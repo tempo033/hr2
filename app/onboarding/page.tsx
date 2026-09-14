@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, CheckCircle2, MessageCircle, Printer, Search, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { generateNextEmployeeNumber } from '@/lib/employee-number'
 
 type Candidate = { id: string; request_id: string; full_name: string; phone: string | null; specialization: string | null; degree: string | null; status: string | null }
 type Request = { id: string; exact_type: string; request_type: string }

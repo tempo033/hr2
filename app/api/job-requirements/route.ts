@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { GoogleGenAI } from '@google/genai'
 import { getSuggestedRequirements } from '@/lib/request-requirements'
 
 type Requirement = { name: string; category: string; required: boolean; source?: string }
@@ -24,62 +25,54 @@ function normalize(value: string) {
     .toLocaleLowerCase('ar')
 }
 
-function labelOf(value: any) {
-  return String(value?.preferredLabel || value?.title || value?.label || value?.prefLabel || '').trim()
-}
-
 function localRequirements(job: string, type: string) {
-  // Local data is allowed only when the requested title is an exact library key.
-  // We never use a related/nearby occupation as a substitute.
   const direct = getSuggestedRequirements(job)
-  if (direct.length) return direct.map((x) => ({ ...x, required: Boolean(x.required), source: 'مكتبة المتطلبات للمسمى المحدد' }))
+  if (direct.length) return direct.map((x) => ({ ...x, required: Boolean(x.required), source: 'مكتبة متطلبات الوظائف المعتمدة' }))
+  
   if (type !== 'توظيف') {
     const exactRequestType = getSuggestedRequirements(type)
-    if (exactRequestType.length) return exactRequestType.map((x) => ({ ...x, required: Boolean(x.required), source: 'مكتبة نوع الطلب المحدد' }))
+    if (exactRequestType.length) return exactRequestType.map((x) => ({ ...x, required: Boolean(x.required), source: 'مكتبة نوع الطلب' }))
   }
   return []
 }
 
-async function escoRequirements(job: string): Promise<Requirement[]> {
+async function aiRequirements(job: string, type: string): Promise<Requirement[]> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return []
+
   try {
-    const searchUrl = `https://ec.europa.eu/esco/api/search?text=${encodeURIComponent(job)}&language=ar&type=occupation&limit=10&selectedVersion=latest&viewObsolete=false`
-    const searchResponse = await fetch(searchUrl, { headers: { Accept: 'application/json' }, next: { revalidate: 86400 } })
-    if (!searchResponse.ok) return []
-    const searchData = await searchResponse.json()
-    const results = Array.isArray(searchData?.results) ? searchData.results : Array.isArray(searchData) ? searchData : []
-    if (!results.length) return []
+    const ai = new GoogleGenAI({ apiKey })
+    const prompt = `أنت خبير موارد بشرية واستقطاب مواهب لشركة مقاولات وإنشاءات سعودية كبرى (شركة البنية الأساسية للمقاولات).
+المطلوب إعداد قائمة متطلبات ومعايير وظيفية دقيقة وشاملة للمسمى التالي: "${job}" ضمن نوع طلب: "${type}".
+قواعد الإخراج:
+- أرجع من 5 إلى 8 متطلبات أساسية ومهمة للوظيفة (مؤهل، خبرة، مهارات فنية، برامج هندسية أو تخصصية، تصاريح أو سلامة).
+- اجعل المتطلبات الأولى (2 أو 3) متطلبات أساسية required: true، والباقي required: false.
+- الصياغة باللغة العربية المهنية المعتمدة في قطاع المقاولات السعودي.
+- يجب أن يكون الرد عبارة عن JSON صالح فقط كمصفوفة كائنات، بدون أي نصوص أو markdown إضافي:
+[
+  {"name": "...", "category": "مؤهل", "required": true},
+  {"name": "...", "category": "خبرة", "required": true},
+  {"name": "...", "category": "مهارة فنية", "required": false}
+]
+الفئات المسموحة: مؤهل، خبرة، مهارة فنية، برنامج هندسي، إدارة، سلامة، أنظمة، مشتريات، محاسبة، تشغيل، عام.`
 
-    const wanted = normalize(job)
-    const exact = results.find((item: any) => normalize(labelOf(item)) === wanted)
-    if (!exact?.uri) return []
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: prompt,
+    })
 
-    const occupationLabel = labelOf(exact)
-    const resourceUrl = `https://ec.europa.eu/esco/api/resource/occupation?uri=${encodeURIComponent(exact.uri)}&language=ar&selectedVersion=latest`
-    const resourceResponse = await fetch(resourceUrl, { headers: { Accept: 'application/json' }, next: { revalidate: 86400 } })
-    if (!resourceResponse.ok) return []
-    const resource = await resourceResponse.json()
-
-    const essential = Array.isArray(resource?.hasEssentialSkill) ? resource.hasEssentialSkill : []
-    const optional = Array.isArray(resource?.hasOptionalSkill) ? resource.hasOptionalSkill : []
-    const skills = [...essential.map((skill: any) => ({ skill, required: true })), ...optional.map((skill: any) => ({ skill, required: false }))]
-
-    const requirements = await Promise.all(skills.slice(0, 30).map(async ({ skill, required }) => {
-      if (typeof skill === 'object') {
-        const label = labelOf(skill)
-        return label ? { name: label, category: required ? 'مهارة أساسية للمهنة' : 'مهارة اختيارية للمهنة', required, source: 'ESCO — المهنة المطابقة تمامًا' } : null
-      }
-      if (typeof skill !== 'string' || !skill.includes('esco')) return null
-      try {
-        const skillUrl = `https://ec.europa.eu/esco/api/resource/skill?uri=${encodeURIComponent(skill)}&language=ar&selectedVersion=latest`
-        const response = await fetch(skillUrl, { headers: { Accept: 'application/json' }, next: { revalidate: 86400 } })
-        if (!response.ok) return null
-        const data = await response.json()
-        const label = labelOf(data)
-        return label ? { name: label, category: required ? 'مهارة أساسية للمهنة' : 'مهارة اختيارية للمهنة', required, source: 'ESCO — المهنة المطابقة تمامًا' } : null
-      } catch { return null }
-    }))
-
-    return unique(requirements.filter(Boolean) as Requirement[]).map((x) => ({ ...x, source: `${x.source} (${occupationLabel})` }))
+    const text = (response.text || '').trim()
+    const cleanJson = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const parsed = JSON.parse(cleanJson)
+    if (Array.isArray(parsed)) {
+      return parsed.map((item: any) => ({
+        name: String(item.name || '').trim(),
+        category: String(item.category || 'عام').trim(),
+        required: Boolean(item.required),
+        source: 'محرك المعايير المهنية الذكي'
+      })).filter(x => x.name.length > 2)
+    }
+    return []
   } catch {
     return []
   }
@@ -93,6 +86,7 @@ export async function GET(req: Request) {
 
   if (!job) return NextResponse.json({ requirements: [], source: 'none', searchedJob: '', searchedType: type })
 
+  // 1. Check local catalog first
   const local = localRequirements(job, type)
   if (local.length) {
     return NextResponse.json({
@@ -102,20 +96,31 @@ export async function GET(req: Request) {
       occupationCode,
       searchedType: type,
       matchedOccupation: job,
-      note: 'تم استخدام متطلبات المسمى المحدد فقط.'
+      note: 'تم جلب المتطلبات بنجاح من مكتبة المسميات المعتمدة.'
     })
   }
 
-  const external = await escoRequirements(job)
+  // 2. Generate specialized requirements via AI
+  const generated = await aiRequirements(job, type)
+  if (generated.length) {
+    return NextResponse.json({
+      requirements: unique(generated),
+      source: 'ai-occupational-standards',
+      searchedJob: job,
+      occupationCode,
+      searchedType: type,
+      matchedOccupation: job,
+      note: 'تم توليد وتحديد متطلبات المسمى الوظيفي بدقة متوافقة مع سوق العمل والمقاولات.'
+    })
+  }
+
   return NextResponse.json({
-    requirements: external,
-    source: external.length ? 'exact-occupation-ESCO' : 'none',
+    requirements: [],
+    source: 'none',
     searchedJob: job,
     occupationCode,
     searchedType: type,
-    matchedOccupation: external.length ? job : null,
-    note: external.length
-      ? 'تم تحميل متطلبات المهنة المطابقة تمامًا فقط؛ لا يتم دمج متطلبات وظائف مشابهة.'
-      : 'لم يتم العثور على ملف مهنة مطابق تمامًا. أضف المتطلبات يدويًا بدل استخدام وظيفة مشابهة.'
+    matchedOccupation: null,
+    note: 'لم يتم العثور على متطلبات محددة، يمكنك إضافة المتطلبات يدويًا.'
   })
 }
