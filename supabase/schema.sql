@@ -1,0 +1,10 @@
+create extension if not exists pgcrypto;
+create table if not exists requests (id uuid primary key default gen_random_uuid(), kind text not null, detail text not null, notes text, status text default 'open', created_at timestamptz default now());
+create table if not exists requirements (id uuid primary key default gen_random_uuid(), request_id uuid references requests(id) on delete cascade, title text not null, weight numeric not null check(weight>=0 and weight<=100));
+create table if not exists candidates (id uuid primary key default gen_random_uuid(), request_id uuid references requests(id) on delete cascade, name text not null, phone text, degree text, experience numeric default 0, saudi_experience boolean default false, notes text, created_at timestamptz default now());
+create table if not exists candidate_scores (id uuid primary key default gen_random_uuid(), candidate_id uuid references candidates(id) on delete cascade, requirement_id uuid references requirements(id) on delete cascade, score numeric not null default 0 check(score>=0 and score<=100), unique(candidate_id, requirement_id));
+alter table requests enable row level security; alter table requirements enable row level security; alter table candidates enable row level security; alter table candidate_scores enable row level security;
+create policy "public read requests" on requests for select using (true); create policy "public insert requests" on requests for insert with check (true);
+create policy "public read requirements" on requirements for select using (true); create policy "public insert requirements" on requirements for insert with check (true);
+create policy "public read candidates" on candidates for select using (true); create policy "public insert candidates" on candidates for insert with check (true);
+create policy "public read scores" on candidate_scores for select using (true); create policy "public insert scores" on candidate_scores for insert with check (true);

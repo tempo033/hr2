@@ -1,0 +1,6 @@
+{
+  "name": "البنية الاساسية للمقاولات | إدارة طلبات الموارد البشرية",
+  "description": "نظام إنشاء وتحليل طلبات التوظيف والتدريب والتجربة والتقييم واعتماد التعيين ومباشرة العمل لشركة البنية الأساسية للمقاولات",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,6 @@
+import type { ReactNode } from 'react'
+
+export function FormPage({title,subtitle,children,actions}:{title:string;subtitle?:string;children:ReactNode;actions?:ReactNode}){return <><div className="hrform-actions print:hidden">{actions}</div><div className="hrform-page" dir="rtl"><div className="hrform-title">{title}</div>{subtitle&&<div className="hrform-subtitle">{subtitle}</div>}<div className="hrform-meta">شركة البنية الأساسية للمقاولات</div>{children}</div></>}
+export function Section({ar,en,children}:{ar:string;en:string;children:ReactNode}){return <section className="hrform-section"><div className="hrform-section-head"><span className="en">{en}</span><span>{ar}</span></div>{children}</section>}
+export function Field({ar,en,value,onChange,type='text',readOnly=false}:{ar:string;en:string;value:any;onChange?:(v:string)=>void;type?:string;readOnly?:boolean}){return <div className="hrform-field"><div className="label-en">{en}</div><div className="label-ar">{ar}</div><input type={type} value={value??''} readOnly={readOnly} onChange={e=>onChange?.(e.target.value)}/></div>}
+export function Signatures(){return <div className="hrform-signatures"><div><b>ممثل الموارد البشرية</b><span>الاسم والتوقيع</span></div><div><b>المدير المختص</b><span>الاسم والتوقيع</span></div><div><b>الموظف</b><span>الاسم والتوقيع</span></div></div>}

@@ -1,11 +1,40 @@
-<div align="center">
+# HRanalysis — البنية الاساسية للمقاولات
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+نظام عربي RTL لإدارة طلبات التوظيف والتدريب والتجربة والتقييم وتحليل مواءمة المرشحين.
 
-  <h1>Built with AI Studio</h2>
+## التشغيل المحلي
+```bash
+npm install
+npm run dev
+```
+ثم افتح `http://localhost:3000`.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## المزايا الحالية
+- إنشاء طلب متعدد الخطوات: توظيف / تدريب / تجربة / تقييم.
+- وظائف جاهزة مع خيار **أخرى**.
+- متطلبات قابلة للتعديل مع أوزان مجموعها 100% وتحديد المتطلب الأساسي.
+- زر لإضافة المتطلبات الهندسية القياسية للوظائف الهندسية.
+- متطلبات هندسية تشمل الرسم، Shop Drawings، BOQ، الحصر، المستخلصات، As-Built، Material Submittals، RFIs، AutoCAD، Excel، Revit/BIM، MS Project/Primavera والاعتمادات.
+- قاعدة بيانات Supabase للطلبات والمتطلبات والمرشحين ودرجات المتطلبات.
+- إنشاء رابط خاص للمرشح وتقديم نموذج البيانات من الهاتف أو الكمبيوتر.
+- تقييم مستوى المرشح لكل متطلب، مع دعم نعم/لا للاعتمادات.
+- حساب نسبة التوافق العامة بالوزن، وإظهار نقاط القوة والفجوات والمتطلبات الأساسية غير المكتملة.
+- تقرير تفصيلي لكل مرشح.
+- نسخ رابط المرشح وفتح النموذج وإرسال الرابط عبر WhatsApp.
+- واجهة RTL بألوان أزرق داكن وأصفر داكن وبدون شعار.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Supabase
+انسخ `.env.example` إلى `.env.local` ثم أضف:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_APP_URL`
 
-</div>
+تم تجهيز جداول `requests`, `request_requirements`, `candidates`, و`candidate_requirement_scores` في مشروع Supabase المرتبط بالمشروع.
+
+> ملاحظة: نسخة MVP الحالية تستخدم مفتاح Supabase العام في المتصفح، لذلك يجب تشديد سياسات RLS وإضافة مصادقة للموظفين قبل استخدام النظام في بيئة إنتاج تحتوي على بيانات مرشحين حقيقية.
+
+## النشر
+المشروع جاهز للربط مع Vercel من مستودع GitHub `tempo033/HRanalysis`. أضف متغيرات Supabase في إعدادات Vercel قبل الاستخدام.
+
+## فحص البناء
+يوجد GitHub Actions workflow في `.github/workflows/ci.yml` لتشغيل `npm ci` ثم `npm run build` على كل Push وPull Request إلى `main`.

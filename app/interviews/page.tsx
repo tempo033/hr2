@@ -1,0 +1,115 @@
+'use client'
+
+import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
+import { ClipboardCheck, Search, Filter, ArrowLeft, RefreshCw, CheckCircle2, Clock3, XCircle } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+
+type Candidate = {
+  id: string
+  request_id: string
+  full_name: string
+  phone: string | null
+  specialization: string | null
+  status: string | null
+  total_experience_years: number | null
+}
+
+type Request = { id: string; exact_type: string; request_type: string; status: string | null }
+type Interview = {
+  id: string
+  candidate_id: string
+  final_score: number
+  recommendation: string
+  final_decision: string
+  interview_date: string | null
+  created_at: string
+}
+
+const decisions = ['الكل', 'لم يتم اتخاذ القرار', 'قبول', 'قبول مشروط', 'احتياطي', 'رفض']
+
+export default function InterviewsPage() {
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [requests, setRequests] = useState<Request[]>([])
+  const [interviews, setInterviews] = useState<Interview[]>([])
+  const [search, setSearch] = useState('')
+  const [requestFilter, setRequestFilter] = useState('الكل')
+  const [decisionFilter, setDecisionFilter] = useState('الكل')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const load = async () => {
+    setLoading(true); setError('')
+    const [{ data: cs, error: ce }, { data: rs, error: re }, { data: iv, error: ie }] = await Promise.all([
+      supabase.from('candidates').select('id,request_id,full_name,phone,specialization,status,total_experience_years').order('created_at', { ascending: false }),
+      supabase.from('requests').select('id,exact_type,request_type,status').order('created_at', { ascending: false }),
+      supabase.from('candidate_interviews').select('id,candidate_id,final_score,recommendation,final_decision,interview_date,created_at').order('created_at', { ascending: false }),
+    ])
+    if (ce || re || ie) setError('تعذر تحميل بيانات المقابلات. تأكد من اتصال قاعدة البيانات وتفعيل جدول المقابلات.')
+    setCandidates((cs || []) as Candidate[]); setRequests((rs || []) as Request[]); setInterviews((iv || []) as Interview[])
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  const requestMap = useMemo(() => Object.fromEntries(requests.map(r => [r.id, r])), [requests])
+  const latestMap = useMemo(() => {
+    const map: Record<string, Interview> = {}
+    interviews.forEach(i => { if (!map[i.candidate_id]) map[i.candidate_id] = i })
+    return map
+  }, [interviews])
+
+  const rows = useMemo(() => candidates.filter(c => {
+    const request = requestMap[c.request_id]
+    const latest = latestMap[c.id]
+    const text = `${c.full_name} ${c.phone || ''} ${c.specialization || ''}`.toLowerCase()
+    const matchesSearch = !search || text.includes(search.toLowerCase())
+    const matchesRequest = requestFilter === 'الكل' || request?.id === requestFilter
+    const matchesDecision = decisionFilter === 'الكل' || (latest?.final_decision || 'لم يتم اتخاذ القرار') === decisionFilter
+    return matchesSearch && matchesRequest && matchesDecision
+  }), [candidates, requestMap, latestMap, search, requestFilter, decisionFilter])
+
+  const stats = useMemo(() => {
+    const evaluated = candidates.filter(c => latestMap[c.id])
+    return {
+      total: candidates.length,
+      evaluated: evaluated.length,
+      pending: candidates.length - evaluated.length,
+      accepted: evaluated.filter(c => latestMap[c.id].final_decision === 'قبول').length,
+    }
+  }, [candidates, latestMap])
+
+  return <main className="min-h-screen bg-[#f5f7fa]" dir="rtl">
+    <div className="max-w-7xl mx-auto p-5 md:p-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-7">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center"><ClipboardCheck size={28}/></div>
+          <div><div className="text-sm text-[#b88618] font-bold">قسم رئيسي</div><h1 className="text-3xl font-black text-[#09233f]">المقابلة والتقييم النهائي</h1><p className="text-slate-500 mt-1">إدارة مقابلات المرشحين واتخاذ القرار النهائي.</p></div>
+        </div>
+        <Link href="/" className="flex items-center gap-2 text-[#09233f] font-bold"><ArrowLeft size={18}/> الرئيسية</Link>
+      </header>
+
+      <section className="grid md:grid-cols-4 gap-4 mb-6">
+        <div className="card p-5"><div className="text-sm text-slate-500">إجمالي المرشحين</div><div className="text-3xl font-black text-[#09233f] mt-1">{stats.total}</div></div>
+        <div className="card p-5"><div className="text-sm text-slate-500">تم تقييمهم</div><div className="text-3xl font-black text-green-600 mt-1">{stats.evaluated}</div></div>
+        <div className="card p-5"><div className="text-sm text-slate-500">بانتظار المقابلة</div><div className="text-3xl font-black text-amber-600 mt-1">{stats.pending}</div></div>
+        <div className="card p-5"><div className="text-sm text-slate-500">قرارات قبول</div><div className="text-3xl font-black text-[#b88618] mt-1">{stats.accepted}</div></div>
+      </section>
+
+      <section className="card p-5 mb-6">
+        <div className="grid md:grid-cols-4 gap-3">
+          <label className="relative md:col-span-2"><Search className="absolute right-3 top-3.5 text-slate-400" size={18}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="البحث باسم المرشح أو الجوال أو التخصص" className="w-full border rounded-xl pr-10 pl-4 py-3"/></label>
+          <select value={requestFilter} onChange={e => setRequestFilter(e.target.value)} className="border rounded-xl px-4 py-3 bg-white"><option>الكل</option>{requests.map(r => <option key={r.id} value={r.id}>{r.exact_type || r.request_type}</option>)}</select>
+          <select value={decisionFilter} onChange={e => setDecisionFilter(e.target.value)} className="border rounded-xl px-4 py-3 bg-white">{decisions.map(d => <option key={d}>{d}</option>)}</select>
+        </div>
+      </section>
+
+      {error && <div className="card p-5 mb-5 border-red-200 bg-red-50 text-red-700 flex justify-between gap-4"><span>{error}</span><button onClick={load} className="font-bold flex items-center gap-2"><RefreshCw size={16}/> إعادة المحاولة</button></div>}
+
+      <section className="card overflow-hidden">
+        <div className="p-5 border-b flex items-center justify-between"><h2 className="font-black text-xl text-[#09233f]">قائمة المرشحين للمقابلة والتقييم</h2><span className="text-sm text-slate-500">{rows.length} مرشح</span></div>
+        {loading ? <div className="p-10 text-center text-slate-500">جاري تحميل البيانات...</div> : rows.length === 0 ? <div className="p-12 text-center text-slate-500">لا توجد نتائج مطابقة.</div> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50"><tr><th className="text-right p-4">المرشح</th><th className="text-right p-4">طلب التوظيف</th><th className="text-right p-4">الخبرة</th><th className="text-right p-4">حالة المقابلة</th><th className="text-right p-4">النتيجة</th><th className="text-right p-4">القرار</th><th className="p-4"></th></tr></thead><tbody>{rows.map(c => { const latest = latestMap[c.id]; const request = requestMap[c.request_id]; const evaluated = !!latest; return <tr key={c.id} className="border-t hover:bg-slate-50"><td className="p-4"><div className="font-bold text-[#09233f]">{c.full_name}</div><div className="text-xs text-slate-500">{c.phone || 'بدون جوال'}{c.specialization ? ` • ${c.specialization}` : ''}</div></td><td className="p-4">{request?.exact_type || '—'}</td><td className="p-4">{c.total_experience_years ?? '—'} سنة</td><td className="p-4">{evaluated ? <span className="inline-flex items-center gap-1 text-green-700"><CheckCircle2 size={16}/> تم التقييم</span> : <span className="inline-flex items-center gap-1 text-amber-700"><Clock3 size={16}/> بانتظار المقابلة</span>}</td><td className="p-4 font-black">{evaluated ? `${Number(latest.final_score).toFixed(0)}%` : '—'}</td><td className="p-4">{latest?.final_decision || 'لم يتم اتخاذ القرار'}</td><td className="p-4"><Link href={`/requests/${c.request_id}/candidates/${c.id}`} className="btn-primary rounded-xl px-4 py-2 font-bold inline-flex items-center gap-2">{evaluated ? 'فتح التقييم' : 'بدء المقابلة'} <ArrowLeft size={15}/></Link></td></tr>})}</tbody></table></div>}
+      </section>
+    </div>
+  </main>
+}
