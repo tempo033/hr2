@@ -1,0 +1,47 @@
+'use client'
+
+import {useEffect,useState} from 'react'
+import {supabase} from '@/lib/supabase'
+
+type Props={candidateId:string}
+
+function Progress({label,value}:{label:string,value:number}){
+  const safe=Math.max(0,Math.min(100,Math.round(value||0)))
+  return <div className="min-w-[170px]">
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-[11px] font-bold text-slate-600">{label}</span>
+      <span className="text-xs font-black text-[#b88618]">{safe}%</span>
+    </div>
+    <div className="h-2.5 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+      <div className="h-full rounded-full bg-[#d4a72c] transition-[width] duration-500" style={{width:`${safe}%`}} />
+    </div>
+  </div>
+}
+
+export default function EvaluationProgress({candidateId}:Props){
+  const [scores,setScores]=useState([0,0,0])
+  useEffect(()=>{
+    let active=true
+    supabase.from('candidate_interviews')
+      .select('hr_score,engineering_score,technical_office_score')
+      .eq('candidate_id',candidateId)
+      .order('created_at',{ascending:false})
+      .limit(1)
+      .maybeSingle()
+      .then(({data})=>{
+        if(active&&data)setScores([
+          Number(data.hr_score)||0,
+          Number(data.engineering_score)||0,
+          Number(data.technical_office_score)||0
+        ])
+      })
+    return()=>{active=false}
+  },[candidateId])
+
+  return <div className="mt-3 space-y-2 rounded-xl border-2 border-slate-100 bg-slate-50/70 p-3">
+    <div className="text-[11px] font-black text-[#09233f] mb-1">نسبة التقييم لكل إدارة</div>
+    <Progress label="الموارد البشرية" value={scores[0]}/>
+    <Progress label="الإدارة المختصة" value={scores[1]}/>
+    <Progress label="الإدارة التنفيذية" value={scores[2]}/>
+  </div>
+}
