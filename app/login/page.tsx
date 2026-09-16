@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, ShieldCheck, Sparkles } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 function getNextPath() {
   if (typeof window === 'undefined') return '/'
@@ -44,6 +45,20 @@ export default function LoginPage() {
       if (!response.ok || !data?.ok) {
         setError(data?.error || 'بيانات الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور.')
         return
+      }
+
+      // Keep the existing secure httpOnly cookie for server authorization, and
+      // also establish the normal Supabase browser session so legacy client-side
+      // pages using lib/supabase continue to work with the same authenticated user.
+      if (data.session?.access_token && data.session?.refresh_token && supabase) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+        if (sessionError) {
+          setError('تم تسجيل الدخول لكن تعذر تهيئة جلسة النظام. حاول مرة أخرى.')
+          return
+        }
       }
 
       window.location.replace(getNextPath())
