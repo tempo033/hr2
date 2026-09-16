@@ -15,9 +15,17 @@ export default function LoginPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace(searchParams.get('next') || '/')
+    let active = true
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!active || !data.session?.access_token) return
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: data.session.access_token }),
+      })
+      if (active && response.ok) router.replace(searchParams.get('next') || '/')
     })
+    return () => { active = false }
   }, [router, searchParams])
 
   async function submit(event: FormEvent) {
@@ -72,32 +80,14 @@ export default function LoginPage() {
           <form onSubmit={submit} className="space-y-4">
             <label className="block font-bold text-[#09233f]">
               اسم المستخدم / البريد الإلكتروني
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                autoComplete="username"
-                required
-                className="mt-2 w-full border-2 border-slate-200 rounded-xl px-4 py-3 bg-white"
-                placeholder="name@company.com"
-              />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" required className="mt-2 w-full border-2 border-slate-200 rounded-xl px-4 py-3 bg-white" placeholder="name@company.com" />
             </label>
 
             <label className="block font-bold text-[#09233f]">
               كلمة المرور
               <div className="relative mt-2">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 pl-12 bg-white"
-                  placeholder="أدخل كلمة المرور"
-                />
-                <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-label="إظهار كلمة المرور">
-                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                </button>
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 pl-12 bg-white" placeholder="أدخل كلمة المرور" />
+                <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-label="إظهار كلمة المرور">{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button>
               </div>
             </label>
 
