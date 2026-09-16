@@ -10,7 +10,7 @@ type Candidate = { id: string; request_id: string; status: string }
 export default function Requests() {
   const [requests, setRequests] = useState<Request[]>([]); const [candidates, setCandidates] = useState<Candidate[]>([])
   const [q, setQ] = useState(''); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
-  const load = async () => { setLoading(true); setError(''); try { const r = await fetch('/api/requests/data', { cache: 'no-store' }); const body = await r.json(); if (!r.ok) throw new Error(body.error || 'تعذر تحميل الطلبات'); setRequests(body.requests || []); setCandidates(body.candidates || []) } catch (e) { setError(e instanceof Error ? e.message : 'تعذر تحميل البيانات') } finally { setLoading(false) } }
+  const load = async () => { setLoading(true); setError(''); try { const r = await fetch('/api/requests/visible', { cache: 'no-store' }); const body = await r.json(); if (!r.ok) throw new Error(body.error || 'تعذر تحميل الطلبات'); setRequests(body.requests || []); setCandidates(body.candidates || []) } catch (e) { setError(e instanceof Error ? e.message : 'تعذر تحميل البيانات') } finally { setLoading(false) } }
   useEffect(()=>{load()},[])
   const remove = async (id:string) => { if (!window.confirm('سيتم حذف الطلب وجميع البيانات التابعة له. هل تريد المتابعة؟')) return; setError(''); const r=await fetch(`/api/requests/${id}`,{method:'DELETE'}); if(!r.ok){const b=await r.json().catch(()=>({}));setError(b.error||'تعذر حذف الطلب');return} await load() }
   const filtered=requests.filter(r=>`${r.request_type} ${r.exact_type} ${r.status}`.includes(q.trim()))
