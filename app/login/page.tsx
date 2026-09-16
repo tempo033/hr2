@@ -2,12 +2,16 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, ShieldCheck, Sparkles } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+
+function getNextPath() {
+  if (typeof window === 'undefined') return '/'
+  return new URLSearchParams(window.location.search).get('next') || '/'
+}
 
 export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -23,10 +27,10 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: data.session.access_token }),
       })
-      if (active && response.ok) router.replace(searchParams.get('next') || '/')
+      if (active && response.ok) router.replace(getNextPath())
     })
     return () => { active = false }
-  }, [router, searchParams])
+  }, [router])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -57,7 +61,7 @@ export default function LoginPage() {
       return
     }
 
-    router.replace(searchParams.get('next') || '/')
+    router.replace(getNextPath())
     router.refresh()
   }
 
