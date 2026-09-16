@@ -5,7 +5,7 @@ import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, ShieldCheck, Sparkles } fro
 import { useRouter } from 'next/navigation'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_A_vnr01AW'
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
 
 function getNextPath() {
   if (typeof window === 'undefined') return '/'
