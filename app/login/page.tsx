@@ -2,11 +2,6 @@
 
 import { FormEvent, useState } from 'react'
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, ShieldCheck, Sparkles } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_A_vnr01AW'
-const COOKIE = 'hr2_access_token'
 
 function getNextPath() {
   if (typeof window === 'undefined') return '/'
@@ -26,14 +21,7 @@ async function requestJson(url: string, init: RequestInit, timeoutMs = 15000) {
   }
 }
 
-function setClientSessionCookie(accessToken: string) {
-  // Fallback for browsers/proxies that do not persist the Set-Cookie response
-  // from the session route. The server route still sets the preferred HttpOnly cookie.
-  document.cookie = `${COOKIE}=${encodeURIComponent(accessToken)}; Path=/; Max-Age=${60 * 60 * 8}; SameSite=Lax; Secure`
-}
-
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -47,28 +35,17 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { response, data: result } = await requestJson(
-        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
-        { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), password }) },
-      )
-
-      if (!response.ok || !result?.access_token) {
-        setError(result?.error_description || result?.msg || 'بيانات الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور.')
-        return
-      }
-
-      const session = await requestJson('/api/auth/session', {
+      const { response, data } = await requestJson('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: result.access_token }),
+        body: JSON.stringify({ email: email.trim(), password }),
       })
 
-      if (!session.response.ok) {
-        setError(session.data?.error || 'تعذر إنشاء جلسة آمنة. حاول مرة أخرى.')
+      if (!response.ok || !data?.ok) {
+        setError(data?.error || 'بيانات الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور.')
         return
       }
 
-      setClientSessionCookie(result.access_token)
       window.location.replace(getNextPath())
     } catch (err) {
       const message = err instanceof DOMException && err.name === 'AbortError'
