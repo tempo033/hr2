@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_A_vnr01AW'
+const PUBLIC_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
 const BOOTSTRAP_EMAIL = 'hr@albenyah.sa'
 
 type AuthUser = { id: string; email?: string; last_sign_in_at?: string | null }
@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
     if (!isAdmin) return NextResponse.json({ error: 'لا تملك صلاحية عرض المستخدمين.' }, { status: 403 })
 
     const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/app_users?select=user_id,display_name,role,is_active,created_at,updated_at&order=created_at.desc`, { headers, cache: 'no-store' })
-    const profiles = profilesResponse.ok ? await profilesResponse.json() : []
+    if (!profilesResponse.ok) {
+      const text = await profilesResponse.text()
+      return NextResponse.json({ error: text || 'تعذر تحميل ملف الصلاحيات.' }, { status: 500 })
+    }
+    const profiles = await profilesResponse.json()
     const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, { headers, cache: 'no-store' })
     const auth: AuthResponse = authResponse.ok ? await authResponse.json() : { users: [] }
     const authUsers: AuthUser[] = auth.users || []
