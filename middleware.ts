@@ -4,14 +4,21 @@ const COOKIE = 'hr2_access_token'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
 
+function isPublicExternalLink(pathname: string) {
+  return /^\/(candidate|evaluation)\/[^/]+\/?$/.test(pathname)
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Public external links are intentionally accessible without system login.
+  // They only expose the specific tokenized candidate/evaluation page.
   if (
     pathname === '/login' ||
     pathname.startsWith('/api/auth/') ||
     pathname.startsWith('/_next/') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    isPublicExternalLink(pathname)
   ) {
     return NextResponse.next()
   }
