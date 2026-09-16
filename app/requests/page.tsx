@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Plus, ArrowLeft, Search, RefreshCw, Pencil, Trash2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 type Request = { id: string; request_type: string; exact_type: string; status: string; created_at: string }
 type Candidate = { id: string; request_id: string; status: string }
@@ -11,15 +10,9 @@ type Candidate = { id: string; request_id: string; status: string }
 export default function Requests() {
   const [requests, setRequests] = useState<Request[]>([]); const [candidates, setCandidates] = useState<Candidate[]>([])
   const [q, setQ] = useState(''); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
-  const load = async () => { setLoading(true); setError(''); if (!supabase) { setError('لم يتم إعداد اتصال Supabase.'); setLoading(false); return }
-    const [{ data: rs, error: re }, { data: cs }] = await Promise.all([supabase.from('requests').select('id,request_type,exact_type,status,created_at').order('created_at',{ascending:false}),supabase.from('candidates').select('id,request_id,status')]);
-    if(re)setError(re.message); setRequests(rs||[]); setCandidates(cs||[]); setLoading(false)
-  }
+  const load = async () => { setLoading(true); setError(''); try { const r = await fetch('/api/requests/data', { cache: 'no-store' }); const body = await r.json(); if (!r.ok) throw new Error(body.error || 'تعذر تحميل الطلبات'); setRequests(body.requests || []); setCandidates(body.candidates || []) } catch (e) { setError(e instanceof Error ? e.message : 'تعذر تحميل البيانات') } finally { setLoading(false) } }
   useEffect(()=>{load()},[])
-  const remove = async (id:string) => { if(!supabase || !window.confirm('سيتم حذف الطلب وجميع البيانات التابعة له. هل تريد المتابعة؟')) return; setError('');
-    const {error:e}=await supabase.rpc('delete_request_cascade',{p_request_id:id});
-    if(e){ setError(e.message); return } await load()
-  }
+  const remove = async (id:string) => { if (!window.confirm('سيتم حذف الطلب وجميع البيانات التابعة له. هل تريد المتابعة؟')) return; setError(''); const r=await fetch(`/api/requests/${id}`,{method:'DELETE'}); if(!r.ok){const b=await r.json().catch(()=>({}));setError(b.error||'تعذر حذف الطلب');return} await load() }
   const filtered=requests.filter(r=>`${r.request_type} ${r.exact_type} ${r.status}`.includes(q.trim()))
   return <main className="min-h-screen" dir="rtl"><header className="bg-[#09233f] text-white px-6 py-5"><div className="max-w-6xl mx-auto flex justify-between items-center"><div><div className="text-[#d4a72c] font-bold">البنية الاساسية للمقاولات</div><h1 className="text-xl font-bold">طلبات الموارد البشرية</h1></div><div className="flex gap-2"><button onClick={load} className="border border-white/20 rounded-xl px-3 py-2"><RefreshCw size={18}/></button><Link href="/requests/new" className="btn-gold rounded-xl px-4 py-2 font-bold flex gap-2 items-center"><Plus size={18}/> طلب جديد</Link></div></div></header>
     <div className="max-w-6xl mx-auto p-6 md:p-10"><div className="relative mb-6"><Search className="absolute right-4 top-3.5 text-slate-400" size={20}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="بحث في الطلبات..." className="input pr-12"/></div>{error&&<div className="mb-5 bg-red-50 text-red-700 p-4 rounded-xl">{error}</div>}
