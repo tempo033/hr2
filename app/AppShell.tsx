@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 const items = [
   ['/', 'الرئيسية', Home, ['admin','hr','interviewer','manager']],['/requests', 'طلبات الموارد البشرية', ClipboardList, ['admin','hr','manager']],['/interviews', 'المقابلات والتقييم', Users, ['admin','hr','interviewer','manager']],['/interviews/links', 'روابط التقييم', Link2, ['admin','hr','interviewer','manager']],['/hiring-approvals', 'اعتماد التعيين', UserCheck, ['admin','hr','manager']],['/offers', 'العروض الوظيفية', Send, ['admin','hr','manager']],['/onboarding', 'مباشرة العمل', BriefcaseBusiness, ['admin','hr']],['/onboarding/manage', 'إدارة المباشرات', FilePenLine, ['admin','hr']],['/forms', 'مركز النماذج', Files, ['admin','hr']],['/employees', 'ملفات الموظفين', FileText, ['admin','hr']],['/reports', 'التقارير', BarChart3, ['admin','hr','manager']],['/users', 'المستخدمون والصلاحيات', UserCog, ['admin']],
 ] as const
-const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation)\/[^/]+\/?$/.test(pathname)
+const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname)
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname=usePathname(); const router=useRouter(); const [role,setRole]=useState<string>('')
