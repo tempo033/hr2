@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { ClipboardCheck, Search, ArrowLeft, RefreshCw, CheckCircle2, Clock3, Link2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { ClipboardCheck, Search, ArrowLeft, RefreshCw, Link2 } from 'lucide-react'
 
 type Candidate = { id:string; request_id:string; full_name:string; phone:string|null; specialization:string|null; status:string|null; total_experience_years:number|null }
 type Request = { id:string; exact_type:string; request_type:string; status:string|null }
@@ -11,7 +10,7 @@ type Interview = { id:string; candidate_id:string; final_score:number; recommend
 const decisions=['الكل','لم يتم اتخاذ القرار','قبول','قبول مشروط','احتياطي','رفض']
 export default function InterviewsPage(){
  const[candidates,setCandidates]=useState<Candidate[]>([]);const[requests,setRequests]=useState<Request[]>([]);const[interviews,setInterviews]=useState<Interview[]>([]);const[search,setSearch]=useState('');const[requestFilter,setRequestFilter]=useState('الكل');const[decisionFilter,setDecisionFilter]=useState('الكل');const[loading,setLoading]=useState(true);const[error,setError]=useState('')
- const load=async()=>{setLoading(true);setError('');const[{data:cs,error:ce},{data:rs,error:re},{data:iv,error:ie}]=await Promise.all([supabase.from('candidates').select('id,request_id,full_name,phone,specialization,status,total_experience_years').order('created_at',{ascending:false}),supabase.from('requests').select('id,exact_type,request_type,status').order('created_at',{ascending:false}),supabase.from('candidate_interviews').select('id,candidate_id,final_score,recommendation,final_decision,interview_date,created_at').order('created_at',{ascending:false})]);if(ce||re||ie)setError('تعذر تحميل بيانات المقابلات.');setCandidates((cs||[])as Candidate[]);setRequests((rs||[])as Request[]);setInterviews((iv||[])as Interview[]);setLoading(false)}
+ const load=async()=>{setLoading(true);setError('');try{const r=await fetch('/api/interviews/data',{cache:'no-store'});const body=await r.json();if(!r.ok)throw new Error(body.error||'تعذر تحميل بيانات المقابلات');setCandidates((body.candidates||[])as Candidate[]);setRequests((body.requests||[])as Request[]);setInterviews((body.interviews||[])as Interview[])}catch(e){setError(e instanceof Error?e.message:'تعذر تحميل بيانات المقابلات')}finally{setLoading(false)}}
  useEffect(()=>{load()},[])
  const requestMap=useMemo(()=>Object.fromEntries(requests.map(r=>[r.id,r])),[requests]);const latestMap=useMemo(()=>{const m:Record<string,Interview>={};interviews.forEach(i=>{if(!m[i.candidate_id])m[i.candidate_id]=i});return m},[interviews]);
  const rows=useMemo(()=>candidates.filter(c=>{const r=requestMap[c.request_id],i=latestMap[c.id],text=`${c.full_name} ${c.phone||''} ${c.specialization||''}`.toLowerCase();return(!search||text.includes(search.toLowerCase()))&&(requestFilter==='الكل'||r?.id===requestFilter)&&(decisionFilter==='الكل'||(i?.final_decision||'لم يتم اتخاذ القرار')===decisionFilter)}),[candidates,requestMap,latestMap,search,requestFilter,decisionFilter]);
