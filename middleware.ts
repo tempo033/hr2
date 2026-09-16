@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const COOKIE = 'hr2_access_token'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_A_vnr01AW'
 const BOOTSTRAP_EMAIL = 'hr@albenyah.sa'
 
-function isPublicExternalLink(pathname: string) { return /^\/(candidate|evaluation)\/[^/]+\/?$/.test(pathname) }
+function isPublicExternalLink(pathname: string) { return /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) }
 function requiredRole(pathname: string) {
   if (pathname === '/users' || pathname.startsWith('/users/')) return ['admin']
   if (pathname === '/forms' || pathname.startsWith('/forms/')) return ['admin','hr']
