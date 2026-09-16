@@ -31,10 +31,10 @@ npm run dev
 
 تم تجهيز جداول `requests`, `request_requirements`, `candidates`, و`candidate_requirement_scores` في مشروع Supabase المرتبط بالمشروع.
 
-> ملاحظة: نسخة MVP الحالية تستخدم مفتاح Supabase العام في المتصفح، لذلك يجب تشديد سياسات RLS وإضافة مصادقة للموظفين قبل استخدام النظام في بيئة إنتاج تحتوي على بيانات مرشحين حقيقية.
-
 ## النشر
-المشروع جاهز للربط مع Vercel من مستودع GitHub `tempo033/HRanalysis`. أضف متغيرات Supabase في إعدادات Vercel قبل الاستخدام.
+المشروع مرتبط بمستودع GitHub `tempo033/hr2` وبمشروع Vercel `hr2`.
 
 ## فحص البناء
 يوجد GitHub Actions workflow في `.github/workflows/ci.yml` لتشغيل `npm ci` ثم `npm run build` على كل Push وPull Request إلى `main`.
+
+آخر مراجعة للنظام: تم توحيد تحميل البيانات الحساسة عبر APIs موثقة على الخادم، مع الحفاظ على روابط التقييم العامة، المرشحين، المقابلات، النسب، التقارير، وصلاحية الاطلاع فقط.
