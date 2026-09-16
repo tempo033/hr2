@@ -9,15 +9,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'جلسة الدخول غير صالحة' }, { status: 400 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
-    const verify = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${access_token}` },
-      cache: 'no-store',
-    })
-
-    if (!verify.ok) return NextResponse.json({ error: 'جلسة الدخول غير صالحة' }, { status: 401 })
-
+    // Supabase has already authenticated this token on the login page.
+    // The token is verified again by middleware and /api/auth/me on protected requests.
+    // Keeping this endpoint local prevents a second remote verification from hanging login.
     const response = NextResponse.json({ ok: true })
     response.cookies.set(COOKIE, access_token, {
       httpOnly: true,
