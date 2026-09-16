@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
 const COOKIE = 'hr2_access_token'
 
 export async function POST(request: NextRequest) {
@@ -9,9 +9,6 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json()
     if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json({ error: 'أدخل البريد الإلكتروني وكلمة المرور.' }, { status: 400 })
-    }
-    if (!SUPABASE_KEY) {
-      return NextResponse.json({ error: 'إعدادات خدمة تسجيل الدخول غير مكتملة.' }, { status: 500 })
     }
 
     const controller = new AbortController()
