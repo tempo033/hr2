@@ -32,7 +32,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: response.status || 401 })
     }
 
-    const result = NextResponse.json({ ok: true })
+    const result = NextResponse.json({
+      ok: true,
+      session: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in,
+        expires_at: data.expires_at,
+        token_type: data.token_type || 'bearer',
+      },
+    })
     result.cookies.set(COOKIE, data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
