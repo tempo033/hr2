@@ -1,44 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
-const BOOTSTRAP_EMAIL = 'hr@albenyah.sa'
-
-type AuthUser = { id: string; email?: string; last_sign_in_at?: string | null }
-type AuthResponse = { users?: AuthUser[] }
-
-export async function GET(req: NextRequest) {
-  try {
-    const token = req.cookies.get('hr2_access_token')?.value
-    if (!token) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
-    const callerResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: PUBLIC_KEY, Authorization: `Bearer ${token}` }, cache: 'no-store' })
-    const caller = callerResponse.ok ? await callerResponse.json() : null
-    if (!caller?.id || !caller?.email) return NextResponse.json({ error: 'جلسة الدخول غير صالحة' }, { status: 401 })
-
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!serviceKey) return NextResponse.json({ error: 'لم يتم إعداد مفتاح إدارة المستخدمين على الخادم.' }, { status: 503 })
-    const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
-    const meResponse = await fetch(`${SUPABASE_URL}/rest/v1/app_users?select=role,is_active&user_id=eq.${caller.id}`, { headers, cache: 'no-store' })
-    const me = meResponse.ok ? await meResponse.json() : []
-    const isAdmin = caller.email.toLowerCase() === BOOTSTRAP_EMAIL || (me?.[0]?.role === 'admin' && me?.[0]?.is_active === true)
-    if (!isAdmin) return NextResponse.json({ error: 'لا تملك صلاحية عرض المستخدمين.' }, { status: 403 })
-
-    const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/app_users?select=user_id,display_name,role,is_active,created_at,updated_at&order=created_at.desc`, { headers, cache: 'no-store' })
-    if (!profilesResponse.ok) {
-      const text = await profilesResponse.text()
-      return NextResponse.json({ error: text || 'تعذر تحميل ملف الصلاحيات.' }, { status: 500 })
-    }
-    const profiles = await profilesResponse.json()
-    const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, { headers, cache: 'no-store' })
-    const auth: AuthResponse = authResponse.ok ? await authResponse.json() : { users: [] }
-    const authUsers: AuthUser[] = auth.users || []
-    const authMap = new Map<string, AuthUser>(authUsers.map((u) => [u.id, u]))
-    const users = profiles.map((p: any) => {
-      const authUser = authMap.get(p.user_id)
-      return { ...p, email: authUser?.email || '', last_sign_in_at: authUser?.last_sign_in_at || null }
-    })
-    return NextResponse.json({ users })
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع.' }, { status: 500 })
-  }
-}
+import { getServerAuth, supabaseHeaders } from '@/lib/server-auth'
+const BOOTSTRAP_EMAIL='hr@albenyah.sa'
+export async function GET(req:NextRequest){try{const auth=await getServerAuth(req,['admin']);if(!auth)return NextResponse.json({error:'لا تملك صلاحية عرض المستخدمين.'},{status:403});const headers=supabaseHeaders(auth);const profilesResponse=await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'}/rest/v1/app_users?select=user_id,display_name,role,is_active,created_at,updated_at&order=created_at.desc`,{headers,cache:'no-store'});if(!profilesResponse.ok)return NextResponse.json({error:await profilesResponse.text()},{status:500});const profiles=await profilesResponse.json();const users=profiles.map((p:any)=>({...p,email:p.user_id===auth.user?.id?(auth.user.email||''):''}));if(auth.serviceKey){const authResponse=await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'}/auth/v1/admin/users?per_page=1000`,{headers:{apikey:auth.serviceKey,Authorization:`Bearer ${auth.serviceKey}`},cache:'no-store'});if(authResponse.ok){const data=await authResponse.json(),map=new Map((data.users||[]).map((u:any)=>[u.id,u]));for(const u of users){const au=map.get(u.user_id);if(au){u.email=au.email||'';u.last_sign_in_at=au.last_sign_in_at||null}}}}return NextResponse.json({users})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:'حدث خطأ غير متوقع.'},{status:500})}}
