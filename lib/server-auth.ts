@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 
 export const AUTH_COOKIE = 'hr2_access_token'
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
-export const PUBLIC_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+export const PUBLIC_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
 export const BOOTSTRAP_EMAIL = 'hr@albenyah.sa'
 
 export type ServerAuth = {
