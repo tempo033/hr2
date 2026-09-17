@@ -1,3 +1,4 @@
+// Vercel deployment sync check
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuth, supabaseHeaders } from '@/lib/server-auth'
 
