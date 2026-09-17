@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const COOKIE = 'hr2_access_token'
+const BOOTSTRAP_EMAIL = 'hr@albenyah.sa'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW'
-const BOOTSTRAP_EMAIL = 'hr@albenyah.sa'
+const COOKIE = 'hr2_access_token'
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,10 +21,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ authenticated: true, user: { id: user.id, email: user.email, role: 'admin', is_active: true } })
     }
 
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!key) return NextResponse.json({ authenticated: true, user: { id: user.id, email: user.email, role: null, is_active: false } })
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const headers = serviceKey
+      ? { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
+      : { apikey: PUBLIC_KEY, Authorization: `Bearer ${token}` }
     const r = await fetch(`${SUPABASE_URL}/rest/v1/app_users?select=display_name,role,is_active&user_id=eq.${user.id}&limit=1`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store', signal: AbortSignal.timeout(10000)
+      headers, cache: 'no-store', signal: AbortSignal.timeout(10000)
     })
     const rows = r.ok ? await r.json() : []
     const p = rows[0]
