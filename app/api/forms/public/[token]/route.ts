@@ -82,6 +82,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     job_title: form.job_title || null,
     form_data: form,
     status: 'معبأ عبر رابط خارجي',
+    last_ip_address: meta.ip,
+    last_device_name: body.device_name || meta.device,
+    last_user_agent: meta.ua,
+    submitted_via_link: true,
     updated_at: new Date().toISOString(),
   }
 
