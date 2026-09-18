@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Printer, FileText, CheckCircle2, ShieldCheck, Building2, Users } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 
 export default function CandidatePdfReport() {
   const { candidateId } = useParams<{ candidateId: string }>()
@@ -19,29 +18,21 @@ export default function CandidatePdfReport() {
   useEffect(() => {
     (async () => {
       setLoading(true)
-      const { data: c } = await supabase.from('candidates').select('*').eq('id', candidateId).single()
-      if (c) {
-        setCandidate(c)
-        const [
-          { data: r },
-          { data: reqs },
-          { data: scs },
-          { data: ivs },
-          { data: app }
-        ] = await Promise.all([
-          supabase.from('requests').select('*').eq('id', c.request_id).single(),
-          supabase.from('request_requirements').select('*').eq('request_id', c.request_id).order('sort_order'),
-          supabase.from('candidate_requirement_scores').select('*').eq('candidate_id', candidateId),
-          supabase.from('candidate_interviews').select('*').eq('candidate_id', candidateId).order('created_at', { ascending: false }),
-          supabase.from('candidate_hiring_approvals').select('*').eq('candidate_id', candidateId).maybeSingle()
-        ])
-        setRequest(r)
-        setRequirements(reqs || [])
-        setScores(scs || [])
-        setInterviews(ivs || [])
-        setApproval(app)
+      try {
+        const res = await fetch('/api/reports/candidate/' + candidateId, { cache: 'no-store' })
+        const body = await res.json()
+        if (!res.ok) throw new Error(body.error || 'تعذر تحميل التقرير الشامل')
+        setCandidate(body.candidate || null)
+        setRequest(body.request || null)
+        setRequirements(body.requirements || [])
+        setScores(body.scores || [])
+        setInterviews(body.interviews || [])
+        setApproval(body.approval || null)
+      } catch {
+        setCandidate(null)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })()
   }, [candidateId])
 
