@@ -29,7 +29,6 @@ export default function Home() {
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-black text-[#09233f]">بوابة العمليات المتكاملة</h2>
-          <p className="text-slate-500 mt-2">أنشئ الطلب، حدد متطلباته، أجرِ المقابلات وجدول Google Meet، قيّم هرمياً، واعتمد التعيين ومباشرة العمل.</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -64,7 +63,7 @@ export default function Home() {
               <div>
                 <div className="text-xs text-[#b88618] font-bold">نظام المقابلات والتقييم الهرمي</div>
                 <h3 className="font-black text-xl text-[#09233f]">المقابلات والتقييم الهرمي (4 مراحل)</h3>
-                <p className="text-sm text-slate-500 mt-1">توليد روابط Google Meet، تسلسل HR ← الإدارة المختصة ← الإدارة ← المدير العام.</p>
+                <p className="text-sm text-slate-500 mt-1">إدارة المقابلات والتقييم الهرمي وتسلسل الاعتماد HR ← الإدارة المختصة ← الإدارة ← المدير العام.</p>
               </div>
             </div>
             <span className="btn-primary rounded-xl px-5 py-3 font-bold flex items-center gap-2 text-sm shrink-0">المقابلات <ArrowLeft size={17} /></span>
