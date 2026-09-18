@@ -1,0 +1,3 @@
+import {NextRequest,NextResponse} from 'next/server'
+import {getServerAuth,supabaseHeaders,SUPABASE_URL} from '@/lib/server-auth'
+export async function GET(req:NextRequest){const auth=await getServerAuth(req,['admin','hr','interviewer','manager']);if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403});const type=req.nextUrl.searchParams.get('form_type');const query=new URLSearchParams({select:'*',order:'updated_at.desc'});if(type)query.set('form_type','eq.'+type);const r=await fetch(SUPABASE_URL+'/rest/v1/hr_form_records?'+query.toString(),{headers:supabaseHeaders(auth),cache:'no-store'});const d=await r.json();return NextResponse.json({records:d||[]},{status:r.ok?200:r.status})}
