@@ -1,4 +1,5 @@
 // Vercel deployment sync check
+// Production build verification: users list auth types are explicit.
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuth, supabaseHeaders } from '@/lib/server-auth'
 
