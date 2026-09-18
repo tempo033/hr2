@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (!kind || !exactType || !requirements.length || Math.abs(total - 100) >= 0.01) {
       return NextResponse.json({ error: 'نوع الطلب والنوع الدقيق والمتطلبات ومجموع الأوزان 100% مطلوبة' }, { status: 400 })
     }
-    const headers = supabaseHeaders(auth, { Prefer: 'return=representation' })
+    const headers = supabaseHeaders(auth, { Prefer: 'return=representation', 'Content-Type': 'application/json' })
     const base = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
     const create = await fetch(`${base}/rest/v1/requests`, {
       method: 'POST',
