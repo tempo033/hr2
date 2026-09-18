@@ -12,7 +12,7 @@ type Interview = { interview_date: string | null; interview_type: string; engine
 
 export default function FinalInterviewReport(){
  const {candidateId}=useParams<{candidateId:string}>(); const [candidate,setCandidate]=useState<Candidate|null>(null); const [request,setRequest]=useState<Request|null>(null); const [interview,setInterview]=useState<Interview|null>(null); const [loading,setLoading]=useState(true)
- useEffect(()=>{(async()=>{const [{data:c},{data:i},{data:r}]=await Promise.all([supabase.from('candidates').select('*').eq('id',candidateId).single(),supabase.from('candidate_interviews').select('*').eq('candidate_id',candidateId).order('created_at',{ascending:false}).limit(1).maybeSingle(),supabase.from('requests').select('exact_type,request_type').eq('id',candidate?.request_id||'00000000-0000-0000-0000-000000000000').maybeSingle()]); setCandidate(c); setInterview(i); if(c?.request_id){const {data:rr}=await supabase.from('requests').select('exact_type,request_type').eq('id',c.request_id).single();setRequest(rr)} setLoading(false)})()},[candidateId])
+ useEffect(()=>{(async()=>{try{const r=await fetch('/api/reports/candidate/'+candidateId,{cache:'no-store'}); const b=await r.json(); if(!r.ok) throw new Error(b.error||'تعذر تحميل التقرير'); setCandidate(b.candidate||null); setInterview(b.interview||null); setRequest(b.request||null)}catch{setCandidate(null)}finally{setLoading(false)}})()},[candidateId])
  if(loading)return <main className="min-h-screen grid place-items-center" dir="rtl">جاري إعداد التقرير...</main>
  if(!candidate)return <main className="min-h-screen grid place-items-center" dir="rtl">المرشح غير موجود.</main>
  const decision=interview?.final_decision||'لم يتم اتخاذ القرار'; const score=Number(interview?.final_score||0)
