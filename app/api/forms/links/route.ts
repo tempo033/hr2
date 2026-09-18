@@ -3,6 +3,15 @@ import { getServerAuth, supabaseHeaders, SUPABASE_URL } from '@/lib/server-auth'
 
 const allowed = ['admin','hr','interviewer','manager']
 
+export async function GET(req: NextRequest) {
+  const auth = await getServerAuth(req, allowed)
+  if (!auth) return NextResponse.json({ error: 'غير مصرح.' }, { status: 403 })
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links?select=*&order=created_at.desc`, { headers: supabaseHeaders(auth), cache: 'no-store' })
+  const data = await response.json()
+  if (!response.ok) return NextResponse.json({ error: JSON.stringify(data) }, { status: response.status })
+  return NextResponse.json({ links: data || [] })
+}
+
 export async function POST(req: NextRequest) {
   const auth = await getServerAuth(req, allowed)
   if (!auth) return NextResponse.json({ error: 'غير مصرح.' }, { status: 403 })
