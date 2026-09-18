@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SUPABASE_URL, PUBLIC_KEY } from '@/lib/server-auth'
+const DB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || PUBLIC_KEY
 
 function clientMeta(req: NextRequest) {
   const forwarded = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || ''
@@ -16,8 +17,8 @@ async function db(path: string, init?: RequestInit) {
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: PUBLIC_KEY,
-      Authorization: `Bearer ${PUBLIC_KEY}`,
+      apikey: DB_KEY,
+      Authorization: `Bearer ${DB_KEY}`,
       'Content-Type': 'application/json',
       ...(init?.headers || {}),
     },
