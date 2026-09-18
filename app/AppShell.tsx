@@ -19,7 +19,7 @@ const items = [
   ['/reports', 'التقارير', BarChart3, ['admin','hr','manager']],
   ['/users', 'المستخدمون والصلاحيات', UserCog, ['admin']],
 ] as const
-const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname)
+const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname)
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname=usePathname(); const router=useRouter(); const [role,setRole]=useState<string>(''); const [open,setOpen]=useState(false)
