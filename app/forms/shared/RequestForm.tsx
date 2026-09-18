@@ -12,7 +12,7 @@ const config:Record<Kind,{title:string;sub:string;fields:Field[]}>= {
  advance:{title:'طلب سلفة مالية',sub:'SALARY ADVANCE REQUEST',fields:[{label:'اسم الموظف',key:'employee_name'},{label:'الرقم الوظيفي',key:'employee_number'},{label:'القسم',key:'department'},{label:'المسمى الوظيفي',key:'job_title'},{label:'قيمة السلفة',key:'amount',type:'number'},{label:'عدد الأقساط',key:'installments',type:'number'},{label:'تاريخ الطلب',key:'request_date',type:'date'},{label:'سبب السلفة',key:'reason'},{label:'طريقة السداد',key:'repayment',type:'select',options:['خصم من الراتب','تحويل بنكي','أخرى']},{label:'ملاحظات',key:'notes'}]}
 }
 export {config}
-export default function RequestForm({kind,publicToken,initialData,readOnly=false}:{kind:Kind;publicToken?:string;initialData?:Record<string,string>;readOnly?:boolean}){
+export default function RequestForm({kind,publicToken,initialData,readOnly=false,recordEdit=false}:{kind:Kind;publicToken?:string;initialData?:Record<string,string>;readOnly?:boolean;recordEdit?:boolean}){
  const c=config[kind]; const storage=`hrform-${kind}`; const initial=useMemo(()=>Object.fromEntries(c.fields.map(f=>[f.key,''])),[kind]);
  const [form,setForm]=useState<Record<string,string>>({...initial,...(initialData||{})}); const [employees,setEmployees]=useState<Employee[]>([]); const [employeeId,setEmployeeId]=useState(''); const [recordId,setRecordId]=useState(''); const [msg,setMsg]=useState(''); const [busy,setBusy]=useState(false); const [externalLoading,setExternalLoading]=useState(Boolean(publicToken));
  useEffect(()=>{if(initialData)setForm({...initial,...initialData})},[initial,initialData]);
