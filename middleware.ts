@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server'
 const COOKIE = 'hr2_access_token'
 
 function isPublicExternalLink(pathname: string) {
-  return /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname)
+  return /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname)
 }
 
 function isPublicExternalApi(pathname: string) {
-  return /^\/api\/(evaluation|candidate|offer)\/[^/]+\/?$/.test(pathname)
+  return /^\/api\/(evaluation|candidate|offer)\/[^/]+\/?$/.test(pathname) || /^\/api\/forms\/public\/[^/]+\/?$/.test(pathname)
 }
 
 export async function middleware(request: NextRequest) {
