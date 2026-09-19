@@ -35,6 +35,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
  const [rec,setRec]=useState<RecordRow|null>(null)
  const [links,setLinks]=useState<LinkRow[]>([])
  const [loading,setLoading]=useState(true)
+ const [savingApply,setSavingApply]=useState(false)
+ const [apply,setApply]=useState<Record<string,boolean>>({})
 
  const load=async()=>{
   if(!id)return
@@ -48,6 +50,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    if(!rr.ok) throw new Error(rd?.error||'تعذر تحميل ملف الإخلاء')
    setRec(rd.records?.[0]||null)
    setLinks((ld.links||[]).filter((x:LinkRow)=>x.record_id===id))
+   const savedApply=rd.records?.[0]?.form_data?.clearance?.applicability||{}
+   setApply(Object.fromEntries(stages.map(s=>[s.key,s.key==='employee'?true:savedApply[s.key]!==false])))
   }catch(error){console.error(error);setRec(null);setLinks([])}
   finally{setLoading(false)}
  }
@@ -60,10 +64,21 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
  const allApproved=useMemo(()=>{
   if(!employee.employee_signature)return false
   return stages.slice(1).every(s=>{
+   if(apply[s.key]===false)return true
    const d=stageData(s.key)
    return signed(d)&&decision(d)==='clear'
   })
- },[clearance,employee])
+ },[clearance,employee,apply])
+ const saveApplicability=async(next:Record<string,boolean>)=>{
+  setSavingApply(true)
+  try{
+   const form={...(rec?.form_data||{}),clearance:{...(rec?.form_data?.clearance||{}),applicability:next}}
+   const r=await fetch('/api/forms/records?id='+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({form,status:'قيد الإخلاء'})})
+   if(!r.ok)throw new Error('تعذر حفظ حالة الإدارات')
+   setApply(next)
+   setRec(prev=>prev?{...prev,form_data:form,updated_at:new Date().toISOString()}:prev)
+  }catch(e){console.error(e)}finally{setSavingApply(false)}
+ }
 
  const officialExport=()=>{if(allApproved)window.print()}
 
@@ -95,7 +110,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
      return <a key={s.key} href={link?'/forms/public/'+link.token:'#'} target={link?'_blank':undefined} rel="noreferrer" className="link-card">
       <span className={complete?'icon ok':'icon'}><Icon size={21}/></span>
       <span className="font-black text-sm">{s.label}</span>
-      <span className={complete?'text-xs text-emerald-700 font-bold':'text-xs text-amber-700 font-bold'}>{complete?'تم الاعتماد':'قيد الانتظار'}</span>
+      {s.key!=='employee'&&<div className="apply-buttons"><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:true})}} className={apply[s.key]!==false?'selected':''}>ينطبق</button><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:false})}} className={apply[s.key]===false?'selected skip':''}>لا ينطبق</button></div>}
+      <span className={apply[s.key]===false?'text-xs text-slate-500 font-bold':complete?'text-xs text-emerald-700 font-bold':'text-xs text-amber-700 font-bold'}>{apply[s.key]===false?'تم التخطي':complete?'تم الاعتماد':'قيد الانتظار'}</span>
       <ExternalLink size={14} className="absolute left-3 top-3 text-slate-400"/>
      </a>
     })}
@@ -170,7 +186,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    .sig-box{height:30px;justify-content:center}.sig-box img{max-width:90px;height:27px;object-fit:contain}
    .official-footer{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;border-top:1px solid #cbd5e1;padding-top:5px}
    .copies{text-align:center;font-size:7px;font-weight:800;margin-top:6px;color:#475569}
-   .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.badge.ok{background:#ecfdf5;color:#166534}.badge.pending{background:#fffbeb;color:#a16207}
+   .apply-buttons{display:flex;gap:4px;width:100%}.apply-buttons button{flex:1;border:1px solid #cbd5e1;border-radius:7px;padding:3px 2px;font-size:9px;font-weight:800;background:#fff;color:#475569}.apply-buttons button.selected{background:#ecfdf5;color:#166534;border-color:#86efac}.apply-buttons button.selected.skip{background:#f1f5f9;color:#475569;border-color:#94a3b8}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.badge.ok{background:#ecfdf5;color:#166534}.badge.pending{background:#fffbeb;color:#a16207}
    .link-card{position:relative;min-height:108px;border:1px solid #e2e8f0;border-radius:14px;padding:14px 10px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:#09233f;background:#fafbfc;transition:.15s}.link-card:hover{border-color:#b88618;transform:translateY(-1px)}
    .icon{width:43px;height:43px;border-radius:12px;background:#eef2f7;display:grid;place-items:center;color:#475569}.icon.ok{background:#ecfdf5;color:#166534}
    @media print{
