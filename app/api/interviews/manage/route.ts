@@ -21,6 +21,18 @@ export async function POST(req: NextRequest) {
       if (!insertRes.ok) return NextResponse.json({error:await insertRes.text()},{status:500})
       const rows=await insertRes.json(); return NextResponse.json({link:rows[0]})
     }
+    if (action === 'reopen_evaluation') {
+      const { candidateId, stage } = body
+      if (!candidateId || !stage) return NextResponse.json({error:'بيانات إعادة فتح التقييم ناقصة'},{status:400})
+      const findRes = await fetch(`${SUPABASE_URL}/rest/v1/candidate_evaluation_links?select=*&candidate_id=eq.${encodeURIComponent(candidateId)}&stage=eq.${encodeURIComponent(stage)}&limit=1`,{headers,cache:'no-store'})
+      const found = findRes.ok ? await findRes.json() : []
+      const link = found[0]
+      if (!link) return NextResponse.json({error:'لم يتم العثور على رابط تقييم هذه الإدارة'},{status:404})
+      const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/candidate_evaluation_links?id=eq.${link.id}`,{method:'PATCH',headers:{...headers,Prefer:'return=representation'},body:JSON.stringify({completed_at:null})})
+      if (!updateRes.ok) return NextResponse.json({error:await updateRes.text()},{status:500})
+      const rows = await updateRes.json()
+      return NextResponse.json({link:rows[0]})
+    }
     if (action === 'save_meeting') {
       const { candidateId, requestId, date, start, end, teamsSchedule, teamsJoin, invitation } = body
       if (!candidateId || !requestId || !date || !start || !end || !teamsJoin) return NextResponse.json({error:'بيانات الموعد ناقصة'},{status:400})
