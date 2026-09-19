@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Printer, ShieldCheck, Users, Building2, Briefcase, Award } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 
 export default function OfficialEvaluationPdfReport() {
   const { candidateId } = useParams<{ candidateId: string }>()
@@ -16,15 +15,15 @@ export default function OfficialEvaluationPdfReport() {
   useEffect(() => {
     (async () => {
       setLoading(true)
-      const { data: c } = await supabase.from('candidates').select('*').eq('id', candidateId).single()
-      if (c) {
-        setCandidate(c)
-        const [{ data: r }, { data: iv }] = await Promise.all([
-          supabase.from('requests').select('*').eq('id', c.request_id).single(),
-          supabase.from('candidate_interviews').select('*').eq('candidate_id', candidateId).order('created_at', { ascending: false }).limit(1).maybeSingle()
-        ])
-        setRequest(r)
-        setInterview(iv)
+      try {
+        const res = await fetch('/api/reports/candidate/' + candidateId, { cache: 'no-store' })
+        const body = await res.json()
+        if (!res.ok) throw new Error(body.error || 'تعذر تحميل التقرير')
+        setCandidate(body.candidate || null)
+        setRequest(body.request || null)
+        setInterview(body.interview || null)
+      } catch {
+        setCandidate(null)
       }
       setLoading(false)
     })()
