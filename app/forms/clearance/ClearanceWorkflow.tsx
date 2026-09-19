@@ -7,7 +7,7 @@ const stages:any={employee:'الموظف',managers:'المدير المباشر 
 export default function ClearanceWorkflow(){
  const [employees,setEmployees]=useState<any[]>([]),[employeeId,setEmployeeId]=useState(''),[links,setLinks]=useState<any[]>([]),[busy,setBusy]=useState(false),[msg,setMsg]=useState('')
  const load=async()=>{const {data}=await supabase.from('employee_records').select('id,employee_number,full_name,department,job_title').order('full_name');setEmployees(data||[])}
- useEffect(()=>{load()},[])
+ useEffect(()=>{void load()},[])
  const create=async()=>{if(!employeeId)return;setBusy(true);setMsg('');const r=await fetch('/api/forms/clearance/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employee_id:employeeId})});const d=await r.json();setBusy(false);if(!r.ok){setMsg(d.error||'تعذر إنشاء الروابط');return}setLinks(d.links||[]);setMsg('تم إنشاء روابط إخلاء الطرف التسعة وربطها بملف الموظف.')}
  const copy=(t:string)=>navigator.clipboard?.writeText(location.origin+'/forms/public/'+t)
  return <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5 md:p-8"><div className="max-w-6xl mx-auto">
