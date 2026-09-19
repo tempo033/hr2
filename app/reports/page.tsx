@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import {FileText,Printer,RefreshCw,ClipboardList} from 'lucide-react'
+import {FileText,Printer,RefreshCw} from 'lucide-react'
 import {useEffect,useState} from 'react'
 type Row={id:string;full_name:string;request_id:string}
 export default function ReportsPage(){
@@ -13,8 +13,7 @@ export default function ReportsPage(){
   {error&&<div className="mb-5 bg-red-50 text-red-700 p-4 rounded-xl">{error}</div>}
   {loading?<div className="card p-12 text-center">جاري تحميل التقارير...</div>:<div className="space-y-6">
    <section className="card p-6"><div className="flex items-center gap-3 mb-5"><FileText className="text-[#b88618]"/><h2 className="text-xl font-black text-[#09233f]">التقرير الشامل</h2></div>{candidates.length?<div className="space-y-3">{candidates.map((x,i)=><ReportRow key={`${x.id}-${i}`} x={x} url={`/reports/candidate/${x.id}`} label="بيانات المرشح + التقييم المبدئي + جميع تقييمات الإدارات"/>)}</div>:<p className="text-slate-500">لا توجد تقارير شاملة حتى الآن.</p>}</section>
-   <section className="card p-6"><div className="flex items-center gap-3 mb-5"><ClipboardList className="text-[#b88618]"/><h2 className="text-xl font-black text-[#09233f]">تقارير التقييم المبدئي</h2></div><p className="text-sm text-slate-500 mb-4">التقييم المبدئي هو تقييم المرشح الأساسي نفسه، بدون تقرير تفصيلي مكرر.</p>{candidates.length?<div className="space-y-3">{candidates.map((x,i)=><ReportRow key={`initial-${x.id}-${i}`} x={x} url={`/reports/initial/${x.id}`} label="تقرير التقييم المبدئي للمرشح"/>)}</div>:<p className="text-slate-500">لا توجد تقييمات مبدئية حتى الآن.</p>}</section>
-  </div>}
+   </div>}
   <div className="mt-6 bg-white border rounded-xl p-4 text-sm text-slate-600">التقارير مضبوطة للطباعة على A4. من نافذة الطباعة اختر <b>Save as PDF / حفظ كملف PDF</b>.</div>
  </div></main>
 }
