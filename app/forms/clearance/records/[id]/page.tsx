@@ -105,7 +105,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    </div>
    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
     {stages.map(s=>{
-     const Icon=s.icon; const d=stageData(s.key); const complete=s.key==='employee'?Boolean(employee.employee_signature):signed(d)&&decision(d)==='clear'
+     const Icon=s.icon; const d=stageData(s.key); const skipped=s.key!=='employee'&&apply[s.key]===false
+     const complete=s.key==='employee'?Boolean(employee.employee_signature):skipped||signed(d)&&decision(d)==='clear'
      const link=links.find(x=>x.link_scope==='clearance:'+s.key)
      return <a key={s.key} href={link?'/forms/public/'+link.token:'#'} target={link?'_blank':undefined} rel="noreferrer" className="link-card">
       <span className={complete?'icon ok':'icon'}><Icon size={21}/></span>
@@ -147,7 +148,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
      const name=s.key==='employee'?employee.employee_name:(s.key==='managers'?(d.line_manager_name||d.project_manager_name||d.projects_manager_name):d[s.key+'_name']||d.deputy_general_manager||'')
      const sig=signatureEntries(d)[0]?.[1]
      const date=s.key==='employee'?d.employee_signature_date:(d[s.key+'_date']||d.senior_date||'')
-     const dec=s.key==='employee'?(employee.employee_signature?'clear':'pending'):decision(d)
+     const skipped= s.key!=='employee'&&apply[s.key]===false
+     const dec=s.key==='employee'?(employee.employee_signature?'clear':'pending'):skipped?'skip':decision(d)
      return <div className="row" key={s.key}>
       <div className="font-black">{s.label}</div>
       <div>{displayValue(name)}</div>
@@ -182,7 +184,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    .row{display:grid;grid-template-columns:1.25fr 1.45fr 1fr 1.2fr .9fr;align-items:center;border-top:1px solid #e2e8f0;min-height:32px;font-size:8px}
    .row>div{padding:3px 5px;border-left:1px solid #e2e8f0;min-height:32px;display:flex;align-items:center}.row>div:last-child{border-left:0}
    .head{background:#f1f5f9;font-weight:900;min-height:25px}.head>div{min-height:25px}
-   .decision{font-weight:900}.decision.clear{color:#166534}.decision.no{color:#b91c1c}.decision.wait{color:#a16207}
+   .decision{font-weight:900}.decision.clear{color:#166534}.decision.no{color:#b91c1c}.decision.wait{color:#a16207}.decision.skip{color:#64748b}
    .sig-box{height:30px;justify-content:center}.sig-box img{max-width:90px;height:27px;object-fit:contain}
    .official-footer{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;border-top:1px solid #cbd5e1;padding-top:5px}
    .copies{text-align:center;font-size:7px;font-weight:800;margin-top:6px;color:#475569}
