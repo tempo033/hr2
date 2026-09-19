@@ -10,10 +10,14 @@ export async function GET(req:NextRequest){
    get('candidate_evaluation_links?select=id,candidate_id,request_id,created_at,completed_at,token&completed_at=not.is.null&order=completed_at.desc',a),
    get('employee_onboarding?select=candidate_id&order=created_at.desc',a)
   ])
-  const ids=Array.from(new Set(links.map((x:any)=>x.candidate_id).filter(Boolean)))
+  // A candidate must appear only once: keep the latest completed evaluation link for each candidate.
+  const latestByCandidate=new Map<string,any>()
+  for(const x of links){if(x.candidate_id&&!latestByCandidate.has(x.candidate_id))latestByCandidate.set(x.candidate_id,x)}
+  const uniqueLinks=Array.from(latestByCandidate.values())
+  const ids=uniqueLinks.map((x:any)=>x.candidate_id)
   const candidates=ids.length?await get(`candidates?select=id,full_name,request_id&id=in.(${ids.join(',')})`,a):[]
   const map=new Map(candidates.map((x:any)=>[x.id,x]))
-  const initialEvaluations=links.map((x:any)=>{const c=map.get(x.candidate_id);return c?{...c,evaluation_link_id:x.id,evaluated_at:x.completed_at,link_created_at:x.created_at}:null}).filter(Boolean)
+  const initialEvaluations=uniqueLinks.map((x:any)=>{const c=map.get(x.candidate_id);return c?{...c,evaluation_link_id:x.id,evaluated_at:x.completed_at,link_created_at:x.created_at}:null}).filter(Boolean)
   const onboardingIds=Array.from(new Set(onboarding.map((x:any)=>x.candidate_id).filter(Boolean)))
   const onboardingCandidates=onboardingIds.length?await get(`candidates?select=id,full_name,request_id&id=in.(${onboardingIds.join(',')})`,a):[]
   const onboardingMap=new Map(onboardingCandidates.map((x:any)=>[x.id,x]))
