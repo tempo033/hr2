@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react'
 import Link from 'next/link'
 import {RefreshCw,ArrowLeft,Link2,CalendarDays,MessageCircle,ExternalLink,Video,Clock,CheckCircle2,Clock3,Pencil} from 'lucide-react'
 import EvaluationProgress from '@/components/EvaluationProgress'
-import {getSpecializedProfile} from '@/components/DepartmentEvaluationQuestions'
+import {getSpecializedProfile} from '@/components/SpecializedEvaluationProfiles'
 const stages=[['hr','الموارد البشرية'],['specialized','الإدارة المختصة'],['executive','الإدارة التنفيذية'],['general_manager','المدير العام']] as const
 function phone(v:string){const raw=(v||'').replace(/[^0-9]/g,'');return raw.startsWith('0')?`966${raw.slice(1)}`:raw}
 function teamsScheduleUrl(subject:string,start:string,end:string,content:string,email?:string|null){const p=new URLSearchParams({subject,startTime:start,endTime:end,content});if(email)p.set('attendees',email);return `https://teams.microsoft.com/l/meeting/new?${p.toString().replace(/\+/g,'%20')}`}
