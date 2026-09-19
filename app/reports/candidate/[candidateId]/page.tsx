@@ -73,7 +73,7 @@ export default function CandidatePdfReport() {
           <div>
             <div className="text-xl font-black text-[#09233f]">شركة البنية الأساسية للمقاولات ذ.م.م</div>
             <div className="text-[#b88618] font-bold text-xs">إدارة الموارد البشرية والتوظيف الموحد</div>
-            <div className="text-[11px] text-slate-500 mt-1">المملكة العربية السعودية • تقرير مرشح رسمي ومعتمد</div>
+            <div className="text-[11px] text-slate-500 mt-1">المملكة العربية السعودية • تقرير شامل لتقييم المرشح</div>
           </div>
           <div className="text-left" dir="ltr">
             <div className="text-xs font-mono font-bold text-[#09233f]">REF: CR-{candidate.id.slice(0, 8).toUpperCase()}</div>
@@ -221,9 +221,11 @@ export default function CandidatePdfReport() {
           <div>
             <div className="font-bold text-[#09233f]">اعتماد المدير العام</div>
             <div className="h-10 border-b border-dotted border-slate-400 mt-1 flex items-center justify-center">
-              <span className="text-[10px] text-[#b88618] font-black border border-[#b88618] px-2 py-0.5 rounded">
-                معتمد رسمياً
-              </span>
+              {latestInterview?.final_decision === 'قبول' && (
+                <span className="text-[10px] text-[#b88618] font-black border border-[#b88618] px-2 py-0.5 rounded">
+                  معتمد رسمياً
+                </span>
+              )}
             </div>
             <div className="text-slate-400 text-[10px] mt-1">التوقيع والختم الرسمي</div>
           </div>
