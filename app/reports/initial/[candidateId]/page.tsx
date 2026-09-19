@@ -1,0 +1,23 @@
+'use client'
+import Link from 'next/link'
+import {ArrowRight,Printer,ClipboardList} from 'lucide-react'
+import {useEffect,useState} from 'react'
+import {useParams} from 'next/navigation'
+export default function InitialReport(){
+ const {candidateId}=useParams<{candidateId:string}>();const[c,setC]=useState<any>(null),[req,setReq]=useState<any>(null),[requirements,setRequirements]=useState<any[]>([]),[scores,setScores]=useState<any[]>([]),[loading,setLoading]=useState(true)
+ useEffect(()=>{(async()=>{try{const r=await fetch('/api/reports/candidate/'+candidateId,{cache:'no-store'}),b=await r.json();if(!r.ok)throw new Error();setC(b.candidate);setReq(b.request);setRequirements(b.requirements||[]);setScores(b.scores||[])}catch{}finally{setLoading(false)}})()},[candidateId])
+ if(loading)return <main dir="rtl" className="min-h-screen grid place-items-center">جاري تجهيز تقرير التقييم المبدئي...</main>
+ if(!c)return <main dir="rtl" className="min-h-screen grid place-items-center">المرشح غير موجود.</main>
+ const sm=Object.fromEntries(scores.map(s=>[s.requirement_id,s]));const tw=requirements.reduce((s,r)=>s+Number(r.weight||0),0);const overall=tw?Math.round(requirements.reduce((s,r)=>s+Number(r.weight||0)*Number(sm[r.id]?.score||0)/100,0)/tw*100):0
+ return <main dir="rtl" className="min-h-screen bg-slate-200 py-6 text-slate-800"><style>{`@page{size:A4 portrait;margin:8mm}@media print{.no-print{display:none!important}.paper{box-shadow:none!important;width:100%!important;margin:0!important;padding:0!important}}`}</style>
+  <div className="no-print max-w-[850px] mx-auto mb-4 flex justify-between"><Link href="/reports/initial" className="font-bold text-[#09233f] flex items-center gap-2"><ArrowRight size={18}/> العودة لتقارير التقييم المبدئي</Link><button onClick={()=>window.print()} className="bg-[#09233f] text-white rounded-xl px-5 py-2.5 font-bold inline-flex items-center gap-2"><Printer size={18}/> طباعة / تصدير PDF</button></div>
+  <article className="paper max-w-[850px] mx-auto bg-white shadow-xl rounded-xl p-8 md:p-12 text-[12px] leading-relaxed">
+   <header className="border-b-2 border-[#09233f] pb-4 flex justify-between"><div><div className="text-xl font-black text-[#09233f]">شركة البنية الأساسية للمقاولات ذ.م.م</div><div className="text-[#b88618] font-bold text-xs">إدارة الموارد البشرية والتوظيف</div><div className="text-[11px] text-slate-500 mt-1">تقرير التقييم المبدئي للمرشح</div></div><div className="text-left" dir="ltr"><div className="text-xs font-mono font-bold">REF: IE-{c.id.slice(0,8).toUpperCase()}</div><div className="text-[11px] text-slate-500">Date: {new Date().toLocaleDateString('ar-SA')}</div></div></header>
+   <div className="text-center my-5"><ClipboardList className="mx-auto text-[#b88618]" size={26}/><h1 className="text-2xl font-black text-[#09233f]">التقييم المبدئي للمرشح</h1><div className="text-xs text-[#b88618] font-bold">INITIAL CANDIDATE EVALUATION</div></div>
+   <div className="grid grid-cols-2 gap-3 border rounded-lg p-4 bg-slate-50 text-[11.5px]"><div><b>اسم المرشح:</b> {c.full_name}</div><div><b>الوظيفة:</b> {req?.exact_type||'—'}</div><div><b>الجوال:</b> {c.phone||'—'}</div><div><b>البريد:</b> {c.email||'—'}</div><div><b>المؤهل:</b> {c.degree||'—'}</div><div><b>التخصص:</b> {c.specialization||'—'}</div><div><b>إجمالي الخبرة:</b> {c.total_experience_years??'—'} سنة</div><div><b>الخبرة السعودية:</b> {c.saudi_experience_years??'—'} سنة</div></div>
+   <div className="mt-5 p-4 bg-[#09233f] text-white rounded-xl flex justify-between"><span>نسبة المطابقة الإجمالية</span><b className="text-2xl">{overall}%</b></div>
+   <div className="mt-5"><h2 className="font-black text-lg text-[#09233f] mb-3">مطابقة متطلبات الوظيفة</h2><table className="w-full border-collapse text-[11px]"><thead><tr className="border-b bg-slate-50"><th className="p-2 text-right">المتطلب</th><th className="p-2">النوع</th><th className="p-2">الوزن</th><th className="p-2">المطابقة</th><th className="p-2 text-right">الدليل</th></tr></thead><tbody>{requirements.map(r=>{const s=Number(sm[r.id]?.score||0);return <tr key={r.id} className="border-b"><td className="p-2 font-medium">{r.name}</td><td className="p-2 text-center">{r.required?'أساسي':'إضافي'}</td><td className="p-2 text-center">{r.weight}%</td><td className="p-2 text-center font-black">{s}%</td><td className="p-2 text-slate-500">{sm[r.id]?.evidence||'مطابق للبيانات'}</td></tr>})}</tbody></table></div>
+   <div className="mt-8 border-t pt-4 text-center text-[10px] text-slate-500">هذا التقرير يمثل التقييم المبدئي للمرشح، أما جميع مراحل تقييم الإدارات فتظهر ضمن التقرير الشامل.</div>
+  </article>
+ </main>
+}
