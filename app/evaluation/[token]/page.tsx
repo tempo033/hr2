@@ -3,7 +3,8 @@ import {useEffect,useMemo,useState} from 'react'
 import {useParams} from 'next/navigation'
 import {CheckCircle2,Clock,LockKeyhole,UserRound,Briefcase} from 'lucide-react'
 import EvaluationStage from '@/components/EvaluationStage'
-import {DEPARTMENT_QUESTIONS,getSpecializedProfile} from '@/components/DepartmentEvaluationQuestions'
+import {DEPARTMENT_QUESTIONS} from '@/components/DepartmentEvaluationQuestions'
+import {getSpecializedProfile} from '@/components/SpecializedEvaluationProfiles'
 const labels:any={hr:'تقييم الموارد البشرية',specialized:'تقييم الإدارة المختصة',executive:'تقييم الإدارة التنفيذية',general_manager:'اعتماد المدير العام'}
 const n=(x:any)=>Number(x??0)
 const level=(v:number)=>v===0?'غير متحقق':v<=25?'محدود':v<=50?'مقبول':v<=75?'جيد':'ممتاز'
