@@ -42,10 +42,17 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
   const load=async()=>{
     if(!id)return
     setLoading(true)
-    const response=await fetch('/api/forms/records/'+id,{cache:'no-store'})
-    const data=await response.json()
-    setRec(data.record||null)
-    setLoading(false)
+    try{
+      const response=await fetch('/api/forms/records?id='+encodeURIComponent(id),{cache:'no-store'})
+      const data=await response.json()
+      if(!response.ok) throw new Error(data?.error||'تعذر تحميل ملف إخلاء الطرف')
+      setRec(data.records?.[0]||null)
+    }catch(error){
+      console.error(error)
+      setRec(null)
+    }finally{
+      setLoading(false)
+    }
   }
 
   useEffect(()=>{void params.then(p=>setId(p.id))},[params])
