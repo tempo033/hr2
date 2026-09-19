@@ -6,7 +6,7 @@ const stages:any={employee:'بيانات الموظف وتوقيع الموظف'
 export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
  const [id,setId]=useState(''),[rec,setRec]=useState<any>(null),[loading,setLoading]=useState(true)
  const load=async()=>{if(!id)return;setLoading(true);const r=await fetch('/api/forms/records/'+id,{cache:'no-store'});const d=await r.json();setRec(d.record||null);setLoading(false)}
- useEffect(()=>{params.then(p=>setId(p.id))},[params]);useEffect(()=>{load()},[id])
+ useEffect(()=>{params.then(p=>setId(p.id))},[params]);useEffect(()=>{void load()},[id])
  if(loading)return <main dir="rtl" className="p-10 text-center">جارٍ تحميل ملف إخلاء الطرف...</main>
  if(!rec)return <main dir="rtl" className="p-10 text-center">السجل غير موجود</main>
  const c=rec.form_data?.clearance||{},e=c.employee||{}
