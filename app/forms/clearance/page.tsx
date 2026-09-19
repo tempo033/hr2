@@ -1,3 +1,3 @@
 'use client'
-import RequestForm from '@/app/forms/shared/RequestForm'
-export default function Page(){return <RequestForm kind="clearance"/>}
+import ClearanceWorkflow from '@/app/forms/clearance/ClearanceWorkflow'
+export default function Page(){return <ClearanceWorkflow/>}
