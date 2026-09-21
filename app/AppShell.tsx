@@ -9,6 +9,7 @@ const items = [
   ['/', 'الرئيسية', Home, ['admin','hr','interviewer','manager']],
   ['/requests', 'طلبات الموارد البشرية', ClipboardList, ['admin','hr','manager']],
   ['/candidates', 'المرشحون', Users, ['admin','hr','manager','interviewer']],
+  ['/rejected-candidates', 'المرشحون غير المقبولين', UserCheck, ['admin','hr','manager','interviewer']],
   ['/interviews', 'المقابلات والتقييم', Users, ['admin','hr','interviewer','manager']],
   ['/interviews/links', 'روابط التقييم', Link2, ['admin','hr','interviewer','manager']],
   ['/hiring-approvals', 'اعتماد التعيين', UserCheck, ['admin','hr','manager']],
