@@ -40,5 +40,5 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 export function supabaseHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
   const apiKey = auth.serviceKey || PUBLIC_KEY
   const authorization = auth.serviceKey ? `Bearer ${auth.serviceKey}` : `Bearer ${auth.token}`
-  return { apikey: apiKey, Authorization: authorization, ...extra }
+  return { apikey: apiKey, Authorization: authorization, Accept: 'application/json', 'Content-Type': 'application/json', ...extra }
 }
