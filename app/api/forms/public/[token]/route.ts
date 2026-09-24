@@ -27,6 +27,8 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
  const body=await req.json().catch(()=>({}));const m=meta(req);const now=new Date().toISOString();if(link.last_submitted_at)return NextResponse.json({error:'تم حفظ وإرسال هذا الرابط مسبقًا ولا يمكن تعديله مرة أخرى.'},{status:409})
  if(link.form_type==='clearance'&&link.link_scope){
   const stage=link.link_scope.replace('clearance:','');const form=body.form||{}
+  const signatureError = stage==='employee' ? !form.employee_signature : stage==='managers' ? (!form.line_manager_signature || !form.project_manager_signature) : stage==='senior' ? !form.senior_signature : !form[stage+'_signature']
+  if(signatureError)return NextResponse.json({error:'لا يمكن حفظ وإرسال إخلاء الطرف بدون التوقيع المطلوب.'},{status:400})
   if(!link.record_id)return NextResponse.json({error:'سجل إخلاء الطرف غير موجود.'},{status:404})
   const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const current=rs?.[0]?.form_data?.clearance||{}
   const employee=current.employee||{}
