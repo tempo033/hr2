@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SUPABASE_URL, PUBLIC_KEY } from '@/lib/server-auth'
+import crypto from 'crypto'
 const DB_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||PUBLIC_KEY
 function meta(req:NextRequest){const ip=(req.headers.get('x-forwarded-for')||req.headers.get('x-real-ip')||'').split(',')[0]?.trim()||null;const ua=req.headers.get('user-agent')||null;return{ip,ua,device:ua||'غير معروف'}}
 async function db(path:string,init?:RequestInit){return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:{apikey:DB_KEY,Authorization:'Bearer '+DB_KEY,'Content-Type':'application/json',...(init?.headers||{})},cache:'no-store'})}
@@ -17,6 +18,13 @@ export async function GET(req:NextRequest,ctx:{params:Promise<{token:string}>}){
   const linksRes=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at,last_opened_at&form_type=eq.clearance&record_id=eq.'+encodeURIComponent(link.record_id)+'&order=created_at.asc'); const allLinks=await linksRes.json(); const consolidated={employee:c.employee||{},managers:c.managers||{},it:c.it||{},transport:c.transport||{},warehouse:c.warehouse||{},admin:c.admin||{},finance:c.finance||{},hr:c.hr||{},senior:c.senior||{}}; return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at},data,consolidated,links:allLinks||[],locked:!!link.last_submitted_at})
  }
  let record=null;if(link.record_id){const rr=await db('hr_form_records?select=*&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();record=rs?.[0]||null}
+ if(link.form_type==='advance'&&link.employee_id){
+  const er=await db('employee_records?select=id,employee_number,full_name,nationality,national_id,phone,email,department,job_title,project_name,work_location,hire_date,basic_salary,housing_allowance,transportation_allowance,total_salary_with_allowances&id=eq.'+encodeURIComponent(link.employee_id)+'&limit=1')
+  const es=await er.json()
+  const approvalRes=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at&form_type=eq.advance&record_id=eq.'+encodeURIComponent(link.record_id||'00000000-0000-0000-0000-000000000000')+'&order=created_at.asc')
+  const approvals=await approvalRes.json()
+  return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at,locked:!!link.last_submitted_at},record,data:{employee:es?.[0]||null},approvals:approvals||[]})
+ }
  return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,expires_at:link.expires_at},record})
 }
 export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>}){
@@ -46,5 +54,13 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
  else res=await db('hr_form_records',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...base,created_at:now})})
  const data=await res.json();if(!res.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:500});recordId=data?.[0]?.id||recordId
  await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({record_id:recordId,last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+ if(link.form_type==='advance'){
+  const stages=[['direct_manager','المدير المباشر'],['finance','الإدارة المالية'],['hr','الموارد البشرية']]
+  for(const [scope,label] of stages){
+   const exists=await db('hr_form_links?select=id&form_type=eq.advance&record_id=eq.'+encodeURIComponent(recordId)+'&link_scope=eq.advance:'+scope+'&limit=1')
+   const ex=await exists.json()
+   if(!ex?.length) await db('hr_form_links',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'advance',record_id:recordId,employee_id:link.employee_id||null,created_by:null,link_scope:'advance:'+scope,status:'active',created_at:now,updated_at:now})})
+  }
+ }
  return NextResponse.json({ok:true,record_id:recordId})
 }
