@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import {FileText,ClipboardCheck,UserRoundCheck,WalletCards,ArrowLeft,Database,Layers,Link2,Copy,ExternalLink} from 'lucide-react'
+import {FileText,ClipboardCheck,UserRoundCheck,WalletCards,ArrowLeft,Database,Layers,Link2,Copy,ExternalLink,Scale} from 'lucide-react'
 import {useEffect,useState} from 'react'
 
 const forms=[
@@ -10,6 +10,7 @@ const forms=[
  {href:'/onboarding/manage',key:'onboarding',title:'مباشرة العمل',desc:'إنشاء وتعديل وطباعة نماذج مباشرة العمل.',icon:UserRoundCheck},
  {href:'/offers',key:'offers',title:'العروض الوظيفية',desc:'إدارة وإصدار عروض العمل المرتبطة بالمرشحين.',icon:FileText},
  {href:'/forms/unified',key:'unified',title:'النماذج الموحدة',desc:'الوصول إلى الواجهة الموحدة للنماذج الداخلية.',icon:Layers},
+ {href:'/forms/investigation',key:'investigation',title:'تحقيق إداري',desc:'اختيار الموظف، تحديد موضوع التحقيق، إعداد الأسئلة وتحليل الإجابات والخيارات التأديبية.',icon:Scale},
 ]
 const labels:Record<string,string>={leave:'طلب إجازة',clearance:'إخلاء الطرف',advance:'طلب سلفة مالية'}
 export default function FormsHub(){
