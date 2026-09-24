@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuth, supabaseHeaders, SUPABASE_URL } from '@/lib/server-auth'
 import crypto from 'crypto'
 const roles=['admin','hr','manager','interviewer']
-const stages=[['employee','الموظف'],['managers','المدير المباشر / مدير المشروع / مدير المشاريع'],['it','إدارة الحاسب الآلي'],['transport','إدارة الحركة'],['warehouse','إدارة المستودعات'],['admin','إدارة الشؤون الإدارية'],['finance','الإدارة المالية'],['hr','إدارة الموارد البشرية'],['senior','الإدارة العليا — الاعتماد النهائي']]
+const stages=[['employee','الموظف'],['managers','المدير المباشر / مدير المشروع'],['it','إدارة الحاسب الآلي'],['transport','إدارة الحركة'],['warehouse','إدارة المستودعات'],['admin','إدارة الشؤون الإدارية'],['finance','الإدارة المالية'],['hr','إدارة الموارد البشرية'],['senior','الإدارة العليا — الاعتماد النهائي']]
 async function db(path:string,auth:any,init?:RequestInit){return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:{...supabaseHeaders(auth),'Content-Type':'application/json',...(init?.headers||{})},cache:'no-store'})}
 export async function POST(req:NextRequest){
  const auth=await getServerAuth(req,roles);if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
@@ -21,6 +21,14 @@ export async function POST(req:NextRequest){
   links.push({...data?.[0],stage:{key:s[0],label:s[1]}})
  }
  return NextResponse.json({record_id:recordId,employee:e,links})
+}
+export async function PATCH(req:NextRequest){
+ const auth=await getServerAuth(req,['admin']);if(!auth)return NextResponse.json({error:'مدير النظام فقط يمكنه إعادة فتح الرابط.'},{status:403})
+ const body=await req.json().catch(()=>({}));const linkId=body.link_id
+ if(!linkId)return NextResponse.json({error:'معرف الرابط مطلوب.'},{status:400})
+ const r=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance',auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({last_submitted_at:null,updated_at:new Date().toISOString()})})
+ const data=await r.json();if(!r.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:r.status})
+ return NextResponse.json({ok:true,link:data?.[0]||null})
 }
 export async function GET(req:NextRequest){
  const auth=await getServerAuth(req,roles);if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
