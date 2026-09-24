@@ -101,10 +101,11 @@ export async function GET(req:NextRequest){
   const token=req.nextUrl.searchParams.get('token')
   const reviewToken=req.nextUrl.searchParams.get('reviewToken')
   if(token){
-    const r=await db(`administrative_investigation_parties?select=id,investigation_id,employee_id,questions,answers,employee_submitted_at,administrative_investigations(id,subject,status,created_at,updated_at)&employee_token=eq.${token}&limit=1`,{cache:'no-store'})
+    const r=await db(`administrative_investigation_parties?select=id,investigation_id,employee_id,questions,answers,employee_token,employee_submitted_at,administrative_investigations(id,subject,status,created_at,updated_at)&employee_token=eq.${token}&limit=1`,{cache:'no-store'})
     if(!r.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
     const rows=await r.json(); if(!rows[0])return NextResponse.json({error:'الرابط غير صالح'},{status:404})
     const party=rows[0]
+    if(party.employee_submitted_at)return NextResponse.json({error:'تم إرسال أقوالك مسبقاً، ولا يمكن فتح الرابط أو تعديل الإجابات مرة أخرى.'},{status:410})
     const er=await db(`employee_records?select=id,full_name,job_title,department&id=eq.${party.employee_id}&limit=1`,{cache:'no-store'})
     const employee=(await er.json())[0]||null
     return NextResponse.json({party,employee,investigation:party.administrative_investigations})
@@ -114,6 +115,7 @@ export async function GET(req:NextRequest){
     if(!r.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
     const rows=await r.json(); if(!rows[0])return NextResponse.json({error:'الرابط غير صالح'},{status:404})
     const review=rows[0]
+    if(review.submitted_at)return NextResponse.json({error:'تم إرسال رأي الإدارة مسبقاً، ولا يمكن فتح الرابط أو تعديل البيانات مرة أخرى.'},{status:410})
     const pr=await db(`administrative_investigation_parties?select=*&investigation_id=eq.${review.investigation_id}`,{cache:'no-store'})
     const parties=pr.ok?await pr.json():[]
     const enriched=[]
@@ -137,13 +139,23 @@ export async function POST(req:NextRequest){
   const publicToken=body.token
   if(publicToken){
     if(body.action==='employee-answer'){
-      const r=await db(`administrative_investigation_parties?employee_token=eq.${publicToken}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({answers:body.answers||[],employee_submitted_at:new Date().toISOString()})})
+      const existing=await db(`administrative_investigation_parties?select=id,employee_submitted_at&employee_token=eq.${publicToken}&limit=1`,{cache:'no-store'})
+      if(!existing.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+      const existingRows=await existing.json(); if(!existingRows[0])return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+      if(existingRows[0].employee_submitted_at)return NextResponse.json({error:'تم إرسال أقوالك مسبقاً، ولا يمكن تعديل الإجابات مرة أخرى.'},{status:409})
+      const r=await db(`administrative_investigation_parties?id=eq.${existingRows[0].id}&employee_submitted_at=is.null`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({answers:body.answers||[],employee_submitted_at:new Date().toISOString()})})
       if(!r.ok)return NextResponse.json({error:'تعذر حفظ الأقوال'},{status:500})
+      const saved=await r.json(); if(!saved[0])return NextResponse.json({error:'تم إرسال الأقوال مسبقاً، ولا يمكن تعديلها.'},{status:409})
       return NextResponse.json({ok:true})
     }
     if(body.action==='management-opinion'){
-      const r=await db(`administrative_investigation_reviews?review_token=eq.${publicToken}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({department_name:body.department_name||'',reviewer_name:body.reviewer_name||'',opinion:body.opinion||'',submitted_at:new Date().toISOString()})})
+      const existing=await db(`administrative_investigation_reviews?select=id,submitted_at&review_token=eq.${publicToken}&limit=1`,{cache:'no-store'})
+      if(!existing.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+      const existingRows=await existing.json(); if(!existingRows[0])return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+      if(existingRows[0].submitted_at)return NextResponse.json({error:'تم إرسال رأي الإدارة مسبقاً، ولا يمكن تعديله مرة أخرى.'},{status:409})
+      const r=await db(`administrative_investigation_reviews?id=eq.${existingRows[0].id}&submitted_at=is.null`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({department_name:body.department_name||'',reviewer_name:body.reviewer_name||'',opinion:body.opinion||'',submitted_at:new Date().toISOString()})})
       if(!r.ok)return NextResponse.json({error:'تعذر حفظ رأي الإدارة'},{status:500})
+      const saved=await r.json(); if(!saved[0])return NextResponse.json({error:'تم إرسال رأي الإدارة مسبقاً، ولا يمكن تعديله.'},{status:409})
       return NextResponse.json({ok:true})
     }
   }
