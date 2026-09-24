@@ -27,8 +27,19 @@ const displayValue=(value:unknown)=>{
 }
 const signatureEntries=(data:any)=>Object.entries(data||{}).filter(([key,value])=>key.toLowerCase().includes('signature')&&Boolean(value)) as [string,unknown][]
 const signed=(data:any)=>signatureEntries(data).length>0
-const decision=(data:any)=>data?.clearance_decision||data?.senior_decision||'pending'
-const decisionLabel=(v:string)=>v==='clear'?'تم الإخلاء':v==='not_clear'?'لم يتم الإخلاء':'قيد الانتظار'
+const stageDecision=(stage:string,data:any)=>{
+ if(stage==='employee') return data?.employee_signature?'clear':'pending'
+ if(stage==='managers') return data?.clearance_decision||'pending'
+ if(stage==='senior') return data?.senior_decision||'pending'
+ return data?.[stage+'_decision']||'pending'
+}
+const stageSignatures=(stage:string,data:any)=>{
+ if(stage==='employee') return data?.employee_signature?[data.employee_signature]:[]
+ if(stage==='managers') return [data?.line_manager_signature,data?.project_manager_signature].filter(Boolean)
+ if(stage==='senior') return data?.senior_signature?[data.senior_signature]:[]
+ return data?.[stage+'_signature']?[data[stage+'_signature']]:[]
+}
+const decisionLabel=(v:string)=>v==='clear'?'تم الإخلاء':v==='not_clear'?'لم يتم الإخلاء':v==='skip'?'لا ينطبق':'قيد الانتظار'
 
 export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
  const [id,setId]=useState('')
@@ -68,7 +79,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
   return stages.slice(1).every(s=>{
    if(apply[s.key]===false)return true
    const d=stageData(s.key)
-   return signed(d)&&decision(d)==='clear'
+   return stageSignatures(s.key,d).length>0&&stageDecision(s.key,d)==='clear'
   })
  },[clearance,employee,apply])
  const saveApplicability=async(next:Record<string,boolean>)=>{
@@ -108,7 +119,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
     {stages.map(s=>{
      const Icon=s.icon; const d=stageData(s.key); const skipped=s.key!=='employee'&&apply[s.key]===false
-     const complete=s.key==='employee'?Boolean(employee.employee_signature):skipped||signed(d)&&decision(d)==='clear'
+     const complete=s.key==='employee'?Boolean(employee.employee_signature):skipped||stageSignatures(s.key,d).length>0&&stageDecision(s.key,d)==='clear'
      const link=links.find(x=>x.link_scope==='clearance:'+s.key)
      return <a key={s.key} href={link?'/forms/public/'+link.token:'#'} target={link?'_blank':undefined} rel="noreferrer" className="link-card">
       <span className={complete?'icon ok':'icon'}><Icon size={21}/></span>
@@ -148,21 +159,21 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     {stages.map(s=>{
      const d=stageData(s.key)
      const name=s.key==='employee'?employee.employee_name:(s.key==='managers'?(d.line_manager_name||d.project_manager_name||d.projects_manager_name):d[s.key+'_name']||d.deputy_general_manager||'')
-     const sig=signatureEntries(d)[0]?.[1]
-     const date=s.key==='employee'?d.employee_signature_date:(d[s.key+'_date']||d.senior_date||'')
+     const sigs=stageSignatures(s.key,d)
+     const date=s.key==='employee'?d.employee_signature_date:(s.key==='managers'?(d.line_manager_signature_date||d.project_manager_signature_date||''):(d[s.key+'_date']||d.senior_date||''))
      const skipped= s.key!=='employee'&&apply[s.key]===false
-     const dec=s.key==='employee'?(employee.employee_signature?'clear':'pending'):skipped?'skip':decision(d)
+     const dec=skipped?'skip':stageDecision(s.key,d)
      return <div className="row" key={s.key}>
       <div className="font-black">{s.label}</div>
       <div>{displayValue(name)}</div>
       <div className={dec==='clear'?'decision clear':dec==='not_clear'?'decision no':'decision wait'}>{decisionLabel(dec)}</div>
-      <div className="sig-box">{sig?<img src={String(sig)} alt="توقيع"/>:'—'}</div>
+      <div className="sig-box">{sigs.length?sigs.map((sig:any,i:number)=><img key={i} src={String(sig)} alt={s.key==='managers'?(i===0?'توقيع المدير المباشر':'توقيع مدير المشروع'):'توقيع'}/>):'—'}</div>
       <div>{displayValue(date)}</div>
      </div>
     })}
    </div>
 
-   <div className="section-title">تفاصيل الإدارة المالية</div><div className="finance-details"><div><b>عهدة / أمانة:</b> {clearance.finance?.financial_custody?clearance.finance.financial_custody_details||'يوجد عهدة ولم يتم إدخال التفاصيل':'لا يوجد'}</div><div><b>سلفة:</b> {clearance.finance?.has_loan?clearance.finance.has_loan_details||'توجد سلفة ولم يتم إدخال التفاصيل':'لا توجد'}</div><div><b>مستحقات مالية:</b> {clearance.finance?.financial_entitlement?clearance.finance.financial_entitlement_details||'توجد مستحقات ولم يتم إدخال التفاصيل':'لا توجد'}</div><div><b>التزامات / ملاحظات أخرى:</b> {clearance.finance?.other_financial_obligation?clearance.finance.other_financial_obligation_details||'يوجد التزام ولم يتم إدخال التفاصيل':'لا يوجد'}</div></div><div className="section-title">حالة جميع الروابط</div><div className="link-status-table"><div className="row head"><div>الإدارة</div><div>الرابط</div><div>الحالة</div></div>{stages.map(s=>{const d=stageData(s.key);const link=links.find(x=>x.link_scope==='clearance:'+s.key);const skipped=s.key!=='employee'&&apply[s.key]===false;const dec=s.key==='employee'?(employee.employee_signature?'clear':'pending'):skipped?'skip':decision(d);return <div className="row" key={'link-'+s.key}><div>{s.label}</div><div>{link?<span className="font-mono text-[7px]">{link.token}</span>:'—'}</div><div className={dec==='clear'?'decision clear':dec==='not_clear'?'decision no':'decision wait'}>{skipped?'لا ينطبق':dec==='clear'?'موافقة':dec==='not_clear'?'رفض':'قيد الانتظار'}</div></div>})}</div><div className="official-footer">
+   <div className="section-title">تفاصيل الإدارة المالية</div><div className="finance-details"><div><b>عهدة / أمانة:</b> {clearance.finance?.financial_custody?clearance.finance.financial_custody_details||'يوجد عهدة ولم يتم إدخال التفاصيل':'لا يوجد'}</div><div><b>سلفة:</b> {clearance.finance?.has_loan?clearance.finance.has_loan_details||'توجد سلفة ولم يتم إدخال التفاصيل':'لا توجد'}</div><div><b>مستحقات مالية:</b> {clearance.finance?.financial_entitlement?clearance.finance.financial_entitlement_details||'توجد مستحقات ولم يتم إدخال التفاصيل':'لا توجد'}</div><div><b>التزامات / ملاحظات أخرى:</b> {clearance.finance?.other_financial_obligation?clearance.finance.other_financial_obligation_details||'يوجد التزام ولم يتم إدخال التفاصيل':'لا يوجد'}</div></div><div className="section-title">حالة جميع الروابط</div><div className="link-status-table"><div className="row head"><div>الإدارة</div><div>الرابط</div><div>الحالة</div></div>{stages.map(s=>{const d=stageData(s.key);const link=links.find(x=>x.link_scope==='clearance:'+s.key);const skipped=s.key!=='employee'&&apply[s.key]===false;const dec=skipped?'skip':stageDecision(s.key,d);return <div className="row" key={'link-'+s.key}><div>{s.label}</div><div>{link?<span className="font-mono text-[7px]">{link.token}</span>:'—'}</div><div className={dec==='clear'?'decision clear':dec==='not_clear'?'decision no':'decision wait'}>{skipped?'لا ينطبق':dec==='clear'?'موافقة':dec==='not_clear'?'رفض':'قيد الانتظار'}</div></div>})}</div><div className="official-footer">
     <div><b>حالة الإخلاء:</b> {allApproved?'معتمد نهائياً':'قيد الاستكمال'}</div>
     <div><b>آخر تحديث:</b> {new Date(rec.updated_at).toLocaleString('ar-SA')}</div>
    </div>
@@ -187,7 +198,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    .row>div{padding:3px 5px;border-left:1px solid #e2e8f0;min-height:32px;display:flex;align-items:center}.row>div:last-child{border-left:0}
    .head{background:#f1f5f9;font-weight:900;min-height:25px}.head>div{min-height:25px}
    .decision{font-weight:900}.decision.clear{color:#166534}.decision.no{color:#b91c1c}.decision.wait{color:#a16207}.decision.skip{color:#64748b}
-   .sig-box{height:30px;justify-content:center}.sig-box img{max-width:90px;height:27px;object-fit:contain}
+   .sig-box{height:30px;justify-content:center;gap:4px}.sig-box img{max-width:45px;height:27px;object-fit:contain}
    .finance-details{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;border:1px solid #cbd5e1;padding:5px;font-size:8px}.link-status-table{border:1px solid #cbd5e1;border-top:0}.link-status-table .row{grid-template-columns:1.3fr 2fr 1fr}.official-footer{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;border-top:1px solid #cbd5e1;padding-top:5px}
    .copies{text-align:center;font-size:7px;font-weight:800;margin-top:6px;color:#475569}
    .apply-buttons{display:flex;gap:4px;width:100%}.apply-buttons button{flex:1;border:1px solid #cbd5e1;border-radius:7px;padding:3px 2px;font-size:9px;font-weight:800;background:#fff;color:#475569}.apply-buttons button.selected{background:#ecfdf5;color:#166534;border-color:#86efac}.apply-buttons button.selected.skip{background:#f1f5f9;color:#475569;border-color:#94a3b8}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.badge.ok{background:#ecfdf5;color:#166534}.badge.pending{background:#fffbeb;color:#a16207}
