@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
         form_type: 'advance',
         employee_id: employee.id,
         record_id: recordId,
+        link_scope: null,
         created_by: auth.user.id,
         expires_at: body.expires_at || null,
       },
