@@ -90,7 +90,10 @@ function analyze(subject:string, parties:any[], managementOpinion:string){
 }
 
 async function db(path:string, init:any, auth?:any){
-  return fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...(auth?supabaseHeaders(auth):{}),...(init.headers||{})}})
+  const serviceKey=auth?.serviceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const headers:any={apikey:serviceKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',...(serviceKey?{Authorization:`Bearer ${serviceKey}`}:{})}
+  if(auth) Object.assign(headers,supabaseHeaders(auth))
+  return fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...headers,...(init.headers||{})}})
 }
 
 export async function GET(req:NextRequest){
