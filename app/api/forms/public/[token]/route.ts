@@ -12,7 +12,8 @@ export async function GET(req:NextRequest,ctx:{params:Promise<{token:string}>}){
  await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'open',ip_address:m.ip,device_name:m.device,user_agent:m.ua})})
  if(link.form_type==='clearance'&&link.link_scope){
   let data={}
-  if(link.record_id){const rr=await db('hr_form_records?select=form_data,employee_name,employee_number,department,job_title&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const rec=rs?.[0];const c=rec?.form_data?.clearance||{};data={...(c.employee||{}),...(c[link.link_scope.replace('clearance:','')]||{})}}
+  let c:any={}
+  if(link.record_id){const rr=await db('hr_form_records?select=form_data,employee_name,employee_number,department,job_title&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const rec=rs?.[0];c=rec?.form_data?.clearance||{};data={...(c.employee||{}),...(c[link.link_scope.replace('clearance:','')]||{})}}
   const linksRes=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at,last_opened_at&form_type=eq.clearance&record_id=eq.'+encodeURIComponent(link.record_id)+'&order=created_at.asc'); const allLinks=await linksRes.json(); const consolidated={employee:c.employee||{},managers:c.managers||{},it:c.it||{},transport:c.transport||{},warehouse:c.warehouse||{},admin:c.admin||{},finance:c.finance||{},hr:c.hr||{},senior:c.senior||{}}; return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at},data,consolidated,links:allLinks||[]})
  }
  let record=null;if(link.record_id){const rr=await db('hr_form_records?select=*&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();record=rs?.[0]||null}
