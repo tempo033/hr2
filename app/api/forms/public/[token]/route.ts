@@ -14,7 +14,7 @@ export async function GET(req:NextRequest,ctx:{params:Promise<{token:string}>}){
   let data={}
   let c:any={}
   if(link.record_id){const rr=await db('hr_form_records?select=form_data,employee_name,employee_number,department,job_title&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const rec=rs?.[0];c=rec?.form_data?.clearance||{};data={...(c.employee||{}),...(c[link.link_scope.replace('clearance:','')]||{})}}
-  const linksRes=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at,last_opened_at&form_type=eq.clearance&record_id=eq.'+encodeURIComponent(link.record_id)+'&order=created_at.asc'); const allLinks=await linksRes.json(); const consolidated={employee:c.employee||{},managers:c.managers||{},it:c.it||{},transport:c.transport||{},warehouse:c.warehouse||{},admin:c.admin||{},finance:c.finance||{},hr:c.hr||{},senior:c.senior||{}}; return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at},data,consolidated,links:allLinks||[]})
+  const linksRes=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at,last_opened_at&form_type=eq.clearance&record_id=eq.'+encodeURIComponent(link.record_id)+'&order=created_at.asc'); const allLinks=await linksRes.json(); const consolidated={employee:c.employee||{},managers:c.managers||{},it:c.it||{},transport:c.transport||{},warehouse:c.warehouse||{},admin:c.admin||{},finance:c.finance||{},hr:c.hr||{},senior:c.senior||{}}; return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at},data,consolidated,links:allLinks||[],locked:!!link.last_submitted_at})
  }
  let record=null;if(link.record_id){const rr=await db('hr_form_records?select=*&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();record=rs?.[0]||null}
  return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,expires_at:link.expires_at},record})
@@ -24,7 +24,7 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
  const lr=await db('hr_form_links?select=*&token=eq.'+encodeURIComponent(token)+'&status=eq.active&limit=1');const ls=await lr.json();const link=ls?.[0]
  if(!link)return NextResponse.json({error:'الرابط غير صالح أو تم تعطيله.'},{status:404})
  if(link.expires_at&&new Date(link.expires_at)<new Date())return NextResponse.json({error:'انتهت صلاحية الرابط.'},{status:410})
- const body=await req.json().catch(()=>({}));const m=meta(req);const now=new Date().toISOString()
+ const body=await req.json().catch(()=>({}));const m=meta(req);const now=new Date().toISOString();if(link.last_submitted_at)return NextResponse.json({error:'تم حفظ وإرسال هذا الرابط مسبقًا ولا يمكن تعديله مرة أخرى.'},{status:409})
  if(link.form_type==='clearance'&&link.link_scope){
   const stage=link.link_scope.replace('clearance:','');const form=body.form||{}
   if(!link.record_id)return NextResponse.json({error:'سجل إخلاء الطرف غير موجود.'},{status:404})
