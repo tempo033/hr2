@@ -1,10 +1,10 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {CheckCircle2} from 'lucide-react'
-export default function Review({params}:{params:{token:string}}){
- const [data,setData]=useState<any>(null),[opinion,setOpinion]=useState(''),[name,setName]=useState(''),[dept,setDept]=useState(''),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState('')
- useEffect(()=>{fetch('/api/administrative-investigations?reviewToken='+params.token).then(r=>r.json()).then(d=>{if(d.error)setError(d.error);else{setData(d);setOpinion(d.review?.opinion||'');setName(d.review?.reviewer_name||'');setDept(d.review?.department_name||'')}})},[params.token])
- const save=async()=>{setBusy(true);const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:params.token,action:'management-opinion',opinion,reviewer_name:name,department_name:dept})});const d=await r.json();setBusy(false);if(!r.ok)setError(d.error||'تعذر الإرسال');else setDone(true)}
+export default function Review({params}:{params:Promise<{token:string}>}){
+ const [token,setToken]=useState(''),[data,setData]=useState<any>(null),[opinion,setOpinion]=useState(''),[name,setName]=useState(''),[dept,setDept]=useState(''),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState('')
+ useEffect(()=>{params.then(({token:t})=>{setToken(t);fetch('/api/administrative-investigations?reviewToken='+encodeURIComponent(t)).then(r=>r.json()).then(d=>{if(d.error)setError(d.error);else{setData(d);setOpinion(d.review?.opinion||'');setName(d.review?.reviewer_name||'');setDept(d.review?.department_name||'')}}).catch(()=>setError('تعذر تحميل التحقيق'))})},[params])
+ const save=async()=>{setBusy(true);const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,action:'management-opinion',opinion,reviewer_name:name,department_name:dept})});const d=await r.json();setBusy(false);if(!r.ok)setError(d.error||'تعذر الإرسال');else setDone(true)}
  if(error)return <main dir="rtl" className="p-8 text-center">{error}</main>
  if(!data)return <main dir="rtl" className="p-8 text-center">جاري تحميل التحقيق...</main>
  return (
