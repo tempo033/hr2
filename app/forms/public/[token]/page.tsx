@@ -4,6 +4,7 @@ import {useParams} from 'next/navigation'
 import RequestForm from '@/app/forms/shared/RequestForm'
 import ClearancePublic from '@/app/forms/clearance/ClearancePublic'
 import AdvanceApprovalPublic from '@/app/forms/advance/AdvanceApprovalPublic'
+import AdvanceEmployeePublic from '@/app/forms/advance/AdvanceEmployeePublic'
 export default function PublicFormPage(){
  const params=useParams<{token:string}>()
  const [kind,setKind]=useState<'leave'|'clearance'|'advance'|null>(null),[scope,setScope]=useState(''),[error,setError]=useState('')
@@ -11,6 +12,7 @@ export default function PublicFormPage(){
  if(error)return <main dir="rtl" className="min-h-screen grid place-items-center bg-slate-50 p-6"><div className="bg-white border rounded-2xl p-8 text-center"><h1 className="font-black text-xl text-red-700">تعذر فتح النموذج</h1><p className="text-slate-500 mt-2">{error}</p></div></main>
  if(!kind)return <main dir="rtl" className="min-h-screen grid place-items-center bg-slate-50 text-slate-500">جارٍ فتح النموذج...</main>
  if(kind==='clearance'&&scope.startsWith('clearance:'))return <ClearancePublic token={params.token}/>
+ if(kind==='advance'&&!scope)return <AdvanceEmployeePublic token={params.token}/>
  if(kind==='advance'&&scope.startsWith('advance:'))return <AdvanceApprovalPublic token={params.token}/>
  return <RequestForm kind={kind} publicToken={params.token}/>
 }
