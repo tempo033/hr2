@@ -18,6 +18,8 @@ export default function OfferForm({ params }: { params: Promise<{ candidateId: s
     salary: '', contract_type: '', notes: '', issue_date: '', offer_validity: '7 أيام',
     work_hours: '8 ساعات يوميًا', work_days: '6 أيام أسبوعيًا', annual_leave: '21 يومًا',
     probation: '90 يومًا', health_insurance: 'حسب سياسة الشركة',
+    show_basic_salary: false, show_housing_allowance: false, show_transportation_allowance: false, show_other_allowances: false,
+    housing_allowance: '', transportation_allowance: '', other_allowances: '', total_salary: '',
   })
 
   useEffect(() => { params.then(p => setId(p.candidateId)) }, [params])
@@ -41,6 +43,8 @@ export default function OfferForm({ params }: { params: Promise<{ candidateId: s
           work_location: a?.work_location || '',
           start_date: a?.start_date || '',
           salary: a?.salary || '',
+          housing_allowance: a?.housing_allowance ?? '', transportation_allowance: a?.transportation_allowance ?? '', other_allowances: a?.other_allowances ?? '', total_salary: a?.total_salary ?? '',
+          show_basic_salary: !!a?.show_basic_salary, show_housing_allowance: !!a?.show_housing_allowance, show_transportation_allowance: !!a?.show_transportation_allowance, show_other_allowances: !!a?.show_other_allowances,
           contract_type: a?.contract_type || '',
           notes: a?.notes || '',
           issue_date: a?.offer_sent_at ? new Date(a.offer_sent_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
@@ -57,7 +61,8 @@ export default function OfferForm({ params }: { params: Promise<{ candidateId: s
   const save = async () => {
     if (!approval) return
     setSaving(true); setMessage('')
-    const payload: any = { start_date: form.start_date || null, salary: form.salary || null, contract_type: form.contract_type || null, notes: form.notes || null }
+    const total = [form.salary, form.housing_allowance, form.transportation_allowance, form.other_allowances].reduce((s,v)=>s+(Number(v)||0),0)
+    const payload: any = { start_date: form.start_date || null, salary: form.salary || null, housing_allowance: Number(form.housing_allowance)||0, transportation_allowance: Number(form.transportation_allowance)||0, other_allowances: Number(form.other_allowances)||0, total_salary: total, show_basic_salary: form.show_basic_salary, show_housing_allowance: form.show_housing_allowance, show_transportation_allowance: form.show_transportation_allowance, show_other_allowances: form.show_other_allowances, contract_type: form.contract_type || null, notes: form.notes || null }
     try {
       const res = await fetch('/api/hiring-approvals/manage', {
         method: 'POST',
@@ -142,11 +147,19 @@ export default function OfferForm({ params }: { params: Promise<{ candidateId: s
         </div>
 
         <h3 className="section">تفاصيل العرض <span>/ OFFER DETAILS</span></h3>
+        <div className="mb-3 border-2 border-[#b88618] bg-[#fffaf0] rounded-xl p-3">
+          <div className="font-black text-[#09233f] mb-2">تفصيل الراتب في العرض المرسل للمرشح</div>
+          <div className="text-xs text-slate-500 mb-3">حدد البنود التي تريد إظهارها في العرض. البنود غير المحددة لن تظهر للمرشح.</div>
+          <div className="grid md:grid-cols-2 gap-2">
+            {([['show_basic_salary','راتب أساسي','salary'],['show_housing_allowance','بدل سكن','housing_allowance'],['show_transportation_allowance','بدل نقل','transportation_allowance'],['show_other_allowances','بدلات أخرى','other_allowances']] as const).map(([flag,label,key])=><label key={flag} className="flex items-center gap-2 border rounded-lg p-2 bg-white"><input type="checkbox" checked={(form as any)[flag]} onChange={e=>update(flag,e.target.checked as any)} /><span className="font-bold">{label}</span><input type="number" value={(form as any)[key]} onChange={e=>update(key,e.target.value)} className="mr-auto w-32 border rounded px-2 py-1 text-left" placeholder="المبلغ"/></label>)}
+          </div>
+          <div className="mt-3 font-black text-[#09233f]">إجمالي الحزمة: {[form.salary,form.housing_allowance,form.transportation_allowance,form.other_allowances].reduce((s,v)=>s+(Number(v)||0),0).toLocaleString('ar-SA')} ريال سعودي</div>
+        </div>
         <table className="w-full border-collapse">
           <tbody>
             {([
               ['تاريخ المباشرة','start_date'],
-              ['الراتب / الأجر الشهري','salary'],
+              ['إجمالي الأجر الشهري / الحزمة','total_salary'],
               ['نوع العقد','contract_type'],
               ['ساعات العمل','work_hours'],
               ['أيام العمل','work_days'],
