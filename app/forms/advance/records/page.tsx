@@ -68,9 +68,9 @@ export default function Records() {
   }
 
   const linkLabel = (scope: string) => {
-    if (scope === 'advance:direct_manager') return 'المدير المباشر'
+    if (scope === 'advance:hr') return 'الموارد البشرية'
     if (scope === 'advance:finance') return 'الإدارة المالية'
-    return 'الموارد البشرية'
+    return 'المدير العام'
   }
 
   return (
