@@ -18,7 +18,10 @@ export default function ClearancePublic({token}:{token:string}){
  useEffect(()=>{fetch('/api/forms/public/'+token,{cache:'no-store'}).then(async r=>{const x=await r.json();if(!r.ok)throw Error(x.error);setLink(x.link);setD(x.data||{});setLocked(!!x.locked);setLoading(false)}).catch(e=>{setMsg(e.message);setLoading(false)})},[token])
  const set=(k:string,v:any)=>{if(locked)return;setD((x:any)=>({...x,[k]:v}))}
  const stage=String(link?.link_scope||'').replace('clearance:','');const editable=stage==='employee'
- const save=async()=>{if(locked)return;setBusy(true);const r=await fetch('/api/forms/public/'+token,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({form:d,device_name:navigator.userAgent})});const x=await r.json();setBusy(false);if(r.ok){setLocked(true);setMsg('تم حفظ وإرسال البيانات بنجاح. لا يمكن تعديل هذا الرابط مرة أخرى.')}else setMsg(x.error||'تعذر الحفظ')}
+ const save=async()=>{if(locked)return;
+  const signatureMissing=stage==='employee'?!d.employee_signature:stage==='managers'?(!d.line_manager_signature||!d.project_manager_signature):stage==='senior'?!d.senior_signature:!d[stage+'_signature']
+  if(signatureMissing){setMsg(stage==='managers'?'يجب إدخال توقيع المدير المباشر وتوقيع مدير المشروع قبل الحفظ والإرسال.':'يجب إدخال التوقيع قبل الحفظ والإرسال.');return}
+  setBusy(true);const r=await fetch('/api/forms/public/'+token,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({form:d,device_name:navigator.userAgent})});const x=await r.json();setBusy(false);if(r.ok){setLocked(true);setMsg('تم حفظ وإرسال البيانات بنجاح. لا يمكن تعديل هذا الرابط مرة أخرى.')}else setMsg(x.error||'تعذر الحفظ')}
  if(loading)return <main dir="rtl" className="min-h-screen grid place-items-center">جارٍ تحميل النموذج...</main>
  if(!link)return <main dir="rtl" className="min-h-screen grid place-items-center p-6">{msg}</main>
  return <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5"><section className="max-w-[210mm] min-h-[297mm] mx-auto bg-white p-[10mm] shadow-sm print:shadow-none"><header className="text-center border-b-2 border-[#b88618] pb-4"><h1 className="text-2xl font-black text-[#09233f]">نموذج إخلاء طرف</h1><div className="font-bold text-[#b88618]">EMPLOYEE CLEARANCE</div><div className="text-xs text-slate-500 mt-2">الرابط مخصص لـ: {labels[stage]||stage}</div></header>
