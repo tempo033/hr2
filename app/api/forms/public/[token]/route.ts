@@ -23,7 +23,7 @@ export async function GET(req:NextRequest,ctx:{params:Promise<{token:string}>}){
   const es=await er.json()
   const approvalRes=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at&form_type=eq.advance&record_id=eq.'+encodeURIComponent(link.record_id||'00000000-0000-0000-0000-000000000000')+'&order=created_at.asc')
   const approvals=await approvalRes.json()
-  return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at,locked:!!link.last_submitted_at},record,data:{employee:es?.[0]||null},approvals:approvals||[]})
+  return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,link_scope:link.link_scope,expires_at:link.expires_at,locked:!!link.last_submitted_at},record,data:{employee:es?.[0]||null},employee_approval:record?.form_data?.advance_employee_approval||null,approvals:approvals||[]})
  }
  return NextResponse.json({link:{id:link.id,token:link.token,form_type:link.form_type,expires_at:link.expires_at},record})
 }
@@ -51,13 +51,31 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
  if(link.form_type==='advance'&&link.link_scope?.startsWith('advance:')){
   const scope=String(link.link_scope).replace('advance:','')
   const form=body.form||{}
-  const signature=form.approval_signature
-  if(!signature)return NextResponse.json({error:'يجب إدخال التوقيع قبل اعتماد طلب السلفة.'},{status:400})
-  if(!['clear','not_clear'].includes(form.approval_decision))return NextResponse.json({error:'اختر قرار الاعتماد أولاً.'},{status:400})
+  if(!['hr','finance','general_manager'].includes(scope))return NextResponse.json({error:'رابط الاعتماد غير صالح.'},{status:400})
+  if(!link.record_id)return NextResponse.json({error:'سجل طلب السلفة غير موجود.'},{status:404})
+  if(!form.approval_name||!form.approval_date||!form.approval_signature)return NextResponse.json({error:'لا يمكن الحفظ إلا بإدخال الاسم والتاريخ والتوقيع.'},{status:400})
+  const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const current=rs?.[0]?.form_data||{}
+  const employeeApproval=current.advance_employee_approval
+  if(!employeeApproval?.employee_name||!employeeApproval?.employee_date||!employeeApproval?.employee_signature||!current.amount){
+    return NextResponse.json({error:'لا يمكن اعتماد الطلب قبل استكمال توقيع الموظف ومبلغ السلفة.'},{status:400})
+  }
+  if(scope==='finance'&&!current.advance_approvals?.hr?.approval_signature)return NextResponse.json({error:'لا يمكن اعتماد الإدارة المالية قبل اعتماد الموارد البشرية.'},{status:400})
+  if(scope==='general_manager'&&(!current.advance_approvals?.hr?.approval_signature||!current.advance_approvals?.finance?.approval_signature))return NextResponse.json({error:'لا يمكن الاعتماد النهائي قبل اعتماد الموارد البشرية والإدارة المالية.'},{status:400})
+  const approvals={...(current.advance_approvals||{}),[scope]:{...form,submitted_at:now}}
+  const nextStatus=scope==='general_manager'?'معتمد نهائياً':scope==='finance'?'قيد اعتماد المدير العام':'قيد اعتماد الإدارة المالية'
+  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,advance_approvals:approvals},status:nextStatus,updated_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+  if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
+  await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+  await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
+  return NextResponse.json({ok:true,record_id:link.record_id})
+ }
+ if(link.form_type==='advance'&&!link.link_scope){
+  const form=body.form||{}
+  if(!form.employee_name||!form.employee_date||!form.employee_signature||!form.amount)return NextResponse.json({error:'لا يمكن إرسال طلب السلفة إلا بعد إدخال مبلغ السلفة واسم الموظف والتاريخ والتوقيع.'},{status:400})
   if(!link.record_id)return NextResponse.json({error:'سجل طلب السلفة غير موجود.'},{status:404})
   const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const current=rs?.[0]?.form_data||{}
-  const approvals={...(current.advance_approvals||{}),[scope]:{...form,submitted_at:now}}
-  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,advance_approvals:approvals},status:'قيد الاعتماد',updated_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+  const employeeApproval={employee_name:form.employee_name,employee_date:form.employee_date,employee_signature:form.employee_signature,submitted_at:now}
+  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({employee_name:form.employee_name,form_data:{...current,...form,advance_employee_approval:employeeApproval},status:'قيد اعتماد الموارد البشرية',updated_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua,submitted_via_link:true})})
   if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
   await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
   await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
