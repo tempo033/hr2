@@ -88,7 +88,7 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
  const data=await res.json();if(!res.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:500});recordId=data?.[0]?.id||recordId
  await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({record_id:recordId,last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
  if(link.form_type==='advance'){
-  const stages=[['direct_manager','المدير المباشر'],['finance','الإدارة المالية'],['hr','الموارد البشرية']]
+  const stages=[['hr','الموارد البشرية'],['finance','الإدارة المالية'],['general_manager','المدير العام']]
   for(const [scope,label] of stages){
    const exists=await db('hr_form_links?select=id&form_type=eq.advance&record_id=eq.'+encodeURIComponent(recordId)+'&link_scope=eq.advance:'+scope+'&limit=1')
    const ex=await exists.json()
