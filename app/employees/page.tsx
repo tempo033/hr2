@@ -11,7 +11,22 @@ export default function EmployeesPage(){
  const allVisible=rows.length>0&&rows.every(e=>selected.includes(e.id))
  const toggle=(id:string)=>setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id])
  const selectVisible=()=>setSelected(allVisible?selected.filter(id=>!rows.some(e=>e.id===id)):Array.from(new Set([...selected,...rows.map(e=>e.id)]))
- const deleteSelected = async (all = false) => {if(!all&&!selected.length)return;if(!confirm(all?'سيتم حذف جميع ملفات الموظفين. هل أنت متأكد؟':'سيتم حذف الموظفين المحددين. هل أنت متأكد؟'))return;setBusy(true);try{const r=await fetch('/api/employees/import',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify(all?{all:true}:{ids:selected})});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر الحذف');setEmployees(e=>all?[]:e.filter(x=>!selected.includes(x.id)));setSelected([]);alert('تم حذف '+b.deleted+' موظف')}catch(e){alert(e instanceof Error?e.message:'تعذر الحذف')}finally { setBusy(false) }
+ const deleteSelected = async (all = false) => {
+  if (!all && !selected.length) return
+  if (!confirm(all ? 'سيتم حذف جميع ملفات الموظفين. هل أنت متأكد؟' : 'سيتم حذف الموظفين المحددين. هل أنت متأكد؟')) return
+  setBusy(true)
+  try {
+   const r = await fetch('/api/employees/import', { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify(all ? {all:true} : {ids:selected}) })
+   const b = await r.json()
+   if (!r.ok) throw new Error(b.error || 'تعذر الحذف')
+   setEmployees(e => all ? [] : e.filter(x => !selected.includes(x.id)))
+   setSelected([])
+   alert('تم حذف ' + b.deleted + ' موظف')
+  } catch (e) {
+   alert(e instanceof Error ? e.message : 'تعذر الحذف')
+  } finally {
+   setBusy(false)
+  }
  }
  return <main className="min-h-screen bg-[#f5f7fa]" dir="rtl"><div className="max-w-7xl mx-auto p-5 md:p-8">
  <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7"><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center"><Users size={28}/></div><div><div className="text-sm text-[#b88618] font-bold">إدارة الموارد البشرية</div><h1 className="text-3xl font-black text-[#09233f]">ملفات الموظفين</h1><p className="text-slate-500 mt-1">قائمة موحدة للموظفين مع التحديد الجماعي والاستيراد والتحديث دون تكرار.</p></div></div><div className="flex flex-wrap gap-2"><button onClick={load} className="rounded-xl border bg-white px-4 py-2 font-bold inline-flex gap-2 items-center"><RefreshCw size={17}/> تحديث</button><Link href="/employees/import" className="rounded-xl bg-[#09233f] text-white px-4 py-2 font-bold inline-flex gap-2 items-center"><Upload size={17}/> استيراد / تحديث</Link><Link href="/" className="flex items-center gap-2 text-[#09233f] font-bold px-2"><ArrowLeft size={18}/> الرئيسية</Link></div></header>
