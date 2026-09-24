@@ -1,22 +1,64 @@
 'use client'
 import {useEffect,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,FileSearch,ChevronLeft,CheckCircle2,AlertTriangle,Scale} from 'lucide-react'
+import {ArrowLeft,FileSearch,Plus,Trash2,Users,ClipboardList} from 'lucide-react'
+
 export default function InvestigationPage(){
- const [employees,setEmployees]=useState<any[]>([]),[employeeId,setEmployeeId]=useState(''),[subject,setSubject]=useState(''),[questions,setQuestions]=useState<any[]>([]),[answers,setAnswers]=useState<any[]>([]),[analysis,setAnalysis]=useState<any>(null),[step,setStep]=useState(1),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
- const employee=employees.find(e=>e.id===employeeId)
+ const [employees,setEmployees]=useState<any[]>([])
+ const [selected,setSelected]=useState<string[]>([])
+ const [subject,setSubject]=useState('')
+ const [questions,setQuestions]=useState<string[]>([])
+ const [busy,setBusy]=useState(false)
+ const [message,setMessage]=useState('')
+ const [created,setCreated]=useState<any>(null)
+
  useEffect(()=>{fetch('/api/administrative-investigations',{cache:'no-store'}).then(r=>r.json()).then(d=>setEmployees(d.employees||[])).catch(()=>setMessage('تعذر تحميل الموظفين'))},[])
- const generate=async()=>{if(!employeeId||!subject.trim())return;setBusy(true);setMessage('');const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'questions',subject})});const d=await r.json();setQuestions(d.questions||[]);setAnswers((d.questions||[]).map((q:any)=>({question:q,answer:''})));setStep(2);setBusy(false)}
- const analyze=async()=>{setBusy(true);const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'analyze',subject,answers,employee})});const d=await r.json();setAnalysis(d.analysis);setStep(3);setBusy(false)}
- const save=async()=>{setBusy(true);const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',employee_id:employeeId,subject,questions,answers,analysis,status:'completed'})});const d=await r.json();setMessage(r.ok?'تم حفظ محضر التحقيق ونتيجة التحليل.':d.error||'تعذر الحفظ');setBusy(false)}
- return <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5 md:p-8 text-[#09233f]"><div className="max-w-5xl mx-auto">
- <header className="flex justify-between items-center mb-7"><div><div className="text-[#b88618] font-bold">مركز النماذج</div><h1 className="text-3xl font-black">تحقيق إداري</h1><p className="text-slate-500 mt-1">إنشاء التحقيق، أسئلة مخصصة، تحليل الإجابات والخيارات التأديبية.</p></div><Link href="/forms" className="border bg-white rounded-xl px-4 py-2 font-bold inline-flex gap-2 items-center"><ArrowLeft size={17}/> مركز النماذج</Link></header>
- <div className="bg-white rounded-2xl border p-5 mb-5 flex gap-2 text-sm font-bold"><span className={step>=1?'text-[#b88618]':''}>1. بيانات التحقيق</span><ChevronLeft/><span className={step>=2?'text-[#b88618]':''}>2. أقوال الموظف</span><ChevronLeft/><span className={step>=3?'text-[#b88618]':''}>3. التحليل والجزاءات</span></div>
- {step===1&&<section className="bg-white rounded-2xl border p-6"><h2 className="text-xl font-black mb-5 flex gap-2 items-center"><FileSearch/> بيانات التحقيق</h2><label className="block font-bold mb-2">الموظف</label><select value={employeeId} onChange={e=>setEmployeeId(e.target.value)} className="w-full border-2 rounded-xl p-3 mb-5"><option value="">اختر الموظف</option>{employees.map(e=><option key={e.id} value={e.id}>{e.full_name}{e.job_title?' — '+e.job_title:''}</option>)}</select><label className="block font-bold mb-2">موضوع التحقيق</label><textarea value={subject} onChange={e=>setSubject(e.target.value)} rows={4} placeholder="مثال: عدم الالتزام بالتعليمات والتسبب في تعطيل العمل..." className="w-full border-2 rounded-xl p-3"/><button disabled={!employeeId||!subject.trim()||busy} onClick={generate} className="mt-5 bg-[#09233f] text-white rounded-xl px-6 py-3 font-black disabled:opacity-50">{busy?'جاري إعداد الأسئلة...':'إعداد أسئلة التحقيق'}</button></section>}
- {step===2&&<section className="space-y-4"><div className="bg-white rounded-2xl border p-5"><b>الموظف:</b> {employee?.full_name}<br/><b>موضوع التحقيق:</b> {subject}</div>{answers.map((a,i)=><div key={i} className="bg-white rounded-2xl border p-5"><div className="font-black mb-3">{i+1}. {a.question}</div><textarea rows={4} value={a.answer} onChange={e=>setAnswers(x=>x.map((v,j)=>j===i?{...v,answer:e.target.value}:v))} className="w-full border rounded-xl p-3" placeholder="اكتب رد الموظف كما ورد في التحقيق..."/></div>)}<button disabled={busy||answers.some(a=>!a.answer.trim())} onClick={analyze} className="bg-[#09233f] text-white rounded-xl px-6 py-3 font-black disabled:opacity-50">{busy?'جاري التحليل...':'إرسال الإجابات وتحليل التحقيق'}</button></section>}
- {step===3&&analysis&&<section className="space-y-5"><div className="bg-white rounded-2xl border p-6"><h2 className="text-xl font-black mb-4 flex gap-2"><Scale/> نتيجة التحليل</h2><p className="font-bold">{analysis.summary}</p><div className="grid md:grid-cols-2 gap-3 mt-4">{Object.entries(analysis.indicators).map(([k,v]:any)=><div key={k} className="border rounded-xl p-3"><span className="font-bold">{({admitted:'مؤشرات إقرار',denied:'مؤشرات إنكار',harm:'مؤشرات ضرر',repeat:'مؤشرات تكرار',article80:'مؤشرات المادة 80'} as any)[k]}</span><b className="mr-2">{v?'نعم':'لا'}</b></div>)}</div><div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm">{analysis.recommendation}</div></div>
- <div className="bg-white rounded-2xl border p-6"><h2 className="text-xl font-black mb-4 flex gap-2"><AlertTriangle/> خيارات الجزاء المحتملة</h2><p className="text-sm text-slate-500 mb-4">هذه خيارات مساعدة وليست قرارًا تلقائيًا. يجب التحقق من لائحة تنظيم العمل والأدلة وملف الموظف قبل اعتماد الجزاء.</p>{analysis.options.map((o:any,i:number)=><div key={i} className="border rounded-xl p-4 mb-3"><div className="font-black text-lg">{o.penalty}</div><div className="text-sm mt-1"><b>الأساس:</b> {o.basis}</div><div className="text-sm mt-1"><b>متى يُبحث هذا الخيار:</b> {o.when}</div></div>)}</div>
- <div className="bg-white rounded-2xl border p-6"><h2 className="font-black mb-3">ضوابط نظامية</h2><ul className="list-disc pr-6 space-y-2 text-sm">{analysis.legalControls.map((x:string,i:number)=><li key={i}>{x}</li>)}</ul></div>
- <button onClick={save} disabled={busy} className="bg-green-600 text-white rounded-xl px-7 py-3 font-black flex gap-2 items-center"><CheckCircle2/> {busy?'جاري الحفظ...':'حفظ محضر التحقيق'}</button>{message&&<div className="p-3 bg-white border rounded-xl font-bold">{message}</div>}</section>}
- </div></main>
+ const addEmployee=(id:string)=>{if(id&&!selected.includes(id))setSelected(x=>[...x,id])}
+ const generate=async()=>{
+  if(!selected.length||!subject.trim())return
+  setBusy(true);setMessage('')
+  const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'questions',subject})})
+  const d=await r.json();setQuestions(d.questions||[]);setBusy(false)
+ }
+ const create=async()=>{
+  if(!selected.length||!subject.trim())return
+  setBusy(true);setMessage('')
+  const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',subject,employee_ids:selected})})
+  const d=await r.json()
+  if(!r.ok){setMessage(d.error||'تعذر إنشاء التحقيق');setBusy(false);return}
+  setCreated(d);setMessage('تم إنشاء التحقيق وروابط الأطراف والإدارة المختصة.')
+  setBusy(false)
+ }
+ const employeeName=(id:string)=>employees.find(e=>e.id===id)?.full_name||id
+ return <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5 md:p-8 text-[#09233f]">
+  <div className="max-w-6xl mx-auto">
+   <header className="bg-white border rounded-2xl p-6 mb-6 shadow-sm">
+    <div className="text-center border-b-2 border-[#b88618] pb-4"><div className="font-black text-2xl">شركة البنية الأساسية للمقاولات ذ.م.م</div><div className="text-xs tracking-[.25em] mt-1">AL BUNYAH AL ASASIYAH CONTRACTING</div></div>
+    <div className="flex justify-between items-center mt-5"><div><div className="text-[#b88618] font-bold">مركز النماذج</div><h1 className="text-3xl font-black">محضر تحقيق إداري</h1><p className="text-slate-500 mt-1">نموذج داخلي — خاص وسري — مخصص لوقائع مشاريع وأعمال المقاولات.</p></div><Link href="/forms/investigation/records" className="border rounded-xl px-4 py-2 font-bold inline-flex gap-2 items-center"><ClipboardList size={17}/> سجل التحقيقات</Link></div>
+   </header>
+
+   <section className="bg-white rounded-2xl border p-6 shadow-sm">
+    <div className="flex items-center gap-2 mb-5"><FileSearch/><h2 className="text-xl font-black">بيانات التحقيق</h2></div>
+    <label className="block font-bold mb-2">الموظفون محل التحقيق</label>
+    <select onChange={e=>{addEmployee(e.target.value);e.target.value=''}} className="w-full border-2 rounded-xl p-3">
+      <option value="">اختر موظفاً لإضافته — يمكن إضافة أكثر من طرف</option>
+      {employees.map(e=><option key={e.id} value={e.id}>{e.full_name}{e.job_title?' — '+e.job_title:''}{e.department?' — '+e.department:''}</option>)}
+    </select>
+    <div className="flex flex-wrap gap-2 mt-3">{selected.map(id=><div key={id} className="border rounded-xl px-3 py-2 bg-slate-50 flex items-center gap-2"><Users size={15}/><span className="font-bold">{employeeName(id)}</span><button onClick={()=>setSelected(x=>x.filter(v=>v!==id))} className="text-red-600"><Trash2 size={15}/></button></div>)}</div>
+
+    <label className="block font-bold mb-2 mt-6">موضوع التحقيق</label>
+    <textarea value={subject} onChange={e=>setSubject(e.target.value)} rows={5} placeholder="اكتب الواقعة بدقة: مثال — قيام مسؤول الحركة بتسليم مركبة لسائق غير مخول مما أدى إلى مخالفة وغرامة على الشركة..." className="w-full border-2 rounded-xl p-4"/>
+
+    <div className="flex gap-3 mt-5 flex-wrap">
+      <button disabled={!selected.length||!subject.trim()||busy} onClick={generate} className="bg-[#09233f] text-white rounded-xl px-6 py-3 font-black disabled:opacity-50">{busy?'جاري إعداد الأسئلة...':'معاينة الأسئلة المتخصصة'}</button>
+      <button disabled={!selected.length||!subject.trim()||busy} onClick={create} className="bg-[#b88618] text-white rounded-xl px-6 py-3 font-black inline-flex gap-2 items-center disabled:opacity-50"><Plus size={18}/>{busy?'جاري الإنشاء...':'إنشاء التحقيق والروابط'}</button>
+    </div>
+   </section>
+
+   {questions.length>0&&<section className="bg-white rounded-2xl border p-6 mt-5"><h2 className="font-black text-xl mb-4">الأسئلة التي تم توليدها من موضوع التحقيق</h2><p className="text-sm text-slate-500 mb-4">الأسئلة تُبنى من نص الواقعة نفسه ومن طبيعة أعمال المقاولات المرتبطة بها، وليست قائمة ثابتة تُكرر لكل تحقيق.</p><ol className="list-decimal pr-6 space-y-3">{questions.map((q,i)=><li key={i} className="font-semibold">{q}</li>)}</ol></section>}
+
+   {created&&<section className="bg-white rounded-2xl border p-6 mt-5"><h2 className="font-black text-xl mb-4">روابط التحقيق</h2><div className="border rounded-xl p-4 mb-4"><div className="font-black mb-2">رابط الإدارة المختصة</div>{created.reviews?.map((r:any)=><a key={r.id} href={location.origin+'/forms/investigation/review/'+r.review_token} target="_blank" className="text-[#b88618] break-all">{location.origin+'/forms/investigation/review/'+r.review_token}</a>)}</div>{created.parties?.map((p:any,i:number)=><div key={p.id} className="border rounded-xl p-4 mb-3"><div className="font-black mb-2">الموظف: {employeeName(p.employee_id)}</div><a href={location.origin+'/forms/investigation/respond/'+p.employee_token} target="_blank" className="text-[#b88618] break-all">{location.origin+'/forms/investigation/respond/'+p.employee_token}</a></div>)}<Link href="/forms/investigation/records" className="inline-flex mt-2 bg-[#09233f] text-white rounded-xl px-5 py-3 font-bold">فتح سجل التحقيقات</Link></section>}
+   {message&&<div className="mt-4 bg-white border rounded-xl p-4 font-bold">{message}</div>}
+  </div>
+ </main>
 }
