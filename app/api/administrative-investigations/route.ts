@@ -96,6 +96,7 @@ async function db(path:string, init:any, auth?:any){
 export async function GET(req:NextRequest){
   const auth=await getServerAuth(req,ALLOWED)
   const token=req.nextUrl.searchParams.get('token')
+  const reviewToken=req.nextUrl.searchParams.get('reviewToken')
   if(token){
     const r=await db(`administrative_investigation_parties?select=id,investigation_id,employee_id,questions,answers,employee_submitted_at,administrative_investigations(id,subject,status,created_at,updated_at)&employee_token=eq.${token}&limit=1`,{cache:'no-store'})
     if(!r.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
@@ -104,6 +105,20 @@ export async function GET(req:NextRequest){
     const er=await db(`employee_records?select=id,full_name,job_title,department&id=eq.${party.employee_id}&limit=1`,{cache:'no-store'})
     const employee=(await er.json())[0]||null
     return NextResponse.json({party,employee,investigation:party.administrative_investigations})
+  }
+  if(reviewToken){
+    const r=await db(`administrative_investigation_reviews?select=*,administrative_investigations(id,subject,status,created_at,updated_at)&review_token=eq.${reviewToken}&limit=1`,{cache:'no-store'})
+    if(!r.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+    const rows=await r.json(); if(!rows[0])return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+    const review=rows[0]
+    const pr=await db(`administrative_investigation_parties?select=*&investigation_id=eq.${review.investigation_id}`,{cache:'no-store'})
+    const parties=pr.ok?await pr.json():[]
+    const enriched=[]
+    for(const p of parties){
+      const er=await db(`employee_records?select=id,full_name,job_title,department&id=eq.${p.employee_id}&limit=1`,{cache:'no-store'})
+      enriched.push({...p,employee:(await er.json())[0]||null})
+    }
+    return NextResponse.json({review,parties:enriched,investigation:review.administrative_investigations})
   }
   if(!auth)return NextResponse.json({error:'غير مصرح'},{status:401})
   const [er,ir,rr]=await Promise.all([
