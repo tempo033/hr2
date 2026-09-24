@@ -75,9 +75,9 @@ export async function POST(req: NextRequest) {
 
     const recordId = recordData[0].id
     const scopes = [
-      ['direct_manager', 'المدير المباشر'],
-      ['finance', 'الإدارة المالية'],
       ['hr', 'الموارد البشرية'],
+      ['finance', 'الإدارة المالية'],
+      ['general_manager', 'المدير العام'],
     ]
 
     const linkPayloads = [
