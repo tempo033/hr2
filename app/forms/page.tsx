@@ -19,7 +19,7 @@ export default function FormsHub(){
  const [copied,setCopied]=useState('')
  const [employees,setEmployees]=useState<any[]>([])
  const [advanceEmployeeId,setAdvanceEmployeeId]=useState('')
- const [advanceApprovalLinks,setAdvanceApprovalLinks]=useState<any[]>([])
+ const [advanceLinks,setAdvanceLinks]=useState<any[]>([])
 
  const load=async()=>{
    const [lr,er]=await Promise.all([
@@ -34,7 +34,7 @@ export default function FormsHub(){
    })
    setLinks(m)
    setEmployees(ed.employees||ed.records||[])
-   setAdvanceApprovalLinks((d.links||[]).filter((x:any)=>x.form_type==='advance'&&x.link_scope?.startsWith('advance:')).slice(0,3))
+   const advanceAll=(d.links||[]).filter((x:any)=>x.form_type==='advance'); const latestRecordId=advanceAll.find((x:any)=>x.record_id)?.record_id; setAdvanceLinks(latestRecordId ? advanceAll.filter((x:any)=>x.record_id===latestRecordId).slice(0,4) : [])
  }
 
  useEffect(()=>{load()},[])
@@ -57,7 +57,7 @@ export default function FormsHub(){
      return
    }
    setLinks((p:any)=>({...p,[kind]:d.link}))
-   if(kind==='advance')setAdvanceApprovalLinks(d.approval_links||[])
+   if(kind==='advance')setAdvanceLinks([d.link,...(d.approval_links||[])].filter(Boolean))
    setBusy('')
    await navigator.clipboard?.writeText(location.origin+'/forms/public/'+d.link.token)
    setCopied(kind)
@@ -113,7 +113,7 @@ export default function FormsHub(){
                >
                  {busy==='advance'?'جارٍ إنشاء الطلب والروابط...':'إنشاء طلب السلفة + روابط الاعتماد'}
                </button>
-               {advanceApprovalLinks.length>0&&<div className="mt-4 space-y-2"><div className="text-xs font-black text-[#09233f]">روابط الاعتماد الأربعة</div><div className="grid gap-2">{advanceApprovalLinks.map((x:any)=>{const label=x.link_scope==='advance:hr'?'الموارد البشرية':x.link_scope==='advance:finance'?'الإدارة المالية':'المدير العام';return <div key={x.id} className="border rounded-lg p-2 bg-slate-50"><div className="font-bold text-sm">{label}</div><div className="flex gap-2 mt-2"><a target="_blank" rel="noreferrer" href={location.origin+'/forms/public/'+x.token} className="bg-[#09233f] text-white rounded px-2 py-1 text-xs font-bold">فتح الرابط</a><button onClick={()=>copy(x.token,'advance-'+x.id)} className="border rounded px-2 py-1 text-xs font-bold">نسخ</button></div></div>})}</div></div>}
+               {advanceLinks.length>0&&<div className="mt-4 space-y-2"><div className="text-xs font-black text-[#09233f]">الروابط الأربعة للطلب</div><div className="grid gap-2">{advanceLinks.map((x:any)=>{const label=!x.link_scope?'الموظف':x.link_scope==='advance:hr'?'الموارد البشرية':x.link_scope==='advance:finance'?'الإدارة المالية':'المدير العام';return <div key={x.id} className="border rounded-lg p-2 bg-slate-50"><div className="font-bold text-sm">{label}</div><div className="flex gap-2 mt-2"><a target="_blank" rel="noreferrer" href={location.origin+'/forms/public/'+x.token} className="bg-[#09233f] text-white rounded px-2 py-1 text-xs font-bold">فتح الرابط</a><button onClick={()=>copy(x.token,'advance-'+x.id)} className="border rounded px-2 py-1 text-xs font-bold">نسخ</button></div></div>})}</div></div>}
              </div>
            )}
 
