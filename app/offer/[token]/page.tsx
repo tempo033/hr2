@@ -157,6 +157,7 @@ export default function CandidateOfferPage({ params }: { params: Promise<{ token
           {a.show_other_allowances && <Row ar="بدلات أخرى" en="Other Allowances" value={`${Number(a.other_allowances||0).toLocaleString('ar-SA')} ريال سعودي`}/>}
           <Row ar="إجمالي الحزمة الشهرية" en="Total Monthly Package" value={`${Number(a.total_salary || (Number(a.salary||0)+Number(a.housing_allowance||0)+Number(a.transportation_allowance||0)+Number(a.other_allowances||0))).toLocaleString('ar-SA')} ريال سعودي`}/>
           <div className="border border-slate-200 bg-slate-50 p-3 mt-2 text-[11px] leading-relaxed">الأجر الموضح أعلاه يُصرف شهريًا عن طريق التحويل البنكي وفق نظام حماية الأجور، وتطبق عليه أحكام عقد العمل والأنظمة المعمول بها في المملكة العربية السعودية.</div>
+          {a.notes && <div className="border border-[#b88618] bg-[#fffaf0] p-3 mt-3 text-[11px] leading-relaxed"><div className="font-black text-[#09233f] mb-1">ملاحظات</div><div className="whitespace-pre-wrap">{a.notes}</div></div>}
         </> : <div className="border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">لم يتم تحديد بنود مالية لإظهارها في العرض.</div>}
       </div>
 
