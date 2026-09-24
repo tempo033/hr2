@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Printer, Save, CheckCircle2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 export default function OfferForm({ params }: { params: Promise<{ candidateId: string }> }) {
   const [id, setId] = useState('')
@@ -26,26 +25,31 @@ export default function OfferForm({ params }: { params: Promise<{ candidateId: s
     if (!id) return
     ;(async () => {
       setLoading(true)
-      const [{ data: c }, { data: a }, { data: r }] = await Promise.all([
-        supabase.from('candidates').select('*').eq('id', id).maybeSingle(),
-        supabase.from('candidate_hiring_approvals').select('*').eq('candidate_id', id).maybeSingle(),
-        supabase.from('requests').select('*').limit(1000),
-      ])
-      const req = (r || []).find((x: any) => x.id === c?.request_id)
-      setCandidate(c); setApproval(a); setRequest(req)
-      setForm(f => ({
-        ...f,
-        job_title: a?.job_title || req?.exact_type || '',
-        department: a?.department || '',
-        project_name: a?.project_name || '',
-        work_location: a?.work_location || '',
-        start_date: a?.start_date || '',
-        salary: a?.salary || '',
-        contract_type: a?.contract_type || '',
-        notes: a?.notes || '',
-        issue_date: a?.offer_sent_at ? new Date(a.offer_sent_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
-      }))
-      setLoading(false)
+      try {
+        const res = await fetch('/api/hiring-approvals/data', { cache: 'no-store' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'تعذر تحميل بيانات المرشح')
+        const c = (data.candidates || []).find((x: any) => x.id === id)
+        const a = (data.approvals || []).find((x: any) => x.candidate_id === id)
+        const req = (data.requests || []).find((x: any) => x.id === c?.request_id)
+        setCandidate(c || null); setApproval(a || null); setRequest(req || null)
+        setForm(f => ({
+          ...f,
+          job_title: a?.job_title || req?.exact_type || '',
+          department: a?.department || '',
+          project_name: a?.project_name || '',
+          work_location: a?.work_location || '',
+          start_date: a?.start_date || '',
+          salary: a?.salary || '',
+          contract_type: a?.contract_type || '',
+          notes: a?.notes || '',
+          issue_date: a?.offer_sent_at ? new Date(a.offer_sent_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+        }))
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : 'تعذر تحميل بيانات المرشح')
+      } finally {
+        setLoading(false)
+      }
     })()
   }, [id])
 
