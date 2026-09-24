@@ -6,6 +6,7 @@ const FIELDS=['employee_number','full_name','nationality','national_id','phone',
 function norm(v:any){return String(v??'').trim().toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ')}
 function clean(v:any){if(v===undefined||v===null)return null;const s=String(v).trim();return s||null}
 function money(v:any){if(v===undefined||v===null||v==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null}
+function dateValue(v:any){if(v===undefined||v===null||v==='')return null;if(v instanceof Date&&!isNaN(v.getTime()))return v.toISOString().slice(0,10);const s=String(v).trim();if(!s)return null;let m=s.match(/^(\\d{4})[-\\/](\\d{1,2})[-\\/](\\d{1,2})$/);if(m){const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));if(d.getFullYear()===Number(m[1])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[3]))return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0')}m=s.match(/^(\\d{1,2})[-\\/](\\d{1,2})[-\\/](\\d{4})$/);if(m){const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));if(d.getFullYear()===Number(m[3])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1]))return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0')}return null}
 async function rest(path:string,auth:any,init?:RequestInit){return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:{...supabaseHeaders(auth),...(init?.headers||{})},cache:'no-store'})}
 export async function POST(req:NextRequest){
  try{
@@ -20,7 +21,7 @@ export async function POST(req:NextRequest){
   const used=new Set(current.map(x=>norm(x.employee_number)).filter(Boolean));const seen=new Set<string>();const result:any={created:[],updated:[],unchanged:[],ambiguous:[]}
   for(const raw of rows){
    const input:any={};for(const f of FIELDS)if(Object.prototype.hasOwnProperty.call(raw,f))input[f]=raw[f];input.full_name=clean(input.full_name);if(!input.full_name)continue
-   for(const f of ['employee_number','national_id','phone','email','date_of_birth','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','hire_date','contract_type','salary','employment_status','residency_status','notes'])if(f in input)input[f]=clean(input[f])
+   for(const f of ['employee_number','national_id','phone','email','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','contract_type','salary','employment_status','residency_status','notes'])if(f in input)input[f]=clean(input[f]);for(const f of ['date_of_birth','hire_date'])if(f in input)input[f]=dateValue(input[f])
    for(const f of ['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances'])if(f in input)input[f]=money(input[f])
    let existing:any=null;if(input.employee_number)existing=byNo.get(norm(input.employee_number))||null;if(!existing&&input.national_id)existing=byNational.get(norm(input.national_id))||null;if(!existing&&input.phone)existing=byPhone.get(norm(input.phone))||null
    if(!existing){const matches=byName.get(norm(input.full_name))||[];if(matches.length===1)existing=matches[0];else if(matches.length>1){result.ambiguous.push({full_name:input.full_name,reason:'يوجد أكثر من موظف بنفس الاسم'});continue}}
