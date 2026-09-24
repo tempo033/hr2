@@ -23,6 +23,95 @@ export async function POST(req: NextRequest) {
   }
 
   const headers = { ...supabaseHeaders(auth), 'Content-Type': 'application/json', Prefer: 'return=representation' }
+
+  // طلب السلفة يبدأ بموظف محدد، ويتم إنشاء سجل الطلب وروابط الاعتماد الأربعة دفعة واحدة.
+  if (formType === 'advance' && body.employee_id && !body.record_id) {
+    const employeeResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/employee_records?id=eq.${encodeURIComponent(body.employee_id)}&select=id,employee_number,full_name,department,job_title,nationality,national_id,phone,email,hire_date,work_location,project_name,basic_salary,housing_allowance,transportation_allowance,total_salary_with_allowances`,
+      { headers: supabaseHeaders(auth), cache: 'no-store' }
+    )
+    const employees = await employeeResponse.json()
+    if (!employeeResponse.ok || !employees?.[0]) {
+      return NextResponse.json({ error: 'تعذر العثور على الموظف في ملف الموظفين.' }, { status: 404 })
+    }
+
+    const employee = employees[0]
+    const formData = {
+      employee_name: employee.full_name || '',
+      employee_number: employee.employee_number || '',
+      nationality: employee.nationality || '',
+      national_id: employee.national_id || '',
+      phone: employee.phone || '',
+      email: employee.email || '',
+      department: employee.department || '',
+      job_title: employee.job_title || '',
+      project_name: employee.project_name || '',
+      work_location: employee.work_location || '',
+      hire_date: employee.hire_date || '',
+      basic_salary: employee.basic_salary == null ? '' : String(employee.basic_salary),
+      housing_allowance: employee.housing_allowance == null ? '' : String(employee.housing_allowance),
+      transportation_allowance: employee.transportation_allowance == null ? '' : String(employee.transportation_allowance),
+      total_salary_with_allowances: employee.total_salary_with_allowances == null ? '' : String(employee.total_salary_with_allowances),
+    }
+
+    const recordResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_records`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        form_type: 'advance',
+        employee_id: employee.id,
+        employee_number: employee.employee_number || null,
+        employee_name: employee.full_name || null,
+        department: employee.department || null,
+        job_title: employee.job_title || null,
+        form_data: formData,
+        status: 'مسودة',
+      }),
+    })
+    const recordData = await recordResponse.json()
+    if (!recordResponse.ok || !recordData?.[0]?.id) {
+      return NextResponse.json({ error: recordData?.message || 'تعذر إنشاء سجل طلب السلفة.' }, { status: recordResponse.status || 500 })
+    }
+
+    const recordId = recordData[0].id
+    const scopes = [
+      ['direct_manager', 'المدير المباشر'],
+      ['finance', 'الإدارة المالية'],
+      ['hr', 'الموارد البشرية'],
+    ]
+
+    const linkPayloads = [
+      {
+        form_type: 'advance',
+        employee_id: employee.id,
+        record_id: recordId,
+        created_by: auth.user.id,
+        expires_at: body.expires_at || null,
+      },
+      ...scopes.map(([scope]) => ({
+        form_type: 'advance',
+        employee_id: employee.id,
+        record_id: recordId,
+        link_scope: `advance:${scope}`,
+        created_by: auth.user.id,
+        expires_at: body.expires_at || null,
+      })),
+    ]
+
+    const linksResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(linkPayloads),
+    })
+    const linksData = await linksResponse.json()
+    if (!linksResponse.ok) {
+      return NextResponse.json({ error: linksData?.message || 'تعذر إنشاء روابط الاعتماد.' }, { status: linksResponse.status })
+    }
+
+    const initialLink = linksData?.find((x: any) => !x.link_scope) || linksData?.[0]
+    return NextResponse.json({ link: initialLink, record_id: recordId, approval_links: linksData?.filter((x: any) => x.link_scope) || [] })
+  }
+
   const response = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, {
     method: 'POST',
     headers,
