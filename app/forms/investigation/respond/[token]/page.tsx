@@ -1,10 +1,10 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {CheckCircle2} from 'lucide-react'
-export default function Respond({params}:{params:{token:string}}){
- const [data,setData]=useState<any>(null),[answers,setAnswers]=useState<any[]>([]),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState('')
- useEffect(()=>{fetch('/api/administrative-investigations?token='+params.token).then(r=>r.json()).then(d=>{if(d.error)setError(d.error);else{setData(d);setAnswers((d.party.questions||[]).map((q:string,i:number)=>({question:q,answer:d.party.answers?.[i]?.answer||''})))}})},[params.token])
- const save=async()=>{setBusy(true);const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:params.token,action:'employee-answer',answers})});const d=await r.json();setBusy(false);if(!r.ok)setError(d.error||'تعذر الإرسال');else setDone(true)}
+export default function Respond({params}:{params:Promise<{token:string}>}){
+ const [token,setToken]=useState(''),[data,setData]=useState<any>(null),[answers,setAnswers]=useState<any[]>([]),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState('')
+ useEffect(()=>{params.then(({token:t})=>{setToken(t);fetch('/api/administrative-investigations?token='+encodeURIComponent(t)).then(r=>r.json()).then(d=>{if(d.error)setError(d.error);else{setData(d);setAnswers((d.party.questions||[]).map((q:string,i:number)=>({question:q,answer:d.party.answers?.[i]?.answer||''})))}}).catch(()=>setError('تعذر تحميل التحقيق'))})},[params])
+ const save=async()=>{setBusy(true);const r=await fetch('/api/administrative-investigations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,action:'employee-answer',answers})});const d=await r.json();setBusy(false);if(!r.ok)setError(d.error||'تعذر الإرسال');else setDone(true)}
  if(error)return <main dir="rtl" className="p-8 text-center">{error}</main>
  if(!data)return <main dir="rtl" className="p-8 text-center">جاري تحميل التحقيق...</main>
  return (
