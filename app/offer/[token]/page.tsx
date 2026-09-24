@@ -149,7 +149,16 @@ export default function CandidateOfferPage({ params }: { params: Promise<{ token
       </div>
 
       <h2 className="mt-5 bg-[#09233f] text-white p-2 font-black text-sm flex justify-between"><span>ثانيًا: الحزمة المالية الشهرية</span><span className="font-semibold text-xs" dir="ltr">MONTHLY COMPENSATION</span></h2>
-      <div className="print-block"><Row ar="إجمالي الأجر الشهري / الحزمة" en="Total Monthly Salary" value={a.salary ? `${a.salary} ريال سعودي` : '—'}/><div className="border border-slate-200 bg-slate-50 p-3 mt-2 text-[11px] leading-relaxed">الأجر الشهري أعلاه شامل ومقابل ساعات العمل اليومية المتفق عليها والبالغة (10) ساعات شاملة فترات الراحة، ولا تستحق عنه أي مقابل إضافي. ويُصرف الأجر شهريًا عن طريق التحويل البنكي وفق نظام حماية الأجور.<br/><span dir="ltr" className="text-slate-500 block mt-1">All-inclusive package covering the agreed ten (10) daily working hours, breaks included; paid monthly by bank transfer under the Wage Protection System.</span></div></div>
+      <div className="print-block">
+        {(a.show_basic_salary || a.show_housing_allowance || a.show_transportation_allowance || a.show_other_allowances) ? <>
+          {a.show_basic_salary && <Row ar="راتب أساسي" en="Basic Salary" value={a.salary ? `${Number(a.salary).toLocaleString('ar-SA')} ريال سعودي` : '—'}/>}
+          {a.show_housing_allowance && <Row ar="بدل سكن" en="Housing Allowance" value={`${Number(a.housing_allowance||0).toLocaleString('ar-SA')} ريال سعودي`}/>}
+          {a.show_transportation_allowance && <Row ar="بدل نقل" en="Transportation Allowance" value={`${Number(a.transportation_allowance||0).toLocaleString('ar-SA')} ريال سعودي`}/>}
+          {a.show_other_allowances && <Row ar="بدلات أخرى" en="Other Allowances" value={`${Number(a.other_allowances||0).toLocaleString('ar-SA')} ريال سعودي`}/>}
+          <Row ar="إجمالي الحزمة الشهرية" en="Total Monthly Package" value={`${Number(a.total_salary || (Number(a.salary||0)+Number(a.housing_allowance||0)+Number(a.transportation_allowance||0)+Number(a.other_allowances||0))).toLocaleString('ar-SA')} ريال سعودي`}/>
+          <div className="border border-slate-200 bg-slate-50 p-3 mt-2 text-[11px] leading-relaxed">الأجر الموضح أعلاه يُصرف شهريًا عن طريق التحويل البنكي وفق نظام حماية الأجور، وتطبق عليه أحكام عقد العمل والأنظمة المعمول بها في المملكة العربية السعودية.</div>
+        </> : <div className="border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">لم يتم تحديد بنود مالية لإظهارها في العرض.</div>}
+      </div>
 
       <h2 className="mt-5 bg-[#09233f] text-white p-2 font-black text-sm flex justify-between"><span>ثالثًا: أحكام عامة</span><span className="font-semibold text-xs" dir="ltr">GENERAL TERMS</span></h2>
       <ol className="list-decimal mr-6 space-y-1.5 text-[11.5px] mt-2 print-block">
