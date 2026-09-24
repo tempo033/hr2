@@ -58,9 +58,20 @@ export default function OfferForm({ params }: { params: Promise<{ candidateId: s
     if (!approval) return
     setSaving(true); setMessage('')
     const payload: any = { start_date: form.start_date || null, salary: form.salary || null, contract_type: form.contract_type || null, notes: form.notes || null }
-    const { error } = await supabase.from('candidate_hiring_approvals').update(payload).eq('candidate_id', id)
-    setMessage(error ? `تعذر الحفظ: ${error.message}` : 'تم حفظ بيانات العرض.')
-    setSaving(false)
+    try {
+      const res = await fetch('/api/hiring-approvals/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidate_id: id, request_id: candidate?.request_id, ...payload })
+      })
+      const body = await res.json()
+      setMessage(!res.ok ? (body.error || 'تعذر الحفظ') : 'تم حفظ بيانات العرض.')
+      if (res.ok && body.approval) setApproval((a: any) => ({ ...a, ...body.approval }))
+    } catch (e) {
+      setMessage(e instanceof Error ? `تعذر الحفظ: ${e.message}` : 'تعذر الحفظ')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) return <div dir="rtl" className="p-10 text-center font-bold text-[#09233f]">جاري تجهيز النموذج...</div>
