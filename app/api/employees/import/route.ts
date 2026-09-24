@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server'
 import {getServerAuth,supabaseHeaders} from '@/lib/server-auth'
 const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
-const ROLES=['admin','hr','manager']
+const ROLES=['admin','hr','interviewer','manager']
 const FIELDS=['employee_number','full_name','nationality','national_id','phone','email','date_of_birth','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','hire_date','contract_type','salary','employment_status','residency_status','basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances','notes','job_description_id']
 function norm(v:any){return String(v??'').trim().toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ')}
 function clean(v:any){if(v===undefined||v===null)return null;const s=String(v).trim();return s||null}
