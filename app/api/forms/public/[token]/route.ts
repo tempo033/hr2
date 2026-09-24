@@ -48,6 +48,21 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
   await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
   return NextResponse.json({ok:true,record_id:link.record_id})
  }
+ if(link.form_type==='advance'&&link.link_scope?.startsWith('advance:')){
+  const scope=String(link.link_scope).replace('advance:','')
+  const form=body.form||{}
+  const signature=form.approval_signature
+  if(!signature)return NextResponse.json({error:'يجب إدخال التوقيع قبل اعتماد طلب السلفة.'},{status:400})
+  if(!['clear','not_clear'].includes(form.approval_decision))return NextResponse.json({error:'اختر قرار الاعتماد أولاً.'},{status:400})
+  if(!link.record_id)return NextResponse.json({error:'سجل طلب السلفة غير موجود.'},{status:404})
+  const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const current=rs?.[0]?.form_data||{}
+  const approvals={...(current.advance_approvals||{}),[scope]:{...form,submitted_at:now}}
+  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,advance_approvals:approvals},status:'قيد الاعتماد',updated_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+  if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
+  await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+  await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
+  return NextResponse.json({ok:true,record_id:link.record_id})
+ }
  const form=body.form||{};const base={form_type:link.form_type,employee_id:link.employee_id||null,employee_number:form.employee_number||null,employee_name:form.employee_name||null,department:form.department||null,job_title:form.job_title||null,form_data:form,status:'معبأ عبر رابط خارجي',last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua,submitted_via_link:true,updated_at:now}
  let recordId=link.record_id;let res:Response
  if(recordId)res=await db('hr_form_records?id=eq.'+encodeURIComponent(recordId),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(base)})
@@ -59,7 +74,7 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
   for(const [scope,label] of stages){
    const exists=await db('hr_form_links?select=id&form_type=eq.advance&record_id=eq.'+encodeURIComponent(recordId)+'&link_scope=eq.advance:'+scope+'&limit=1')
    const ex=await exists.json()
-   if(!ex?.length) await db('hr_form_links',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'advance',record_id:recordId,employee_id:link.employee_id||null,created_by:null,link_scope:'advance:'+scope,status:'active',created_at:now,updated_at:now})})
+   if(!ex?.length) await db('hr_form_links',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'advance',record_id:recordId,employee_id:link.employee_id||null,created_by:link.created_by||null,link_scope:'advance:'+scope,status:'active',created_at:now,updated_at:now})})
   }
  }
  return NextResponse.json({ok:true,record_id:recordId})
