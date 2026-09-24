@@ -5,21 +5,61 @@ import {ArrowLeft,Search,Users,Upload,RefreshCw,Trash2,CheckSquare,Square,Printe
 type Employee={id:string;employee_number:string|null;full_name:string;nationality:string|null;national_id:string|null;residency_status:string|null;job_title:string|null;department:string|null;basic_salary:number|null;housing_allowance:number|null;transportation_allowance:number|null;other_allowances:number|null;total_salary_with_allowances:number|null;employment_status:string|null;hire_date:string|null}
 export default function EmployeesPage(){
  const[employees,setEmployees]=useState<Employee[]>([]),[search,setSearch]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState(''),[selected,setSelected]=useState<string[]>([]),[busy,setBusy]=useState(false)
- const load=async()=>{setLoading(true);setError('');try{const r=await fetch('/api/employees/data',{cache:'no-store'});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر تحميل الموظفين');setEmployees(b.employees||[]);setSelected([])}catch(e){setError(e instanceof Error?e.message:'تعذر تحميل الموظفين')}finally{setLoading(false)}}
- useEffect(()=>{load()},[])
- const rows=useMemo(()=>employees.filter(e=>`${e.employee_number||''} ${e.full_name} ${e.job_title||''} ${e.department||''} ${e.national_id||''}`.toLowerCase().includes(search.toLowerCase())),[employees,search])
- const allVisible=rows.length>0&&rows.every(e=>selected.includes(e.id))
- const toggle=(id:string)=>setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id])
- const selectVisible=()=>setSelected(allVisible?selected.filter(id=>!rows.some(e=>e.id===id)):Array.from(new Set([...selected,...rows.map(e=>e.id)]))
+ const load = async () => {
+  setLoading(true)
+  setError('')
+  try {
+   const r = await fetch('/api/employees/data', { cache: 'no-store' })
+   const b = await r.json()
+   if (!r.ok) throw new Error(b.error || 'تعذر تحميل الموظفين')
+   setEmployees(b.employees || [])
+   setSelected([])
+  } catch (e) {
+   setError(e instanceof Error ? e.message : 'تعذر تحميل الموظفين')
+  } finally {
+   setLoading(false)
+  }
+ }
+
+ useEffect(() => { load() }, [])
+
+ const rows = useMemo(() => {
+  const q = search.toLowerCase()
+  return employees.filter((e) => {
+   const text = [e.employee_number, e.full_name, e.job_title, e.department, e.national_id].filter(Boolean).join(' ')
+   return text.toLowerCase().includes(q)
+  })
+ }, [employees, search])
+
+ const allVisible = rows.length > 0 && rows.every((e) => selected.includes(e.id))
+
+ const toggle = (id: string) => {
+  setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id])
+ }
+
+ const selectVisible = () => {
+  setSelected((current) => {
+   if (allVisible) {
+    const visibleIds = new Set(rows.map((e) => e.id))
+    return current.filter((id) => !visibleIds.has(id))
+   }
+   return Array.from(new Set([...current, ...rows.map((e) => e.id)]))
+  })
+ }
+
  const deleteSelected = async (all = false) => {
-  if (!all && !selected.length) return
+  if (!all && selected.length === 0) return
   if (!confirm(all ? 'سيتم حذف جميع ملفات الموظفين. هل أنت متأكد؟' : 'سيتم حذف الموظفين المحددين. هل أنت متأكد؟')) return
   setBusy(true)
   try {
-   const r = await fetch('/api/employees/import', { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify(all ? {all:true} : {ids:selected}) })
+   const r = await fetch('/api/employees/import', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(all ? { all: true } : { ids: selected }),
+   })
    const b = await r.json()
    if (!r.ok) throw new Error(b.error || 'تعذر الحذف')
-   setEmployees(e => all ? [] : e.filter(x => !selected.includes(x.id)))
+   setEmployees((current) => all ? [] : current.filter((x) => !selected.includes(x.id)))
    setSelected([])
    alert('تم حذف ' + b.deleted + ' موظف')
   } catch (e) {
