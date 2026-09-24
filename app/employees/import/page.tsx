@@ -35,7 +35,7 @@ const fields=[
 ] as const
 
 function norm(v:any){return String(v??'').trim().toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ')}
-function dateValue(v:any){if(!v)return null;if(v instanceof Date&&!isNaN(v.getTime()))return v.toISOString().slice(0,10);if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);if(d)return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0')}const s=String(v).trim();const m=s.match(/^(\d{1,2})[\\/-](\d{1,2})[\\/-](\d{4})$/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):s||null}
+function dateValue(v:any){if(!v)return null;if(v instanceof Date&&!isNaN(v.getTime()))return v.toISOString().slice(0,10);if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);if(d)return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0')}const s=String(v).trim();let m=s.match(/^(\d{4})[\\/-](\d{1,2})[\\/-](\d{1,2})$/);if(m){const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));if(d.getFullYear()===Number(m[1])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[3]))return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0')}m=s.match(/^(\d{1,2})[\\/-](\d{1,2})[\\/-](\d{4})$/);if(m){const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));if(d.getFullYear()===Number(m[3])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1]))return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')}return null}
 function money(v:any){if(v===null||v===undefined||v==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null}
 
 export default function EmployeeImportPage(){
