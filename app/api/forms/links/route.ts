@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { getServerAuth, supabaseHeaders, SUPABASE_URL } from '@/lib/server-auth'
 
 const allowed = ['admin','hr','interviewer','manager']
@@ -74,19 +75,48 @@ export async function POST(req: NextRequest) {
     }
 
     const recordId = recordData[0].id
+    // نفس آلية إخلاء الطرف: كل رابط يُنشأ كسجل مستقل، مع token وحالة active ووقت الإنشاء.
     const scopes = [null, 'advance:hr', 'advance:finance', 'advance:general_manager']
     const links: any[] = []
+    const now = new Date().toISOString()
+
     for (const linkScope of scopes) {
+      const linkPayload = {
+        token: crypto.randomUUID(),
+        form_type: 'advance',
+        employee_id: employee.id,
+        record_id: recordId,
+        created_by: auth.user.id,
+        link_scope: linkScope,
+        status: 'active',
+        created_at: now,
+        updated_at: now,
+        expires_at: body.expires_at || null,
+      }
+
       const linkResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ form_type: 'advance', employee_id: employee.id, record_id: recordId, link_scope: linkScope, created_by: auth.user.id, expires_at: body.expires_at || null }),
+        method: 'POST',
+        headers,
+        body: JSON.stringify(linkPayload),
       })
       const linkData = await linkResponse.json()
-      if (!linkResponse.ok) return NextResponse.json({ error: linkData?.message || linkData?.hint || JSON.stringify(linkData) || 'تعذر إنشاء أحد روابط السلفة.' }, { status: linkResponse.status || 500 })
-      if (linkData?.[0]) links.push(linkData[0])
+
+      if (!linkResponse.ok || !linkData?.[0]?.id) {
+        return NextResponse.json({
+          error: linkData?.message || linkData?.hint || JSON.stringify(linkData) || 'تعذر إنشاء أحد روابط السلفة.'
+        }, { status: linkResponse.status || 500 })
+      }
+
+      links.push(linkData[0])
     }
+
     const initialLink = links.find((x: any) => !x.link_scope)
-    return NextResponse.json({ link: initialLink, record_id: recordId, approval_links: links.filter((x: any) => x.link_scope), links })
+    return NextResponse.json({
+      link: initialLink,
+      record_id: recordId,
+      approval_links: links.filter((x: any) => x.link_scope),
+      links,
+    })
   }
 
   const response = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, {
