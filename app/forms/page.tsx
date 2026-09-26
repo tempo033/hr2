@@ -23,7 +23,7 @@ export default function FormsHub(){
 
  const load=async()=>{
    const [lr,er]=await Promise.all([
-     fetch('/api/forms/links',{cache:'no-store'}),
+     fetch(kind==='advance'?'/api/forms/advance/workflow':'/api/forms/links',{cache:'no-store'}),
      fetch('/api/employees/data',{cache:'no-store'})
    ])
    const d=await lr.json().catch(()=>({}))
@@ -56,14 +56,15 @@ export default function FormsHub(){
      setBusy('')
      return
    }
-   setLinks((p:any)=>({...p,[kind]:d.link}))
-   if(kind==='advance')setAdvanceLinks([d.link,...(d.approval_links||[])].filter(Boolean))
+   setLinks((p:any)=>({...p,[kind]:kind==='advance' ? (d.links?.[0] || null) : d.link}))
+   if(kind==='advance')setAdvanceLinks(d.links||[])
    setBusy('')
-   await navigator.clipboard?.writeText(location.origin+'/forms/public/'+d.link.token)
+   const employeeLink=kind==='advance' ? (d.links||[]).find((x:any)=>x.link_scope==='advance:employee') : d.link
+   if(employeeLink?.token) await navigator.clipboard?.writeText(location.origin+'/forms/public/'+employeeLink.token)
    setCopied(kind)
    setTimeout(()=>setCopied(''),1800)
    if(kind==='advance'){
-     alert('تم إنشاء طلب السلفة وروابط الاعتماد: الموارد البشرية، الإدارة المالية، المدير العام. تم نسخ رابط الموظف.')
+     alert('تم إنشاء طلب السلفة والروابط الأربعة: الموظف، الموارد البشرية، الإدارة المالية، المدير العام. تم نسخ رابط الموظف.')
      await load()
    }
  }
