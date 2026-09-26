@@ -23,7 +23,7 @@ export default function FormsHub(){
 
  const load=async()=>{
    const [lr,er]=await Promise.all([
-     fetch(kind==='advance'?'/api/forms/advance/workflow':'/api/forms/links',{cache:'no-store'}),
+     fetch('/api/forms/links',{cache:'no-store'}),
      fetch('/api/employees/data',{cache:'no-store'})
    ])
    const d=await lr.json().catch(()=>({}))
