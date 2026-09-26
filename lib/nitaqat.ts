@@ -4,11 +4,11 @@ export type NitaqatResult = {
   total:number; saudi:number; nonSaudi:number; localizationRate:number|null; band:NitaqatBand;
   thresholds:Record<string,number>|null; ruleId:string|null; source:string; warnings:string[]
 }
-export function calculateNitaqat(input:{total:number;saudi:number;nonSaudi?:number;year:number;rule?:NitaqatRule|null}):NitaqatResult {
+export function calculateNitaqat(input:{total:number;saudi:number;nonSaudi?:number;year:number;rule?:NitaqatRule|null;smallCase?:{max_total_workers:number;required_saudi:number}|null}):NitaqatResult {
   const total=Math.max(0,Number(input.total)||0), saudi=Math.max(0,Number(input.saudi)||0)
   const nonSaudi=Math.max(0,Number(input.nonSaudi??Math.max(0,total-saudi))||0)
   if(total===0) return {total,saudi,nonSaudi,localizationRate:null,band:'غير متاح',thresholds:null,ruleId:null,source:'بيانات HR2 + قواعد نطاقات المحفوظة بالنظام',warnings:['لا توجد عمالة كافية للحساب.']}
-  if(total<=5) return {total,saudi,nonSaudi,localizationRate:(saudi/total)*100,band:'غير متاح',thresholds:null,ruleId:null,source:'حاسبة نطاقات وزارة الموارد البشرية',warnings:['المنشآت التي لديها 5 عمال فأقل تتطلب عاملًا سعوديًا واحدًا وفق الحاسبة الرسمية؛ لا يتم استنتاج نطاق لوني داخلي لهذه الفئة.']}
+  if(input.smallCase && total<=Number(input.smallCase.max_total_workers)) return {total,saudi,nonSaudi,localizationRate:(saudi/total)*100,band:'غير متاح',thresholds:null,ruleId:null,source:'حاسبة نطاقات وزارة الموارد البشرية',warnings:[`هذه الفئة الخاصة تتطلب ${input.smallCase.required_saudi} عامل سعودي على الأقل وفق القاعدة المحفوظة بالنظام؛ لا يتم استنتاج نطاق لوني داخلي لها.`]}
   if(!input.rule) return {total,saudi,nonSaudi,localizationRate:(saudi/total)*100,band:'غير متاح',thresholds:null,ruleId:null,source:'بيانات HR2',warnings:['لم يتم العثور على قاعدة نشطة للنشاط المحدد والسنة المحددة.']}
   const y=String(input.year), t=input.rule.targets||{}, mv=input.rule.m_values||{}
   const thresholds={ 'منخفض الأخضر':Number(mv['منخفض الأخضر'])*Math.log(total)+Number(t['منخفض الأخضر']?.[y]), 'متوسط الأخضر':Number(mv['متوسط الأخضر'])*Math.log(total)+Number(t['متوسط الأخضر']?.[y]), 'مرتفع الأخضر':Number(mv['مرتفع الأخضر'])*Math.log(total)+Number(t['مرتفع الأخضر']?.[y]), 'البلاتيني':Number(mv['البلاتيني'])*Math.log(total)+Number(t['البلاتيني']?.[y]) }
