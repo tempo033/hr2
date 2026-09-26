@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays, WalletCards } from 'lucide-react'
+import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays, WalletCards, Calculator, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const sections = [
@@ -40,6 +40,9 @@ const sections = [
     ['/payroll/projects','تكلفة المشاريع',WalletCards,['admin','hr','finance','general_manager']],
     ['/payroll/reports','تقارير الرواتب',BarChart3,['admin','hr','finance','general_manager','manager']],
     ['/payroll/settings','إعدادات الرواتب',UserCog,['admin']],
+  ]},
+  { id:'nitaqat', label:'نطاقات', icon:Calculator, items:[
+    ['/nitaqat','لوحة نطاقات',Calculator,['admin','hr','manager']], ['/nitaqat/calculator','حاسبة نطاقات',Calculator,['admin','hr','manager']], ['/nitaqat/company','بيانات المنشأة',Building2,['admin','hr']], ['/nitaqat/employees','الموظفون المحتسبون',Users,['admin','hr','manager']], ['/nitaqat/simulation','محاكاة التوطين',Calculator,['admin','hr','manager']], ['/nitaqat/rules','متطلبات النطاق',FileText,['admin','hr','manager']], ['/nitaqat/history','سجل التغييرات',FileText,['admin','hr','manager']], ['/nitaqat/reports','تقارير نطاقات',BarChart3,['admin','hr','manager']], ['/nitaqat/settings','إعدادات نطاقات',UserCog,['admin','hr']],
   ]},
   { id:'reports', label:'التقارير', icon:BarChart3, items:[
     ['/reports','التقارير',BarChart3,['admin','hr','manager']],
