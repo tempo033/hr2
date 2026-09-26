@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Send, XCircle, Printer, Check, PenTool, RotateCcw } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import SignatureEditor from '@/app/components/signature/SignatureEditor'
+import { CheckCircle2, Send, XCircle, Printer, Check, PenTool } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 type OfferData = { candidate: any; request: any; approval: any; onboarding: any }
@@ -37,43 +38,6 @@ export default function CandidateOfferPage({ params }: { params: Promise<{ token
       setLoading(false)
     })()
   }, [token])
-
-  const point = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const rect = canvas.getBoundingClientRect()
-    const x = ('touches' in e ? e.touches[0].clientX : e.clientX) - rect.left
-    const y = ('touches' in e ? e.touches[0].clientY : e.clientY) - rect.top
-    ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true)
-  }
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const rect = canvas.getBoundingClientRect()
-    const x = ('touches' in e ? e.touches[0].clientX : e.clientX) - rect.left
-    const y = ('touches' in e ? e.touches[0].clientY : e.clientY) - rect.top
-    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#09233f'; ctx.lineTo(x, y); ctx.stroke()
-  }
-
-  const stopDrawing = () => {
-    if (!isDrawing) return
-    setIsDrawing(false)
-    if (canvasRef.current) setSignatureDataUrl(canvasRef.current.toDataURL('image/png'))
-  }
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
-    setSignatureDataUrl('')
-    try { localStorage.removeItem(`sig_${token}`) } catch {}
-  }
 
   const respond = async (decision: 'موافق' | 'غير موافق' | 'أحتاج توضيح') => {
     if (decision === 'موافق' && !signatureDataUrl && !signatureName.trim()) {
@@ -176,7 +140,7 @@ export default function CandidateOfferPage({ params }: { params: Promise<{ token
       {!alreadyAnswered && <div className="no-print mt-4 border-2 border-dashed border-[#b88618] bg-[#fdfbf6] p-4 rounded-xl">
         <div className="flex items-center gap-2 text-[#09233f] font-black text-sm mb-2"><PenTool size={18} className="text-[#b88618]"/><span>إجراءات الموافقة وتوقيع العرض الوظيفي</span></div>
         <p className="text-xs text-slate-600 mb-4">إذا كنت موافقًا على بنود العرض، يرجى كتابة اسمك الكامل وتوقيعك في المربع المخصص أدناه، ثم النقر على زر قبول وتوقيع العرض.</p>
-        <div className="grid md:grid-cols-2 gap-4"><div><label className="block text-xs font-bold mb-1">الاسم الكامل لتوقيع العرض:</label><input type="text" className="w-full border rounded-lg p-2.5 text-sm bg-white font-bold" value={signatureName} onChange={e=>setSignatureName(e.target.value)} placeholder="اكتب اسمك كما في الهوية"/><label className="block text-xs font-bold mt-3 mb-1">ملاحظات أو تعليق (اختياري):</label><textarea className="w-full border rounded-lg p-2 text-xs bg-white" rows={2} value={notes} onChange={e=>setNotes(e.target.value)} /></div><div><div className="flex justify-between items-center mb-1"><label className="text-xs font-bold">رسم التوقيع الإلكتروني:</label>{signatureDataUrl&&<button type="button" onClick={clearSignature} className="text-[11px] text-red-600 inline-flex items-center gap-1 font-bold"><RotateCcw size={12}/> مسح التوقيع</button>}</div><div className="border border-slate-300 rounded-lg bg-white relative overflow-hidden"><canvas ref={canvasRef} width={360} height={120} className="w-full h-[120px] touch-none cursor-crosshair" onMouseDown={point} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={point} onTouchMove={draw} onTouchEnd={stopDrawing}/>{!signatureDataUrl&&<div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 text-xs">✍️ ارسم توقيعك هنا</div>}</div></div></div>
+        <div className="grid md:grid-cols-2 gap-4"><div><label className="block text-xs font-bold mb-1">الاسم الكامل لتوقيع العرض:</label><input type="text" className="w-full border rounded-lg p-2.5 text-sm bg-white font-bold" value={signatureName} onChange={e=>setSignatureName(e.target.value)} placeholder="اكتب اسمك كما في الهوية"/><label className="block text-xs font-bold mt-3 mb-1">ملاحظات أو تعليق (اختياري):</label><textarea className="w-full border rounded-lg p-2 text-xs bg-white" rows={2} value={notes} onChange={e=>setNotes(e.target.value)} /></div><div><SignatureEditor value={signatureDataUrl} onChange={setSignatureDataUrl} autoUseSaved={false}/></div></div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4"><button disabled={saving} onClick={()=>respond('موافق')} className="bg-green-600 text-white rounded-xl p-3 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"><CheckCircle2 size={18}/> قبول وتوقيع العرض</button><button disabled={saving} onClick={()=>respond('أحتاج توضيح')} className="bg-[#d4a72c] text-[#09233f] rounded-xl p-3 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"><Send size={18}/> أحتاج توضيح</button><button disabled={saving} onClick={()=>respond('غير موافق')} className="bg-slate-700 text-white rounded-xl p-3 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"><XCircle size={18}/> اعتذار عن العرض</button></div>
       </div>}
 
