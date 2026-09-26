@@ -1,8 +1,8 @@
 import {NextRequest,NextResponse} from 'next/server'
 import {getServerAuth,supabaseHeaders} from '@/lib/server-auth'
 const ROLES=['admin','hr','manager','finance','general_manager']
-const URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
-async function rest(path:string,auth:any,init?:RequestInit){return fetch(URL+'/rest/v1/'+path,{...init,headers:{...supabaseHeaders(auth),...(init?.headers||{})},cache:'no-store'})}
+const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
+async function rest(path:string,auth:any,init?:RequestInit){return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:{...supabaseHeaders(auth),...(init?.headers||{})},cache:'no-store'})}
 async function json(path:string,auth:any,init?:RequestInit){const r=await rest(path,auth,init);const t=await r.text();let b:any={};try{b=t?JSON.parse(t):{}}catch{b={raw:t}};if(!r.ok)throw new Error(b.message||b.error||t||'تعذر تنفيذ العملية');return b}
 function money(v:any){const n=Number(v);return Number.isFinite(n)?Math.round(n*100)/100:0}
 async function audit(auth:any,action:string,entity:string,id:string|undefined,before:any,after:any){await rest('payroll_audit_log',auth,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:auth.user.id,user_name:auth.user.email,action,entity_type:entity,entity_id:id||null,before_data:before||null,after_data:after||null})}).catch(()=>{})}
