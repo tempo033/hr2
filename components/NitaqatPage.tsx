@@ -129,10 +129,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
 
   const rules = data.rules || []
   const employees = data.employees || []
-  const activities = useMemo(
-    () => Array.from(new Set(rules.map((r: any) => r.activity_group))).filter(Boolean) as string[],
-    [rules]
-  )
+  const activities = useMemo(() => Array.from(new Set(rules.filter((r: any) => r.active !== false).map((r: any) => r.activity_group))).filter(Boolean) as string[], [rules])
 
   const save = async (action: string, payload: any) => {
     const response = await fetch('/api/nitaqat', {
@@ -322,7 +319,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
           <div className="grid md:grid-cols-5 gap-4">
             <label className="font-bold md:col-span-2">النشاط
               <select value={activity} onChange={(e) => setActivity(e.target.value)} className="mt-2 w-full border rounded-xl p-3">
-                <option value="">اختر النشاط</option>
+                <option value="">اختر النشاط الاقتصادي من القائمة المعتمدة</option>
                 {activities.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
@@ -346,7 +343,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
             </select>
           </div>
 
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">الحاسبة تستبعد تلقائيًا أي موظف <b>خارج كفالة المنشأة</b> من أعداد نطاقات. زر «استخدام بيانات الموظفين الحالية» يعتمد فقط على الموظفين المحتسبين.</div>
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">الحاسبة تعتمد فقط على الموظفين المحتسبين داخل HR2، ويتم استبعاد أي موظف <b>خارج كفالة المنشأة</b> تلقائيًا. النشاط لا يُدخل يدويًا؛ يجب اختياره من قائمة الأنشطة الاقتصادية المحملة في قواعد نطاقات بالنظام.</div>
 
           <div className="flex flex-wrap gap-2 mt-5">
             <button onClick={useCurrent} className="rounded-xl border px-4 py-2 font-bold">استخدام بيانات الموظفين الحالية</button>
@@ -406,7 +403,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
     return (
       <Shell>
         <div className="bg-white rounded-2xl border overflow-auto">
-          <div className="p-5 flex justify-between"><h2 className="font-black text-xl">الموظفون المحتسبون</h2><button onClick={() => void load()} className="border rounded-xl px-3 py-2"><RefreshCw size={16} /></button></div>
+          <div className="p-5 flex justify-between"><div><h2 className="font-black text-xl">الموظفون المحتسبون</h2><div className="text-sm text-slate-500 mt-1">يظهر هنا فقط الموظفون على كفالة الشركة والمستوفون لشروط الإدراج.</div></div><button onClick={() => void load()} className="border rounded-xl px-3 py-2"><RefreshCw size={16} /></button></div>
           <table className="w-full min-w-[1300px]">
             <thead className="bg-[#09233f] text-white"><tr>{headers.map((h) => <th className="p-3 text-right" key={h}>{h}</th>)}</tr></thead>
             <tbody>{employees.map((e: any) => (
