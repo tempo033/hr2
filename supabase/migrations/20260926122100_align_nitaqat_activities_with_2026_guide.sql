@@ -1,0 +1,2 @@
+update public.nitaqat_rules set activity_group='خدمات الاعمال',m_values='{"منخفض الأخضر":1.03,"متوسط الأخضر":1.03,"مرتفع الأخضر":2.19,"البلاتيني":2.19}'::jsonb where activity_group='خدمات العمال';
+update public.nitaqat_rules set active=false,notes='لم يظهر هذا النشاط ضمن جدول القيم المرفق في الدليل الإجرائي لبرنامج نطاقات المطور 2026 الذي تم التحقق منه؛ أوقف مؤقتًا بدل افتراض قاعدة حالية.' where activity_group='نظافة المدن';
