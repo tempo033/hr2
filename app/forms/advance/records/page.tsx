@@ -68,6 +68,7 @@ export default function Records() {
   }
 
   const linkLabel = (scope: string) => {
+    if (scope === 'advance:employee') return 'الموظف'
     if (scope === 'advance:hr') return 'الموارد البشرية'
     if (scope === 'advance:finance') return 'الإدارة المالية'
     return 'المدير العام'
@@ -236,7 +237,7 @@ export default function Records() {
               </button>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-3">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
               {links
                 .filter(
                   (x: any) =>
