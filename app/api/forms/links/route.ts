@@ -74,12 +74,6 @@ export async function POST(req: NextRequest) {
     }
 
     const recordId = recordData[0].id
-    const scopes = [
-      ['hr', 'الموارد البشرية'],
-      ['finance', 'الإدارة المالية'],
-      ['general_manager', 'المدير العام'],
-    ]
-
     const scopes = [null, 'advance:hr', 'advance:finance', 'advance:general_manager']
     const links: any[] = []
     for (const linkScope of scopes) {
