@@ -2,44 +2,360 @@
 import {useEffect,useState} from 'react'
 import SignatureEditor from '@/app/components/signature/SignatureEditor'
 import {Save,Printer} from 'lucide-react'
-const labels:any={employee:'الموظف',managers:'المدير المباشر / مدير المشروع',it:'إدارة الحاسب الآلي',transport:'إدارة الحركة',warehouse:'إدارة المستودعات',admin:'إدارة الشؤون الإدارية',finance:'الإدارة المالية',hr:'إدارة الموارد البشرية',senior:'الإدارة العليا — الاعتماد النهائي'}
-function SignatureField({nameValue,signatureValue,onNameChange,onSignatureChange,disabled=false,employeeId,publicToken}:{nameValue:string;signatureValue:string;onNameChange:(v:string)=>void;onSignatureChange:(v:string)=>void;disabled?:boolean;employeeId?:string;publicToken?:string}){return <div className="grid grid-cols-2 gap-3 items-end"><label className="font-bold">الاسم / Name<input disabled={disabled} className="field" value={nameValue||''} onChange={e=>onNameChange(e.target.value)} placeholder="اكتب الاسم هنا"/></label><div><SignatureEditor employeeId={employeeId} publicToken={publicToken} value={signatureValue} onChange={onSignatureChange} disabled={disabled} autoUseSaved={Boolean(employeeId)}/></div></div>}
-function Decision({d,set,prefix='' }:{d:any;set:(k:string,v:any)=>void;prefix?:string}){const k=prefix?prefix+'_decision':'clearance_decision';const reason=prefix?prefix+'_reason':'clearance_reason';return <div className="grid grid-cols-2 gap-3 mt-4"><label><input type="radio" checked={d[k]==='clear'} onChange={()=>set(k,'clear')}/> يخلى طرفه / Clear</label><label><input type="radio" checked={d[k]==='not_clear'} onChange={()=>set(k,'not_clear')}/> لا يخلى طرفه / Not Clear</label>{d[k]==='not_clear'&&<textarea className="field min-h-20 col-span-2" placeholder="السبب / Reason" value={d[reason]||''} onChange={e=>set(reason,e.target.value)}/>}</div>}
-function Dept({d,set,stage}:{d:any;set:(k:string,v:any)=>void;stage:string}){return <><h3 className="section">اعتماد الإدارة</h3><SignatureField nameValue={d[stage+'_name']||''} signatureValue={d[stage+'_signature']||''} onNameChange={v=>set(stage+'_name',v)} onSignatureChange={v=>set(stage+'_signature',v)}/><input type="date" className="field" value={d[stage+'_date']||''} onChange={e=>set(stage+'_date',e.target.value)}/><Decision d={d} set={set} prefix={stage}/></>}
-function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){return <><h3 className="section">المدير المباشر / مدير المشروع</h3>{[['line_manager_name','اسم المدير المباشر'],['project_manager_name','اسم مدير المشروع']].map(a=><div key={a[0]} className="mb-3 font-bold">{a[1]}<SignatureField nameValue={d[a[0]]||''} signatureValue={d[a[0].replace('_name','_signature')]||''} onNameChange={v=>set(a[0],v)} onSignatureChange={v=>set(a[0].replace('_name','_signature'),v)}/></div>)}<Decision d={d} set={set}/></>}
+
+const labels:any={
+  employee:'الموظف',managers:'المدير المباشر / مدير المشروع',it:'إدارة الحاسب الآلي',
+  transport:'إدارة الحركة',warehouse:'إدارة المستودعات',admin:'إدارة الشؤون الإدارية',
+  finance:'الإدارة المالية',hr:'إدارة الموارد البشرية',senior:'الإدارة العليا — الاعتماد النهائي'
+}
+
+function SignatureField({nameValue,signatureValue,onNameChange,onSignatureChange,disabled=false,employeeId,publicToken}:{
+  nameValue:string; signatureValue:string; onNameChange:(v:string)=>void; onSignatureChange:(v:string)=>void;
+  disabled?:boolean; employeeId?:string; publicToken?:string
+}){
+  return (
+    <div className="grid grid-cols-2 gap-3 items-end">
+      <label className="font-bold">
+        الاسم / Name
+        <input disabled={disabled} className="field" value={nameValue||''} onChange={e=>onNameChange(e.target.value)} placeholder="اكتب الاسم هنا"/>
+      </label>
+      <div>
+        <SignatureEditor employeeId={employeeId} publicToken={publicToken} value={signatureValue} onChange={onSignatureChange} disabled={disabled} autoUseSaved={Boolean(employeeId)}/>
+      </div>
+    </div>
+  )
+}
+
+function Decision({d,set,prefix=''}:{d:any;set:(k:string,v:any)=>void;prefix?:string}){
+  const k=prefix?prefix+'_decision':'clearance_decision'
+  const reason=prefix?prefix+'_reason':'clearance_reason'
+  return (
+    <div className="grid grid-cols-2 gap-3 mt-4">
+      <label><input type="radio" checked={d[k]==='clear'} onChange={()=>set(k,'clear')}/> يخلى طرفه / Clear</label>
+      <label><input type="radio" checked={d[k]==='not_clear'} onChange={()=>set(k,'not_clear')}/> لا يخلى طرفه / Not Clear</label>
+      {d[k]==='not_clear' && (
+        <textarea className="field min-h-20 col-span-2" placeholder="السبب / Reason" value={d[reason]||''} onChange={e=>set(reason,e.target.value)}/>
+      )}
+    </div>
+  )
+}
+
+function Dept({d,set,stage}:{d:any;set:(k:string,v:any)=>void;stage:string}){
+  return (
+    <>
+      <h3 className="section">اعتماد الإدارة</h3>
+      <SignatureField
+        nameValue={d[stage+'_name']||''}
+        signatureValue={d[stage+'_signature']||''}
+        onNameChange={v=>set(stage+'_name',v)}
+        onSignatureChange={v=>set(stage+'_signature',v)}
+      />
+      <input type="date" className="field" value={d[stage+'_date']||''} onChange={e=>set(stage+'_date',e.target.value)}/>
+      <Decision d={d} set={set} prefix={stage}/>
+    </>
+  )
+}
+
+function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){
+  return (
+    <>
+      <h3 className="section">المدير المباشر / مدير المشروع</h3>
+      {[
+        ['line_manager_name','اسم المدير المباشر'],
+        ['project_manager_name','اسم مدير المشروع']
+      ].map(a=>(
+        <div key={a[0]} className="mb-3 font-bold">
+          {a[1]}
+          <SignatureField
+            nameValue={d[a[0]]||''}
+            signatureValue={d[a[0].replace('_name','_signature')]||''}
+            onNameChange={v=>set(a[0],v)}
+            onSignatureChange={v=>set(a[0].replace('_name','_signature'),v)}
+          />
+        </div>
+      ))}
+      <Decision d={d} set={set}/>
+    </>
+  )
+}
+
 export default function ClearancePublic({token}:{token:string}){
- const [link,setLink]=useState<any>(),[d,setD]=useState<any>({}),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[loading,setLoading]=useState(true),[locked,setLocked]=useState(false)
- useEffect(()=>{fetch('/api/forms/public/'+token,{cache:'no-store'}).then(async r=>{const x=await r.json();if(!r.ok)throw Error(x.error);setLink(x.link);setD(x.data||{});setLocked(!!x.locked);setLoading(false)}).catch(e=>{setMsg(e.message);setLoading(false)})},[token])
- const set=(k:string,v:any)=>{if(locked)return;setD((x:any)=>({...x,[k]:v}))}
- const stage=String(link?.link_scope||'').replace('clearance:','');const editable=stage==='employee'
- const save=async()=>{if(locked)return;
-  const signatureMissing=stage==='employee'?!d.employee_signature:stage==='managers'?(!d.line_manager_signature||!d.project_manager_signature):stage==='senior'?!d.senior_signature:!d[stage+'_signature']
-  if(signatureMissing){setMsg(stage==='managers'?'يجب إدخال توقيع المدير المباشر وتوقيع مدير المشروع قبل الحفظ والإرسال.':'يجب إدخال التوقيع قبل الحفظ والإرسال.');return}
-  setBusy(true);const r=await fetch('/api/forms/public/'+token,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({form:d,device_name:navigator.userAgent})});const x=await r.json();setBusy(false);if(r.ok){setLocked(true);setMsg('تم حفظ وإرسال البيانات بنجاح. لا يمكن تعديل هذا الرابط مرة أخرى.')}else setMsg(x.error||'تعذر الحفظ')}
- if(loading)return <main dir="rtl" className="min-h-screen grid place-items-center">جارٍ تحميل النموذج...</main>
- if(!link)return <main dir="rtl" className="min-h-screen grid place-items-center p-6">{msg}</main>
- return <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5"><section className="max-w-[210mm] min-h-[297mm] mx-auto bg-white p-[10mm] shadow-sm print:shadow-none"><header className="text-center border-b-2 border-[#b88618] pb-4"><h1 className="text-2xl font-black text-[#09233f]">نموذج إخلاء طرف</h1><div className="font-bold text-[#b88618]">EMPLOYEE CLEARANCE</div><div className="text-xs text-slate-500 mt-2">الرابط مخصص لـ: {labels[stage]||stage}</div></header>
- <fieldset disabled={locked} className={locked?'opacity-80':''}><div className="mt-5 grid grid-cols-2 gap-3">{[['الاسم','Name','employee_name'],['الجنسية','Nationality','nationality'],['رقم الهوية / الإقامة','ID Number','national_id'],['الإدارة / الموقع','Department / Location','department_location'],['القسم','Section','department'],['المسمى الوظيفي','Job Title','job_title'],['آخر يوم عمل','Last Working Day','last_work_date']].map(a=><label key={a[2]} className="font-bold">{a[0]}<span className="block text-[10px] text-slate-500">{a[1]}</span><input disabled={!editable} className="field" value={d[a[2]]||''} onChange={e=>set(a[2],e.target.value)}/></label>)}</div>
- {editable&&<><h3 className="section">سبب إخلاء الطرف / Clearance Reason</h3><div className="flex flex-wrap gap-6">{['إجازة','نهاية خدمة / خروج','أخرى'].map(x=><label key={x}><input type="radio" checked={d.reason===x} onChange={()=>set('reason',x)}/> {x}</label>)}</div><h3 className="section">بيانات الموظف والتوقيع / Employee Name & Signature</h3><SignatureField employeeId={link?.employee_id} publicToken={token} nameValue={d.employee_name||''} signatureValue={d.employee_signature||''} onNameChange={v=>set('employee_name',v)} onSignatureChange={v=>set('employee_signature',v)}/></>}
- {stage==='managers'&&<Manager d={d} set={set}/>}
- {['it','transport','warehouse','admin'].includes(stage)&&<Dept d={d} set={set} stage={stage}/>}
- {stage==='finance'&&<><h3 className="section">الإدارة المالية / Finance</h3><div className="grid grid-cols-2 gap-3">{[['financial_custody','عليه عهدة / أمانة'],['has_loan','عليه سلفة'],['financial_entitlement','له مستحقات مالية'],['other_financial_obligation','يوجد أي التزام أو ملاحظة مالية أخرى']].map(a=><div className="border rounded-lg p-3" key={a[0]}><label className="font-bold flex items-center gap-2"><input type="checkbox" checked={!!d[a[0]]} onChange={e=>set(a[0],e.target.checked)}/> {a[1]}</label>{d[a[0]]&&<textarea className="field mt-2 min-h-20" placeholder="اكتب التفاصيل / المبلغ / البيان" value={d[a[0]+'_details']||''} onChange={e=>set(a[0]+'_details',e.target.value)}/>}</div>)}</div><Dept d={d} set={set} stage={stage}/></>}
- {stage==='hr'&&<><h3 className="section">إدارة الموارد البشرية / HR</h3><div className="grid grid-cols-3 gap-3">{[['medical_card','بطاقة التأمين'],['employee_card','البطاقة الوظيفية'],['loans','السلف']].map(a=><label className="border rounded-lg p-3 font-bold" key={a[0]}>{a[1]}<input className="field" value={d[a[0]]||''} onChange={e=>set(a[0],e.target.value)}/></label>)}</div><Dept d={d} set={set} stage={stage}/></>}
- {stage==='senior'&&<div className="mt-5">
-  <div className="text-center border-b-2 border-[#09233f] pb-3 mb-5"><div className="text-xs font-bold text-[#b88618]">النموذج الأساسي للاعتماد النهائي</div><h2 className="text-xl font-black text-[#09233f]">إخلاء طرف الموظف — اعتماد المدير العام</h2><p className="text-xs text-slate-500 mt-1">كامل بيانات الإخلاء وجميع الاعتمادات والتوقيعات السابقة.</p></div>
-  <div className="grid grid-cols-2 gap-3 mb-5">{[['الاسم','employee_name'],['الرقم الوظيفي','employee_number'],['الجنسية','nationality'],['رقم الهوية / الإقامة','national_id'],['الإدارة / الموقع','department_location'],['القسم','department'],['المسمى الوظيفي','job_title'],['آخر يوم عمل','last_work_date']].map(([label,key])=><div key={key} className="border-b border-slate-200 pb-2"><div className="text-xs text-slate-500">{label}</div><div className="font-bold">{d[key]||'—'}</div></div>)}</div>
-  <h3 className="section">اعتماد الموظف</h3><div className="grid grid-cols-2 gap-3 items-end"><div><div className="font-bold">{d.employee_name||'—'}</div><div className="text-xs text-slate-500">توقيع الموظف</div></div><SignatureEditor value={d.employee_signature||''} disabled autoUseSaved={false}/></div>
-  <h3 className="section">المدير المباشر / مدير المشروع</h3><div className="grid grid-cols-2 gap-4">
-   <div className="border rounded-lg p-3"><div className="font-bold">المدير المباشر</div><div>{d.line_manager_name||'—'}</div><SignatureEditor value={d.line_manager_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">القرار: {d.clearance_decision==='clear'?'يخلى طرفه':d.clearance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div>
-   <div className="border rounded-lg p-3"><div className="font-bold">مدير المشروع</div><div>{d.project_manager_name||'—'}</div><SignatureEditor value={d.project_manager_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">القرار: {d.clearance_decision==='clear'?'يخلى طرفه':d.clearance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div>
-  </div>
-  <div><h3 className="section">إدارة الحاسب الآلي</h3><div className="border rounded-lg p-3"><div className="font-bold">{d.it_name||'—'}</div><SignatureEditor value={d.it_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">التاريخ: {d.it_date||'—'} • القرار: {d.it_decision==='clear'?'يخلى طرفه':d.it_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div></div>
-  <div><h3 className="section">إدارة الحركة</h3><div className="border rounded-lg p-3"><div className="font-bold">{d.transport_name||'—'}</div><SignatureEditor value={d.transport_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">التاريخ: {d.transport_date||'—'} • القرار: {d.transport_decision==='clear'?'يخلى طرفه':d.transport_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div></div>
-  <div><h3 className="section">إدارة المستودعات</h3><div className="border rounded-lg p-3"><div className="font-bold">{d.warehouse_name||'—'}</div><SignatureEditor value={d.warehouse_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">التاريخ: {d.warehouse_date||'—'} • القرار: {d.warehouse_decision==='clear'?'يخلى طرفه':d.warehouse_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div></div>
-  <div><h3 className="section">إدارة الشؤون الإدارية</h3><div className="border rounded-lg p-3"><div className="font-bold">{d.admin_name||'—'}</div><SignatureEditor value={d.admin_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">التاريخ: {d.admin_date||'—'} • القرار: {d.admin_decision==='clear'?'يخلى طرفه':d.admin_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div></div>
-  <h3 className="section">الإدارة المالية</h3><div className="border rounded-lg p-3"><div className="grid grid-cols-2 gap-2 text-sm"><div>عهدة / أمانة: {d.financial_custody?'نعم':'لا'}</div><div>سلفة: {d.has_loan?'نعم':'لا'}</div><div>مستحقات مالية: {d.financial_entitlement?'نعم':'لا'}</div><div>التزام مالي آخر: {d.other_financial_obligation?'نعم':'لا'}</div></div><div className="mt-3 font-bold">{d.finance_name||'—'}</div><SignatureEditor value={d.finance_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">التاريخ: {d.finance_date||'—'} • القرار: {d.finance_decision==='clear'?'يخلى طرفه':d.finance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div>
-  <h3 className="section">إدارة الموارد البشرية</h3><div className="border rounded-lg p-3"><div className="grid grid-cols-3 gap-2 text-sm"><div>بطاقة التأمين: {d.medical_card||'—'}</div><div>البطاقة الوظيفية: {d.employee_card||'—'}</div><div>السلف: {d.loans||'—'}</div></div><div className="mt-3 font-bold">{d.hr_name||'—'}</div><SignatureEditor value={d.hr_signature||''} disabled autoUseSaved={false}/><div className="text-xs text-slate-500">التاريخ: {d.hr_date||'—'} • القرار: {d.hr_decision==='clear'?'يخلى طرفه':d.hr_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div></div>
-  <h3 className="section">اعتماد المدير العام — الاعتماد النهائي</h3><div className="border-2 border-[#b88618] rounded-xl p-4"><label className="font-bold">اسم المدير العام<input className="field" value={d.deputy_general_manager||''} onChange={e=>set('deputy_general_manager',e.target.value)} placeholder="اسم المدير العام"/></label><div className="mt-3"><div className="font-bold mb-1">توقيع المدير العام</div><SignatureEditor value={d.senior_signature||''} onChange={v=>set('senior_signature',v)} disabled={locked} autoUseSaved={false}/></div><input type="date" className="field mt-2" value={d.senior_date||''} onChange={e=>set('senior_date',e.target.value)}/><div className="grid grid-cols-2 gap-3 mt-4"><label><input type="radio" checked={d.senior_decision==='clear'} onChange={()=>set('senior_decision','clear')}/> يخلى طرفه</label><label><input type="radio" checked={d.senior_decision==='not_clear'} onChange={()=>set('senior_decision','not_clear')}/> لا يخلى طرفه</label></div>{d.senior_decision==='not_clear'&&<textarea className="field min-h-20 mt-3" placeholder="سبب عدم الاعتماد" value={d.senior_reason||''} onChange={e=>set('senior_reason',e.target.value)}/>}</div>
- </div>
- <h3 className="section">ملاحظات / Notes</h3><textarea className="field min-h-24 border rounded-lg px-3" placeholder="اكتب أي ملاحظات أو بيانات إضافية تخص إخلاء الطرف..." value={d.clearance_notes||''} onChange={e=>set('clearance_notes',e.target.value)}/></fieldset><div className="mt-6 flex gap-2 print-hidden">{locked&&<div className="w-full bg-slate-100 text-slate-700 rounded-xl px-4 py-2 font-bold text-center">تم حفظ وإرسال هذا الرابط — التعديل غير متاح.</div>} {!locked&&<button disabled={busy} onClick={save} className="bg-[#09233f] text-white rounded-xl px-6 py-2 font-bold"><Save size={17} className="inline ml-1"/>{busy?'جارٍ الحفظ':'حفظ وإرسال'}</button>}<button onClick={()=>window.print()} className="bg-[#b88618] text-white rounded-xl px-6 py-2 font-bold"><Printer size={17} className="inline ml-1"/>طباعة A4</button></div>{msg&&<div className="mt-4 bg-emerald-50 text-emerald-800 p-3 rounded-lg">{msg}</div>}</section><style>{'@page{size:A4 portrait;margin:0}.field{display:block;width:100%;border:0;border-bottom:1px solid #cbd5e1;padding:6px 2px;background:transparent;outline:0}.section{margin:18px 0 9px;padding:5px 7px;border-top:1.5px solid #b88618;border-bottom:1.5px solid #b88618;font-weight:800}@media print{.print\\\\:hidden{display:none!important}}'}</style></main>
+  const [link,setLink]=useState<any>()
+  const [d,setD]=useState<any>({})
+  const [busy,setBusy]=useState(false)
+  const [msg,setMsg]=useState('')
+  const [loading,setLoading]=useState(true)
+  const [locked,setLocked]=useState(false)
+
+  useEffect(()=>{
+    fetch('/api/forms/public/'+token,{cache:'no-store'})
+      .then(async r=>{
+        const x=await r.json()
+        if(!r.ok) throw Error(x.error)
+        setLink(x.link);setD(x.data||{});setLocked(!!x.locked);setLoading(false)
+      })
+      .catch(e=>{setMsg(e.message);setLoading(false)})
+  },[token])
+
+  const set=(k:string,v:any)=>{
+    if(locked)return
+    setD((x:any)=>({...x,[k]:v}))
+  }
+
+  const stage=String(link?.link_scope||'').replace('clearance:','')
+  const editable=stage==='employee'
+
+  const save=async()=>{
+    if(locked)return
+    const signatureMissing=
+      stage==='employee'?!d.employee_signature:
+      stage==='managers'?(!d.line_manager_signature||!d.project_manager_signature):
+      stage==='senior'?!d.senior_signature:
+      !d[stage+'_signature']
+
+    if(signatureMissing){
+      setMsg(stage==='managers'
+        ?'يجب إدخال توقيع المدير المباشر وتوقيع مدير المشروع قبل الحفظ والإرسال.'
+        :'يجب إدخال التوقيع قبل الحفظ والإرسال.')
+      return
+    }
+
+    setBusy(true)
+    const r=await fetch('/api/forms/public/'+token,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({form:d,device_name:navigator.userAgent})
+    })
+    const x=await r.json()
+    setBusy(false)
+    if(r.ok){
+      setLocked(true)
+      setMsg('تم حفظ وإرسال البيانات بنجاح. لا يمكن تعديل هذا الرابط مرة أخرى.')
+    }else{
+      setMsg(x.error||'تعذر الحفظ')
+    }
+  }
+
+  if(loading)return <main dir="rtl" className="min-h-screen grid place-items-center">جارٍ تحميل النموذج...</main>
+  if(!link)return <main dir="rtl" className="min-h-screen grid place-items-center p-6">{msg}</main>
+
+  return (
+    <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5">
+      <section className="max-w-[210mm] min-h-[297mm] mx-auto bg-white p-[10mm] shadow-sm print:shadow-none">
+        <header className="text-center border-b-2 border-[#b88618] pb-4">
+          <h1 className="text-2xl font-black text-[#09233f]">نموذج إخلاء طرف</h1>
+          <div className="font-bold text-[#b88618]">EMPLOYEE CLEARANCE</div>
+          <div className="text-xs text-slate-500 mt-2">الرابط مخصص لـ: {labels[stage]||stage}</div>
+        </header>
+
+        <fieldset disabled={locked} className={locked?'opacity-80':''}>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            {[
+              ['الاسم','Name','employee_name'],['الجنسية','Nationality','nationality'],
+              ['رقم الهوية / الإقامة','ID Number','national_id'],['الإدارة / الموقع','Department / Location','department_location'],
+              ['القسم','Section','department'],['المسمى الوظيفي','Job Title','job_title'],
+              ['آخر يوم عمل','Last Working Day','last_work_date']
+            ].map(a=>(
+              <label key={a[2]} className="font-bold">
+                {a[0]}<span className="block text-[10px] text-slate-500">{a[1]}</span>
+                <input disabled={!editable} className="field" value={d[a[2]]||''} onChange={e=>set(a[2],e.target.value)}/>
+              </label>
+            ))}
+          </div>
+
+          {editable && (
+            <>
+              <h3 className="section">سبب إخلاء الطرف / Clearance Reason</h3>
+              <div className="flex flex-wrap gap-6">
+                {['إجازة','نهاية خدمة / خروج','أخرى'].map(x=>(
+                  <label key={x}><input type="radio" checked={d.reason===x} onChange={()=>set('reason',x)}/> {x}</label>
+                ))}
+              </div>
+              <h3 className="section">بيانات الموظف والتوقيع / Employee Name & Signature</h3>
+              <SignatureField
+                employeeId={link?.employee_id}
+                publicToken={token}
+                nameValue={d.employee_name||''}
+                signatureValue={d.employee_signature||''}
+                onNameChange={v=>set('employee_name',v)}
+                onSignatureChange={v=>set('employee_signature',v)}
+              />
+            </>
+          )}
+
+          {stage==='managers' && <Manager d={d} set={set}/>}
+
+          {['it','transport','warehouse','admin'].includes(stage) && <Dept d={d} set={set} stage={stage}/>}
+
+          {stage==='finance' && (
+            <>
+              <h3 className="section">الإدارة المالية / Finance</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ['financial_custody','عليه عهدة / أمانة'],['has_loan','عليه سلفة'],
+                  ['financial_entitlement','له مستحقات مالية'],['other_financial_obligation','يوجد أي التزام أو ملاحظة مالية أخرى']
+                ].map(a=>(
+                  <div className="border rounded-lg p-3" key={a[0]}>
+                    <label className="font-bold flex items-center gap-2">
+                      <input type="checkbox" checked={!!d[a[0]]} onChange={e=>set(a[0],e.target.checked)}/> {a[1]}
+                    </label>
+                    {d[a[0]] && <textarea className="field mt-2 min-h-20" placeholder="اكتب التفاصيل / المبلغ / البيان" value={d[a[0]+'_details']||''} onChange={e=>set(a[0]+'_details',e.target.value)}/>}
+                  </div>
+                ))}
+              </div>
+              <Dept d={d} set={set} stage={stage}/>
+            </>
+          )}
+
+          {stage==='hr' && (
+            <>
+              <h3 className="section">إدارة الموارد البشرية / HR</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  ['medical_card','بطاقة التأمين'],['employee_card','البطاقة الوظيفية'],['loans','السلف']
+                ].map(a=>(
+                  <label className="border rounded-lg p-3 font-bold" key={a[0]}>
+                    {a[1]}
+                    <input className="field" value={d[a[0]]||''} onChange={e=>set(a[0],e.target.value)}/>
+                  </label>
+                ))}
+              </div>
+              <Dept d={d} set={set} stage={stage}/>
+            </>
+          )}
+
+          {stage==='senior' && (
+            <div className="mt-5">
+              <div className="text-center border-b-2 border-[#09233f] pb-3 mb-5">
+                <div className="text-xs font-bold text-[#b88618]">النموذج الأساسي للاعتماد النهائي</div>
+                <h2 className="text-xl font-black text-[#09233f]">إخلاء طرف الموظف — اعتماد المدير العام</h2>
+                <p className="text-xs text-slate-500 mt-1">كامل بيانات الإخلاء وجميع الاعتمادات والتوقيعات السابقة.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                {[
+                  ['الاسم','employee_name'],['الرقم الوظيفي','employee_number'],['الجنسية','nationality'],
+                  ['رقم الهوية / الإقامة','national_id'],['الإدارة / الموقع','department_location'],
+                  ['القسم','department'],['المسمى الوظيفي','job_title'],['آخر يوم عمل','last_work_date']
+                ].map(([label,key])=>(
+                  <div key={key} className="border-b border-slate-200 pb-2">
+                    <div className="text-xs text-slate-500">{label}</div>
+                    <div className="font-bold">{d[key]||'—'}</div>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="section">اعتماد الموظف</h3>
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <div>
+                  <div className="font-bold">{d.employee_name||'—'}</div>
+                  <div className="text-xs text-slate-500">توقيع الموظف</div>
+                </div>
+                <SignatureEditor value={d.employee_signature||''} disabled autoUseSaved={false}/>
+              </div>
+
+              <h3 className="section">المدير المباشر / مدير المشروع</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border rounded-lg p-3">
+                  <div className="font-bold">المدير المباشر</div>
+                  <div>{d.line_manager_name||'—'}</div>
+                  <SignatureEditor value={d.line_manager_signature||''} disabled autoUseSaved={false}/>
+                  <div className="text-xs text-slate-500">القرار: {d.clearance_decision==='clear'?'يخلى طرفه':d.clearance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
+                </div>
+                <div className="border rounded-lg p-3">
+                  <div className="font-bold">مدير المشروع</div>
+                  <div>{d.project_manager_name||'—'}</div>
+                  <SignatureEditor value={d.project_manager_signature||''} disabled autoUseSaved={false}/>
+                  <div className="text-xs text-slate-500">القرار: {d.clearance_decision==='clear'?'يخلى طرفه':d.clearance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
+                </div>
+              </div>
+
+              {[
+                ['it','إدارة الحاسب الآلي'],['transport','إدارة الحركة'],['warehouse','إدارة المستودعات'],['admin','إدارة الشؤون الإدارية']
+              ].map(([key,title])=>(
+                <div key={key}>
+                  <h3 className="section">{title}</h3>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-bold">{d[key+'_name']||'—'}</div>
+                    <SignatureEditor value={d[key+'_signature']||''} disabled autoUseSaved={false}/>
+                    <div className="text-xs text-slate-500">
+                      التاريخ: {d[key+'_date']||'—'} • القرار: {d[key+'_decision']==='clear'?'يخلى طرفه':d[key+'_decision']==='not_clear'?'لا يخلى طرفه':'لم يحدد'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <h3 className="section">الإدارة المالية</h3>
+              <div className="border rounded-lg p-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>عهدة / أمانة: {d.financial_custody?'نعم':'لا'}</div>
+                  <div>سلفة: {d.has_loan?'نعم':'لا'}</div>
+                  <div>مستحقات مالية: {d.financial_entitlement?'نعم':'لا'}</div>
+                  <div>التزام مالي آخر: {d.other_financial_obligation?'نعم':'لا'}</div>
+                </div>
+                <div className="mt-3 font-bold">{d.finance_name||'—'}</div>
+                <SignatureEditor value={d.finance_signature||''} disabled autoUseSaved={false}/>
+                <div className="text-xs text-slate-500">التاريخ: {d.finance_date||'—'} • القرار: {d.finance_decision==='clear'?'يخلى طرفه':d.finance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
+              </div>
+
+              <h3 className="section">إدارة الموارد البشرية</h3>
+              <div className="border rounded-lg p-3">
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>بطاقة التأمين: {d.medical_card||'—'}</div>
+                  <div>البطاقة الوظيفية: {d.employee_card||'—'}</div>
+                  <div>السلف: {d.loans||'—'}</div>
+                </div>
+                <div className="mt-3 font-bold">{d.hr_name||'—'}</div>
+                <SignatureEditor value={d.hr_signature||''} disabled autoUseSaved={false}/>
+                <div className="text-xs text-slate-500">التاريخ: {d.hr_date||'—'} • القرار: {d.hr_decision==='clear'?'يخلى طرفه':d.hr_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
+              </div>
+
+              <h3 className="section">اعتماد المدير العام — الاعتماد النهائي</h3>
+              <div className="border-2 border-[#b88618] rounded-xl p-4">
+                <label className="font-bold">
+                  اسم المدير العام
+                  <input className="field" value={d.deputy_general_manager||''} onChange={e=>set('deputy_general_manager',e.target.value)} placeholder="اسم المدير العام"/>
+                </label>
+                <div className="mt-3">
+                  <div className="font-bold mb-1">توقيع المدير العام</div>
+                  <SignatureEditor value={d.senior_signature||''} onChange={v=>set('senior_signature',v)} disabled={locked} autoUseSaved={false}/>
+                </div>
+                <input type="date" className="field mt-2" value={d.senior_date||''} onChange={e=>set('senior_date',e.target.value)}/>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <label><input type="radio" checked={d.senior_decision==='clear'} onChange={()=>set('senior_decision','clear')}/> يخلى طرفه</label>
+                  <label><input type="radio" checked={d.senior_decision==='not_clear'} onChange={()=>set('senior_decision','not_clear')}/> لا يخلى طرفه</label>
+                </div>
+                {d.senior_decision==='not_clear' && (
+                  <textarea className="field min-h-20 mt-3" placeholder="سبب عدم الاعتماد" value={d.senior_reason||''} onChange={e=>set('senior_reason',e.target.value)}/>
+                )}
+              </div>
+            </div>
+          )}
+
+          <h3 className="section">ملاحظات / Notes</h3>
+          <textarea
+            className="field min-h-24 border rounded-lg px-3"
+            placeholder="اكتب أي ملاحظات أو بيانات إضافية تخص إخلاء الطرف..."
+            value={d.clearance_notes||''}
+            onChange={e=>set('clearance_notes',e.target.value)}
+          />
+        </fieldset>
+
+        <div className="mt-6 flex gap-2 print-hidden">
+          {locked && <div className="w-full bg-slate-100 text-slate-700 rounded-xl px-4 py-2 font-bold text-center">تم حفظ وإرسال هذا الرابط — التعديل غير متاح.</div>}
+          {!locked && <button disabled={busy} onClick={save} className="bg-[#09233f] text-white rounded-xl px-6 py-2 font-bold"><Save size={17} className="inline ml-1"/>{busy?'جارٍ الحفظ':'حفظ وإرسال'}</button>}
+          <button onClick={()=>window.print()} className="bg-[#b88618] text-white rounded-xl px-6 py-2 font-bold"><Printer size={17} className="inline ml-1"/>طباعة A4</button>
+        </div>
+
+        {msg && <div className="mt-4 bg-emerald-50 text-emerald-800 p-3 rounded-lg">{msg}</div>}
+      </section>
+
+      <style>{`
+        @page{size:A4 portrait;margin:0}
+        .field{display:block;width:100%;border:0;border-bottom:1px solid #cbd5e1;padding:6px 2px;background:transparent;outline:0}
+        .section{margin:18px 0 9px;padding:5px 7px;border-top:1.5px solid #b88618;border-bottom:1.5px solid #b88618;font-weight:800}
+        @media print{.print\\:hidden{display:none!important}}
+      `}</style>
+    </main>
+  )
 }
