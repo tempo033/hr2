@@ -346,6 +346,8 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
             </select>
           </div>
 
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">الحاسبة تستبعد تلقائيًا أي موظف <b>خارج كفالة المنشأة</b> من أعداد نطاقات. زر «استخدام بيانات الموظفين الحالية» يعتمد فقط على الموظفين المحتسبين.</div>
+
           <div className="flex flex-wrap gap-2 mt-5">
             <button onClick={useCurrent} className="rounded-xl border px-4 py-2 font-bold">استخدام بيانات الموظفين الحالية</button>
             <button onClick={() => void calculate()} className="bg-[#09233f] text-white rounded-xl px-5 py-2 font-bold inline-flex gap-2"><Calculator size={17} /> احسب النطاق</button>
@@ -400,7 +402,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
   }
 
   if (mode === 'employees') {
-    const headers = ['الموظف', 'الجنسية', 'الهوية/الإقامة', 'المسمى', 'القسم', 'المشروع', 'نوع العقد', 'حالة الموظف', 'GOSI', 'أجر GOSI', 'هل تم احتسابه؟', 'سبب عدم الاحتساب', 'التوثيق']
+    const headers = ['الموظف', 'الجنسية', 'الهوية/الإقامة', 'المسمى', 'القسم', 'المشروع', 'نوع العقد', 'حالة الموظف', 'الكفالة', 'GOSI', 'أجر GOSI', 'هل تم احتسابه؟', 'سبب عدم الاحتساب', 'التوثيق']
     return (
       <Shell>
         <div className="bg-white rounded-2xl border overflow-auto">
@@ -411,7 +413,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
               <tr key={e.id} className="border-b">
                 <td className="p-3 font-bold">{e.full_name}</td><td className="p-3">{e.nationality || 'غير معروف'}</td><td className="p-3">{e.national_id || '—'}</td>
                 <td className="p-3">{e.job_title || '—'}</td><td className="p-3">{e.department || '—'}</td><td className="p-3">{e.project_name || '—'}</td>
-                <td className="p-3">{e.contract_type || '—'}</td><td className="p-3">{e.employment_status || '—'}</td><td className="p-3">{e.gosi_status || 'غير معروف'}</td>
+                <td className="p-3">{e.contract_type || '—'}</td><td className="p-3">{e.employment_status || '—'}</td><td className="p-3">{e.residency_status || '—'}</td><td className="p-3">{e.gosi_status || 'غير معروف'}</td>
                 <td className="p-3">{e.gosi_subscriber_wage ?? '—'}</td><td className="p-3">{e.included ? 'نعم' : 'لا'}</td>
                 <td className="p-3">{e.included ? '—' : e.exclusion_reason}</td><td className="p-3">{e.contract_verification || '—'}</td>
               </tr>
