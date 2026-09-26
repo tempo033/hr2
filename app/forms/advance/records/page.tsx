@@ -202,7 +202,7 @@ export default function Records() {
                           روابط الاعتماد
                         </button>
                         <Link
-                          href={`/forms/records/${r.id}`}
+                          href={`/forms/advance/records/${r.id}`}
                           className="bg-[#09233f] text-white rounded-lg px-3 py-1.5 font-bold"
                         >
                           عرض / تعديل
