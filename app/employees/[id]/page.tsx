@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import {useEffect,useState} from 'react'
-import {ArrowLeft,FileText,Save,UserRound,CalendarDays,ClipboardCheck,BriefcaseBusiness,Printer,Briefcase} from 'lucide-react'
+import {ArrowLeft,FileText,Save,UserRound,CalendarDays,ClipboardCheck,BriefcaseBusiness,Printer,Briefcase,WalletCards} from 'lucide-react'
 type Employee=Record<string,any>;type Job=Record<string,any>;type Document=Record<string,any>
 const docTypes=['الهوية الوطنية / الإقامة','العقد','المؤهل العلمي','العضوية المهنية','شهادة التأمينات','شهادة صحية','رخصة القيادة','مستند آخر']
 const fields=[['employee_number','الرقم الوظيفي'],['full_name','الاسم الكامل'],['nationality','الجنسية'],['national_id','رقم الهوية / الإقامة'],['residency_status','حالة العامل / الإقامة'],['phone','الجوال'],['email','البريد الإلكتروني'],['degree','المؤهل'],['specialization','التخصص'],['department','الإدارة'],['project_name','المشروع'],['work_location','موقع العمل'],['manager_name','المدير المباشر'],['hire_date','تاريخ التعيين'],['contract_type','نوع العقد'],['employment_status','الحالة الوظيفية'],['basic_salary','الراتب الأساسي'],['housing_allowance','بدل السكن'],['transportation_allowance','بدل النقل'],['other_allowances','البدلات الأخرى'],['total_salary_with_allowances','إجمالي الراتب مع البدلات']] as const
@@ -11,7 +11,7 @@ export default function EmployeePage({params}:{params:Promise<{id:string}>}){
  const[doc,setDoc]=useState({document_type:docTypes[0],document_name:'',document_number:'',issue_date:'',expiry_date:'',status:'ساري',notes:''})
  useEffect(()=>{params.then(p=>setId(p.id))},[params])
  useEffect(()=>{if(!id)return;(async()=>{try{const[r,j]=await Promise.all([fetch('/api/employees/'+id+'/full',{cache:'no-store'}),fetch('/api/job-descriptions',{cache:'no-store'})]);const b=await r.json(),jb=await j.json();if(!r.ok)throw new Error(b.error||'تعذر تحميل ملف الموظف');setEmployee(b.employee);setDocs(b.documents||[]);setJob(b.job_description||null);if(j.ok)setJobs(jb.jobs||[])}catch(e){setMessage(e instanceof Error?e.message:'تعذر تحميل الملف')}finally{setLoading(false)}})()},[id])
- const change=(k:string,v:any)=>setEmployee((e:any)=>({...e,[k]:v}))
+ const change=(k:string,v:any)=>setEmployee((e:any)=>({...e,[k]:v))
  const selectJob=(jobId:string)=>{const j=jobs.find(x=>x.id===jobId)||null;setJob(j);setEmployee(e=>e?{...e,job_description_id:jobId||null,job_title:j?.name||e.job_title,department:j?.department||e.department}:e)}
  const save=async()=>{if(!employee)return;setSaving(true);setMessage('');try{const r=await fetch('/api/employees/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(employee)});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر الحفظ');setEmployee(b.employee||employee);setMessage('تم حفظ جميع بيانات الموظف وربط المسمى الوظيفي.')}catch(e){setMessage(e instanceof Error?e.message:'تعذر الحفظ')}finally{setSaving(false)}}
  const addDoc=async()=>{if(!doc.document_name)return setMessage('اكتب اسم المستند أولًا.');try{const r=await fetch('/api/employees/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(doc)});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر إضافة المستند');setDocs(d=>[b.document,...d]);setDoc({...doc,document_name:'',document_number:'',issue_date:'',expiry_date:'',notes:''});setMessage('تمت إضافة المستند.')}catch(e){setMessage(e instanceof Error?e.message:'تعذر إضافة المستند')}}
