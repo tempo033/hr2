@@ -88,7 +88,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
     entity_name: '',
     main_activity: '',
     sub_activity: '',
-    active_statuses: ['خارج الكفالة فعال', 'على الكفالة'],
+    active_statuses: ['على الكفالة'],
     current_year: 2026,
   })
 
