@@ -1,0 +1,1 @@
+import NitaqatPage from '@/components/NitaqatPage'; export default function Page(){return <NitaqatPage mode="calculator"/>}
