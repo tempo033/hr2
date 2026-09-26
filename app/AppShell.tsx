@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays } from 'lucide-react'
+import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays, WalletCards } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const sections = [
@@ -26,6 +26,20 @@ const sections = [
   ]},
   { id:'forms', label:'النماذج والتحقيقات', icon:Files, items:[
     ['/forms','مركز النماذج والتحقيقات',Files,['admin','hr']],
+  ]},
+  { id:'payroll', label:'الرواتب', icon:WalletCards, items:[
+    ['/payroll','لوحة الرواتب',WalletCards,['admin','hr','finance','general_manager','manager']],
+    ['/payroll/runs','مسيرات الرواتب',WalletCards,['admin','hr','finance','general_manager']],
+    ['/payroll/attendance','الحضور والغياب',CalendarDays,['admin','hr','manager']],
+    ['/payroll/overtime','العمل الإضافي',WalletCards,['admin','hr','manager']],
+    ['/payroll/deductions','الخصومات والجزاءات',WalletCards,['admin','hr','manager']],
+    ['/payroll/advances','السلف',WalletCards,['admin','hr']],
+    ['/payroll/bonuses','المكافآت',WalletCards,['admin','hr','manager']],
+    ['/payroll/gosi','التأمينات الاجتماعية',WalletCards,['admin','hr','finance']],
+    ['/payroll/wps','حماية الأجور WPS',WalletCards,['admin','hr','finance']],
+    ['/payroll/projects','تكلفة المشاريع',WalletCards,['admin','hr','finance','general_manager']],
+    ['/payroll/reports','تقارير الرواتب',BarChart3,['admin','hr','finance','general_manager','manager']],
+    ['/payroll/settings','إعدادات الرواتب',UserCog,['admin']],
   ]},
   { id:'reports', label:'التقارير', icon:BarChart3, items:[
     ['/reports','التقارير',BarChart3,['admin','hr','manager']],
