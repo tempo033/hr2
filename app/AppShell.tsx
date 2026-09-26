@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, WalletCards, CalendarDays } from 'lucide-react'
+import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const sections = [
@@ -20,23 +20,6 @@ const sections = [
   { id:'employees', label:'الموظفون', icon:Users, items:[
     ['/employees','ملفات الموظفين',FileText,['admin','hr']],
     ['/job-descriptions','الوصف الوظيفي',BriefcaseBusiness,['admin','hr','manager','interviewer']],
-  ]},
-  { id:'payroll', label:'الرواتب', icon:WalletCards, items:[
-    ['/payroll','لوحة الرواتب',WalletCards,['admin','hr','manager','finance','general_manager']],
-    ['/payroll/runs','مسير الرواتب',FileText,['admin','hr','finance','general_manager']],
-    ['/payroll/attendance','الحضور والغياب',CalendarDays,['admin','hr','manager']],
-    ['/payroll/overtime','الإضافي',CalendarDays,['admin','hr','manager']],
-    ['/payroll/deductions','الخصومات',FileText,['admin','hr']],
-    ['/payroll/advances','السلف',WalletCards,['admin','hr']],
-    ['/payroll/bonuses','المكافآت والحوافز',WalletCards,['admin','hr']],
-    ['/payroll/gosi','التأمينات',FileText,['admin','hr','finance']],
-    ['/payroll/wps','حماية الأجور WPS',FileText,['admin','hr','finance']],
-    ['/payroll/payslips','قسائم الرواتب',FileText,['admin','hr','finance','manager']],
-    ['/payroll/archive','أرشيف المسيرات',FileText,['admin','hr','finance','general_manager']],
-    ['/payroll/projects','تكلفة المشاريع',BriefcaseBusiness,['admin','hr','manager','finance']],
-    ['/payroll/reports','التقارير',BarChart3,['admin','hr','manager','finance','general_manager']],
-    ['/payroll/approvals','اعتماد الرواتب',UserCheck,['admin','hr','finance','general_manager']],
-    ['/payroll/settings','إعدادات الرواتب',UserCog,['admin']],
   ]},
   { id:'leaves', label:'الإجازات', icon:CalendarDays, items:[
     ['/leaves','إدارة الإجازات',CalendarDays,['admin','hr','manager']],
