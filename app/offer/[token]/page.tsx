@@ -16,8 +16,6 @@ export default function CandidateOfferPage({ params }: { params: Promise<{ token
   const [message, setMessage] = useState('')
   const [signatureName, setSignatureName] = useState('')
   const [signatureDataUrl, setSignatureDataUrl] = useState('')
-  const [isDrawing, setIsDrawing] = useState(false)
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => { params.then(p => setToken(p.token)) }, [params])
 
