@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BriefcaseBusiness, GraduationCap, ClipboardCheck, UserRoundCheck, ArrowLeft, FilePlus2, UserPlus, Layers, FileText } from 'lucide-react';
+import { BriefcaseBusiness, GraduationCap, ClipboardCheck, UserRoundCheck, ArrowLeft, FilePlus2, UserPlus, Layers, FileText, Calculator } from 'lucide-react';
 
 const cards = [
   ['توظيف', 'إنشاء طلب توظيف وتحديد المتطلبات وتحليل المرشحين', BriefcaseBusiness, '/requests/new'],
@@ -45,6 +45,7 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-5 mt-8">
+          <Link href="/nitaqat" className="card p-6 flex flex-col md:flex-row justify-between gap-4 items-center border-2 border-[#b88618] bg-amber-50/30 hover:-translate-y-0.5 transition rounded-2xl md:col-span-2"><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] flex items-center justify-center shrink-0"><Calculator size={28}/></div><div><div className="text-xs text-[#b88618] font-bold">وحدة التوطين</div><h3 className="font-black text-2xl text-[#09233f]">حاسبة نطاقات</h3><p className="text-sm text-slate-600 mt-1">متابعة التوطين، محاكاة التوظيف، قواعد النشاط، مقارنة النطاق الرسمي، وتقارير التوطين.</p></div></div><span className="btn-gold rounded-xl px-5 py-3 font-bold flex items-center gap-2 text-sm shrink-0">فتح نطاقات <ArrowLeft size={17}/></span></Link>
           <Link href="/forms/unified" className="card p-6 flex flex-col md:flex-row justify-between gap-4 items-center border-2 border-[#b88618] bg-amber-50/30 hover:-translate-y-0.5 transition rounded-2xl">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#b88618] text-white flex items-center justify-center shrink-0"><Layers size={24} /></div>
