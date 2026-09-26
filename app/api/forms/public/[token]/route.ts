@@ -48,6 +48,18 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
   await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
   return NextResponse.json({ok:true,record_id:link.record_id})
  }
+ if(link.form_type==='advance'&&link.link_scope==='advance:employee'){
+  const form=body.form||{}
+  if(!form.employee_name||!form.employee_date||!form.employee_signature||!form.amount)return NextResponse.json({error:'لا يمكن إرسال طلب السلفة إلا بعد إدخال مبلغ السلفة واسم الموظف والتاريخ والتوقيع.'},{status:400})
+  if(!link.record_id)return NextResponse.json({error:'سجل طلب السلفة غير موجود.'},{status:404})
+  const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1');const rs=await rr.json();const current=rs?.[0]?.form_data||{}
+  const employeeApproval={employee_name:form.employee_name,employee_date:form.employee_date,employee_signature:form.employee_signature,submitted_at:now}
+  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({employee_name:form.employee_name,form_data:{...current,...form,advance_employee_approval:employeeApproval},status:'قيد اعتماد الموارد البشرية',updated_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua,submitted_via_link:true})})
+  if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
+  await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
+  await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
+  return NextResponse.json({ok:true,record_id:link.record_id})
+ }
  if(link.form_type==='advance'&&link.link_scope?.startsWith('advance:')){
   const scope=String(link.link_scope).replace('advance:','')
   const form=body.form||{}
