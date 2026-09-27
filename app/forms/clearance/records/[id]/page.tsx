@@ -119,18 +119,18 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     <div><h2 className="text-xl font-black text-[#09233f]">روابط إخلاء الطرف</h2><p className="text-sm text-slate-500">رابط مستقل لكل إدارة — اضغط على الأيقونة لفتح رابط الإدارة.</p></div>
     <span className={allApproved?'badge ok':'badge pending'}>{allApproved?<><CheckCircle2 size={15}/> مكتمل ومعتمد</>:<><Clock3 size={15}/> قيد الاستكمال</>}</span>
    </div>
-   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+   <div className="clearance-links-grid">
     {stages.map(s=>{
      const Icon=s.icon; const d=stageData(s.key); const skipped=s.key!=='employee'&&apply[s.key]===false
      const complete=s.key==='employee'?Boolean(employee.employee_signature):skipped||stageSignatures(s.key,d).length>0&&stageDecision(s.key,d)==='clear'
      const link=links.find(x=>x.link_scope==='clearance:'+s.key)
-     return <div key={s.key} className="link-card">
-      <span className={complete?'icon ok':'icon'}><Icon size={21}/></span>
-      <span className="font-black text-sm">{s.label}</span>
-      {link&&<a href={'/forms/public/'+encodeURIComponent(link.token)} target="_blank" rel="noopener noreferrer" className="open-link bg-[#09233f] text-white rounded-lg px-3 py-1.5 text-xs font-black inline-flex items-center gap-1" title="فتح رابط الإخلاء في صفحة جديدة"><ExternalLink size={13}/> فتح الرابط</a>}
-      {role==='admin'&&link&&<button type="button" className="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-2 py-1 font-black" onClick={async e=>{e.preventDefault();e.stopPropagation();const r=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_id:link.id})});if(r.ok)await load();}} title="إعادة فتح هذا الرابط للتعديل">إعادة فتح الرابط</button>}
-      {s.key!=='employee'&&<div className="apply-buttons"><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:true})}} className={apply[s.key]!==false?'selected':''}>ينطبق</button><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:false})}} className={apply[s.key]===false?'selected skip':''}>لا ينطبق</button></div>}
-      <span className={apply[s.key]===false?'text-xs text-slate-500 font-bold':complete?'text-xs text-emerald-700 font-bold':'text-xs text-amber-700 font-bold'}>{apply[s.key]===false?'تم التخطي':complete?'تم الاعتماد':'قيد الانتظار'}</span>
+     return <div key={s.key} className="clearance-link-card">
+      <span className={complete?'clearance-link-icon ok':'clearance-link-icon'}><Icon size={21}/></span>
+      <span className="clearance-link-title">{s.label}</span>
+      {link&&<a href={'/forms/public/'+encodeURIComponent(link.token)} target="_blank" rel="noopener noreferrer" className="open-link" title="فتح رابط الإخلاء في صفحة جديدة"><ExternalLink size={13}/> فتح الرابط</a>}
+      {role==='admin'&&link&&<button type="button" className="reopen-link" onClick={async e=>{e.preventDefault();e.stopPropagation();const r=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_id:link.id})});if(r.ok)await load();}} title="إعادة فتح هذا الرابط للتعديل">إعادة فتح الرابط</button>}
+      {s.key!=='employee'&&<div className="clearance-apply-buttons"><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:true})}} className={apply[s.key]!==false?'selected':''}>ينطبق</button><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:false})}} className={apply[s.key]===false?'selected skip':''}>لا ينطبق</button></div>}
+      <span className={apply[s.key]===false?'clearance-link-status skipped':complete?'clearance-link-status complete':'clearance-link-status pending'}>{apply[s.key]===false?'تم التخطي':complete?'تم الاعتماد':'قيد الانتظار'}</span>
      </div>
     })}
    </div>
@@ -152,6 +152,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
      <tr><td>الإدارة / الموقع</td><td>{displayValue(employee.department_location)}</td><td>Department / Location</td><td>القسم</td><td>{displayValue(employee.department)}</td><td>Section</td></tr>
      <tr><td>تاريخ المباشرة</td><td>{displayValue(employee.joining_date)}</td><td>Joining Date</td><td>سبب الإخلاء</td><td>{displayValue(employee.reason)}</td><td>Clearance Reason</td></tr>
     </tbody></table>
+
+    <div className="employee-signature employee-signature-top"><span>توقيع الموظف</span><div className="signature-box">{employee.employee_signature?<img src={String(employee.employee_signature)} alt="توقيع الموظف"/>:<span>—</span>}</div><span>Employee Signature</span></div>
 
     <div className="columns-title"><span>اعتمادات وإخلاءات الجهات</span><span>DEPARTMENT CLEARANCES & SIGNATURES</span></div>
     <div className="signature-columns">
@@ -183,25 +185,51 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
      </div>
     </div>
 
-    <div className="employee-signature"><span>توقيع الموظف</span><div className="signature-box">{employee.employee_signature?<img src={String(employee.employee_signature)} alt="توقيع الموظف"/>:<span>—</span>}</div><span>Employee Signature</span></div>
     <div className="final-status"><b>حالة الإخلاء:</b> {allApproved?'معتمد نهائياً':'قيد الاستكمال'}</div>
     <div className="copies">الأصل &nbsp;&nbsp; | &nbsp;&nbsp; صورة لشؤون الموظفين &nbsp;&nbsp; | &nbsp;&nbsp; صورة لملف المذكور &nbsp;&nbsp; | &nbsp;&nbsp; صورة للحسابات</div>
    </section>
   </div>
   <style>{`
+   /* Site links: presentation only; routes, hrefs, tokens and actions remain unchanged. */
+   .clearance-links-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+   .clearance-link-card{min-width:0;border:1px solid #e3e7ed;background:linear-gradient(180deg,#fff 0%,#fafbfc 100%);border-radius:14px;padding:13px 12px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;box-shadow:0 3px 12px rgba(15,23,42,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+   .clearance-link-card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(15,23,42,.08);border-color:#cbd5e1}
+   .clearance-link-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#eef2f6;color:#334155}
+   .clearance-link-icon.ok{background:#e9f7ef;color:#137a43}
+   .clearance-link-title{font-size:14px;font-weight:900;color:#0f2740;line-height:1.35}
+   .clearance-link-card .open-link{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border-radius:9px;background:#09233f;color:#fff;font-size:12px;font-weight:900;text-decoration:none;box-sizing:border-box}
+   .clearance-link-card .open-link:hover{background:#123b61}
+   .clearance-link-card .reopen-link{width:100%;padding:7px 9px;border-radius:9px;background:#fff7e6;color:#8a5a00;border:1px solid #efd69c;font-size:11px;font-weight:900;cursor:pointer}
+   .clearance-apply-buttons{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:6px}
+   .clearance-apply-buttons button{padding:6px 5px;border:1px solid #d8dee6;border-radius:8px;background:#fff;color:#475569;font-size:11px;font-weight:800;cursor:pointer}
+   .clearance-apply-buttons button.selected{background:#eef5fb;border-color:#8eacc5;color:#09233f}
+   .clearance-apply-buttons button.selected.skip{background:#f4f5f7;border-color:#cbd5e1;color:#64748b}
+   .clearance-link-status{font-size:11px;font-weight:900}
+   .clearance-link-status.complete{color:#15803d}.clearance-link-status.pending{color:#b45309}.clearance-link-status.skipped{color:#64748b}
+   @media(min-width:768px){.clearance-links-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+   @media(min-width:1100px){.clearance-links-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+   @media(max-width:640px){.clearance-links-grid{grid-template-columns:1fr}}
+
+   /* Official A4 export — all selectors are scoped to avoid affecting the live site UI. */
    @page{size:A4 portrait;margin:0}
    .official-export{font-family:Arial,Tahoma,sans-serif;color:#17104f}
-   .form-page{width:210mm;height:297mm;margin:0 auto;background:#fff;position:relative;padding:12mm 14mm;box-sizing:border-box;overflow:hidden;direction:rtl}
-   .form-page:before{content:"";position:absolute;top:6mm;left:14mm;right:14mm;height:1px;background:#bd921f}
-   .form-header{text-align:center;border-bottom:1.5px solid #bd921f;padding-bottom:2.5mm;margin-bottom:2.5mm}
-   .company-name{font-size:10px;font-weight:800}.form-title{font-size:18px;font-weight:800;margin:1mm 0}.form-subtitle{color:#bd921f;letter-spacing:2px;font-weight:700;font-size:9px}.form-meta{font-size:8px;margin-top:1mm}
-   .section-title,.columns-title{border-top:1.2px solid #bd921f;border-bottom:1.2px solid #bd921f;padding:3px 6px;margin:3mm 0 1.5mm;font-weight:800;display:flex;justify-content:space-between}.section-title span:last-child,.columns-title span:last-child{color:#bd921f;direction:ltr;font-size:8px}
-   .original-grid{width:100%;border-collapse:collapse;font-size:7.5px}.original-grid td{border-bottom:1px solid #d8d7df;padding:2.5px 3px;vertical-align:middle}.original-grid td:nth-child(odd){font-weight:700}.original-grid td:nth-child(even){text-align:center}.employee-grid td:nth-child(1),.employee-grid td:nth-child(4){width:13%}.employee-grid td:nth-child(2),.employee-grid td:nth-child(5){width:20%}.employee-grid td:nth-child(3),.employee-grid td:nth-child(6){width:13%;color:#666879;direction:ltr}
-   .signature-columns{display:grid;grid-template-columns:1fr 1fr;gap:4mm;border-top:1px solid #17104f;position:relative}.signature-columns:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#17104f;transform:translateX(-50%)}
-   .signature-column{padding:2.5mm 2.5mm 0;min-width:0}.column-title{text-align:center;font-weight:800;font-size:8px;padding-bottom:1.5mm;border-bottom:1px solid #bd921f}.column-title small,.card-title small{color:#bd921f;font-size:6.5px;direction:ltr}
-   .signature-card{border:1px solid #c9c7d1;margin:1.7mm 0;padding:1.8mm 2mm;break-inside:avoid}.card-title{font-weight:800;border-bottom:1px solid #ddd;padding-bottom:1mm;margin-bottom:1mm;font-size:8px;display:flex;justify-content:space-between}.signature-card>span{display:block;text-align:center;font-size:7.5px;min-height:10px}.signature-box{height:12mm;display:flex;align-items:center;justify-content:center;border-bottom:1px dashed #aaa;margin-top:1mm}.signature-box img{max-width:70%;max-height:10mm;object-fit:contain}.decision-row{text-align:center;font-weight:800;font-size:7px;margin-top:1mm}.finance-mini{font-size:6.5px;line-height:1.35;text-align:right;margin-top:1mm}
-   .employee-signature{display:flex;align-items:center;justify-content:center;gap:4mm;border-top:1px solid #bd921f;margin-top:2mm;padding-top:1.5mm;font-size:7px}.employee-signature .signature-box{width:35mm;margin-top:0;height:9mm;border:0}.employee-signature .signature-box img{max-height:8mm}
-   .final-status{text-align:center;border-top:1px solid #bd921f;margin-top:1.5mm;padding-top:1.5mm;font-size:8px;font-weight:800}.copies{text-align:center;font-size:6.5px;margin-top:1.5mm;color:#555}
-   @media print{html,body{width:210mm;margin:0;padding:0;background:#fff}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.official-export{width:210mm}.form-page{width:210mm!important;height:297mm!important;margin:0!important;padding:12mm 14mm!important;box-shadow:none!important;page-break-after:auto!important;break-after:auto!important}}
+   .official-export .form-page{width:210mm;height:297mm;margin:0 auto;background:#fff;position:relative;padding:11mm 13mm;box-sizing:border-box;overflow:hidden;direction:rtl}
+   .official-export .form-page:before{content:"";position:absolute;top:6mm;left:13mm;right:13mm;height:1px;background:#bd921f}
+   .official-export .form-header{text-align:center;border-bottom:1.5px solid #bd921f;padding-bottom:2.2mm;margin-bottom:2.2mm}
+   .official-export .company-name{font-size:10px;font-weight:800}.official-export .form-title{font-size:18px;font-weight:800;margin:1mm 0}.official-export .form-subtitle{color:#bd921f;letter-spacing:2px;font-weight:700;font-size:9px}.official-export .form-meta{font-size:8px;margin-top:1mm}
+   .official-export .section-title,.official-export .columns-title{border-top:1.2px solid #bd921f;border-bottom:1.2px solid #bd921f;padding:3px 6px;margin:2.5mm 0 1.5mm;font-weight:800;display:flex;justify-content:space-between;align-items:center}.official-export .section-title span:last-child,.official-export .columns-title span:last-child{color:#bd921f;direction:ltr;font-size:8px}
+   .official-export .original-grid{width:100%;border-collapse:collapse;font-size:7.5px}.official-export .original-grid td{border-bottom:1px solid #d8d7df;padding:2.5px 3px;vertical-align:middle}.official-export .original-grid td:nth-child(odd){font-weight:700}.official-export .original-grid td:nth-child(even){text-align:center}.official-export .employee-grid td:nth-child(1),.official-export .employee-grid td:nth-child(4){width:13%}.official-export .employee-grid td:nth-child(2),.official-export .employee-grid td:nth-child(5){width:20%}.official-export .employee-grid td:nth-child(3),.official-export .employee-grid td:nth-child(6){width:13%;color:#666879;direction:ltr}
+   .official-export .employee-signature{display:flex;align-items:center;justify-content:center;gap:4mm;border-top:1px solid #bd921f;margin-top:1.8mm;padding-top:1.4mm;font-size:7px}
+   .official-export .employee-signature .signature-box{width:35mm;margin-top:0;height:9mm;border:0}.official-export .employee-signature .signature-box img{max-height:8mm;max-width:100%;object-fit:contain}
+   .official-export .columns-title{margin-top:2.2mm}
+   .official-export .signature-columns{display:grid;grid-template-columns:1fr 1fr;gap:4mm;border-top:1px solid #17104f;position:relative}.official-export .signature-columns:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#17104f;transform:translateX(-50%)}
+   .official-export .signature-column{padding:2.3mm 2.3mm 0;min-width:0}.official-export .column-title{text-align:center;font-weight:900;font-size:8px;padding-bottom:1.5mm;border-bottom:1px solid #bd921f}.official-export .column-title small,.official-export .card-title small{color:#bd921f;font-size:6.5px;direction:ltr}
+   .official-export .signature-card{border:1px solid #cfd4dc;background:#fff;border-radius:2mm;margin:1.5mm 0;padding:1.6mm 1.8mm;break-inside:avoid;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+   .official-export .signature-card .card-title{font-weight:900;border-bottom:1px solid #e4e7eb;padding-bottom:1mm;margin-bottom:1mm;font-size:8px;display:flex;justify-content:space-between;align-items:center}.official-export .signature-card>span{display:block;text-align:center;font-size:7.5px;min-height:10px;color:#334155}
+   .official-export .signature-box{height:11mm;display:flex;align-items:center;justify-content:center;border-bottom:1px dashed #aeb5bf;margin-top:1mm}.official-export .signature-box img{max-width:70%;max-height:9.5mm;object-fit:contain}.official-export .decision-row{text-align:center;font-weight:900;font-size:7px;margin-top:1mm;color:#334155}
+   .official-export .finance-mini{font-size:6.3px;line-height:1.3;text-align:right;margin-top:1mm;color:#4b5563}
+   .official-export .senior-card{border-color:#bd921f;background:#fffdf7}
+   .official-export .final-status{text-align:center;border-top:1px solid #bd921f;margin-top:1.4mm;padding-top:1.2mm;font-size:8px;font-weight:900}.official-export .copies{text-align:center;font-size:6.5px;margin-top:1.2mm;color:#555}
+   @media print{html,body{width:210mm;margin:0;padding:0;background:#fff}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.official-export{width:210mm}.official-export .form-page{width:210mm!important;height:297mm!important;margin:0!important;padding:11mm 13mm!important;box-shadow:none!important;page-break-after:auto!important;break-after:auto!important}}
   `}</style> </main>
 }
