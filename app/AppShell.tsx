@@ -20,6 +20,7 @@ const sections = [
   { id:'employees', label:'الموظفون والوصف الوظيفي', icon:Users, items:[
     ['/employees','ملفات الموظفين',FileText,['admin','hr']],
     ['/job-descriptions','الوصف الوظيفي',BriefcaseBusiness,['admin','hr','manager','interviewer']],
+    ['/kpi','تقييم مؤشرات الأداء KPI',BarChart3,['admin','hr','manager']],
   ]},
   { id:'attendance', label:'الحضور والإجازات', icon:CalendarDays, items:[
     ['/leaves','إدارة الإجازات',CalendarDays,['admin','hr','manager']],
