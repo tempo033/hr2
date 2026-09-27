@@ -24,6 +24,7 @@ export default function SignatureEditor({
   const canvas=useRef<HTMLCanvasElement>(null)
   const drawing=useRef(false)
   const last=useRef<{x:number;y:number}|null>(null)
+  const hasStroke=useRef(false)
 
   useEffect(()=>{if(value)setPreview(value)},[value])
 
@@ -63,23 +64,21 @@ export default function SignatureEditor({
 
   const move=(e:React.PointerEvent<HTMLCanvasElement>)=>{
     if(!drawing.current)return
+    e.preventDefault()
     const c=canvas.current
     if(!c)return
     const ctx=c.getContext('2d')!
     const p=point(e),q=last.current
+    if(!q)return
     ctx.strokeStyle=color
-    ctx.lineWidth=4
+    ctx.lineWidth=5
     ctx.lineCap='round'
     ctx.lineJoin='round'
     ctx.beginPath()
-    if(q){
-      const m={x:(q.x+p.x)/2,y:(q.y+p.y)/2}
-      ctx.moveTo(q.x,q.y)
-      ctx.quadraticCurveTo(q.x,q.y,m.x,m.y)
-    }else{
-      ctx.moveTo(p.x,p.y)
-    }
+    ctx.moveTo(q.x,q.y)
+    ctx.lineTo(p.x,p.y)
     ctx.stroke()
+    hasStroke.current=true
     last.current=p
   }
 
@@ -164,7 +163,7 @@ export default function SignatureEditor({
         onPointerMove={move}
         onPointerUp={end}
         onPointerCancel={end}
-        className="w-full h-40 rounded-xl border-2 touch-none bg-white"
+        className="w-full rounded-xl border-2 touch-none bg-white" style={{aspectRatio:'4 / 1',height:'auto'}}
       />
       <button type="button" onClick={clear} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold inline-flex gap-1">
         <Eraser size={14}/>مسح وإعادة الرسم
