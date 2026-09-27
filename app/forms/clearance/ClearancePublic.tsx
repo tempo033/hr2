@@ -81,15 +81,15 @@ function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){
 
 export default function ClearancePublic({token,initialData}:{token:string;initialData?:any}){
   const [link,setLink]=useState<any>()
-  const [d,setD]=useState<any>({})
+  const [d,setD]=useState<any>(()=>{\n    if(initialData?.link?.link_scope==='clearance:senior'&&initialData?.consolidated){\n      const x=initialData.consolidated\n      return {...x.employee,...x.managers,...x.it,...x.transport,...x.warehouse,...x.admin,...x.finance,...x.hr,...x.senior}\n    }\n    return initialData?.data||{}\n  })
   const [busy,setBusy]=useState(false)
   const [msg,setMsg]=useState('')
-  const [loading,setLoading]=useState(true)
+  const [loading,setLoading]=useState(!initialData)
   const [locked,setLocked]=useState(false)
 
   useEffect(()=>{
     if(initialData){
-      setLink(initialData.link);setD(initialData.data||{});setLocked(!!initialData.locked);setLoading(false);return
+      setLink(initialData.link);setD(initialData.link?.link_scope==='clearance:senior'&&initialData.consolidated?{...initialData.consolidated.employee,...initialData.consolidated.managers,...initialData.consolidated.it,...initialData.consolidated.transport,...initialData.consolidated.warehouse,...initialData.consolidated.admin,...initialData.consolidated.finance,...initialData.consolidated.hr,...initialData.consolidated.senior}:initialData.data||{});setLocked(!!initialData.locked);setLoading(false);return
     }
     fetch('/api/forms/public/'+token,{cache:'no-store'})
       .then(async r=>{
@@ -254,7 +254,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
                   <div className="font-bold">{d.employee_name||'—'}</div>
                   <div className="text-xs text-slate-500">توقيع الموظف</div>
                 </div>
-                <SignatureEditor value={d.employee_signature||''} disabled autoUseSaved={false}/>
+                <div className="h-20 flex items-center justify-center border-b border-slate-200"><img src={d.employee_signature||''} alt="توقيع الموظف" className="max-h-16 max-w-full object-contain"/></div>
               </div>
 
               <h3 className="section">المدير المباشر / مدير المشروع</h3>
@@ -262,13 +262,13 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
                 <div className="border rounded-lg p-3">
                   <div className="font-bold">المدير المباشر</div>
                   <div>{d.line_manager_name||'—'}</div>
-                  <SignatureEditor value={d.line_manager_signature||''} disabled autoUseSaved={false}/>
+                  <div className="h-20 flex items-center justify-center border-b border-slate-200"><img src={d.line_manager_signature||''} alt="توقيع المدير المباشر" className="max-h-16 max-w-full object-contain"/></div>
                   <div className="text-xs text-slate-500">القرار: {d.clearance_decision==='clear'?'يخلى طرفه':d.clearance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
                 </div>
                 <div className="border rounded-lg p-3">
                   <div className="font-bold">مدير المشروع</div>
                   <div>{d.project_manager_name||'—'}</div>
-                  <SignatureEditor value={d.project_manager_signature||''} disabled autoUseSaved={false}/>
+                  <div className="h-20 flex items-center justify-center border-b border-slate-200"><img src={d.project_manager_signature||''} alt="توقيع مدير المشروع" className="max-h-16 max-w-full object-contain"/></div>
                   <div className="text-xs text-slate-500">القرار: {d.clearance_decision==='clear'?'يخلى طرفه':d.clearance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
                 </div>
               </div>
@@ -280,7 +280,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
                   <h3 className="section">{title}</h3>
                   <div className="border rounded-lg p-3">
                     <div className="font-bold">{d[key+'_name']||'—'}</div>
-                    <SignatureEditor value={d[key+'_signature']||''} disabled autoUseSaved={false}/>
+                    <div className="h-16 flex items-center justify-center border-b border-slate-200"><img src={d[key+'_signature']||''} alt="التوقيع" className="max-h-14 max-w-full object-contain"/></div>
                     <div className="text-xs text-slate-500">
                       التاريخ: {d[key+'_date']||'—'} • القرار: {d[key+'_decision']==='clear'?'يخلى طرفه':d[key+'_decision']==='not_clear'?'لا يخلى طرفه':'لم يحدد'}
                     </div>
@@ -297,7 +297,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
                   <div>التزام مالي آخر: {d.other_financial_obligation?'نعم':'لا'}</div>
                 </div>
                 <div className="mt-3 font-bold">{d.finance_name||'—'}</div>
-                <SignatureEditor value={d.finance_signature||''} disabled autoUseSaved={false}/>
+                <div className="h-16 flex items-center justify-center border-b border-slate-200"><img src={d.finance_signature||''} alt="توقيع المالية" className="max-h-14 max-w-full object-contain"/></div>
                 <div className="text-xs text-slate-500">التاريخ: {d.finance_date||'—'} • القرار: {d.finance_decision==='clear'?'يخلى طرفه':d.finance_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
               </div>
 
@@ -309,7 +309,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
                   <div>السلف: {d.loans||'—'}</div>
                 </div>
                 <div className="mt-3 font-bold">{d.hr_name||'—'}</div>
-                <SignatureEditor value={d.hr_signature||''} disabled autoUseSaved={false}/>
+                <div className="h-16 flex items-center justify-center border-b border-slate-200"><img src={d.hr_signature||''} alt="توقيع الموارد البشرية" className="max-h-14 max-w-full object-contain"/></div>
                 <div className="text-xs text-slate-500">التاريخ: {d.hr_date||'—'} • القرار: {d.hr_decision==='clear'?'يخلى طرفه':d.hr_decision==='not_clear'?'لا يخلى طرفه':'لم يحدد'}</div>
               </div>
 
