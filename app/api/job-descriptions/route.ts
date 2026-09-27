@@ -12,7 +12,7 @@ export async function GET(req:NextRequest){
   const h=supabaseHeaders(auth)
   const r=await fetch(`${SUPABASE_URL}/rest/v1/job_descriptions?select=*&order=job_level.asc,sort_order.asc,name.asc`,{headers:h,cache:'no-store'})
   if(!r.ok)return NextResponse.json({error:await r.text()},{status:500})
-  return NextResponse.json({jobs:await r.json()},{headers:{'Cache-Control':'no-store'}})
+  const rows=await r.json(); const jobs=rows.map((j:any)=>{let k=j.kpi; if(typeof k==='string'){try{k=JSON.parse(k)}catch{}}; if(!Array.isArray(k)&&k&&typeof k==='object') k=Object.values(k); return {...j,kpi:Array.isArray(k)?k.map((x:any)=>String(x??'').trim()).filter(Boolean):[]}}); return NextResponse.json({jobs},{headers:{'Cache-Control':'no-store'}})
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'تعذر تحميل الأوصاف الوظيفية'},{status:500})}
 }
 
