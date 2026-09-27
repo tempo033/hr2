@@ -53,8 +53,10 @@ export default function ClearanceWorkflow(){
     setMsg('تم إنشاء روابط إخلاء الطرف التسعة وربطها بملف الموظف.')
   }
 
+  const publicUrl=(token:string)=>new URL('/forms/public/'+encodeURIComponent(token),window.location.origin).toString()
+
   const copy=(token:string)=>{
-    void navigator.clipboard?.writeText(location.origin+'/forms/public/'+token)
+    void navigator.clipboard?.writeText(publicUrl(token))
   }
 
   return (
@@ -102,7 +104,7 @@ export default function ClearanceWorkflow(){
             <div className="p-4 border-b font-black">الروابط التسعة</div>
             <div className="divide-y">
               {links.map(link=>{
-                const url=new URL('/forms/public/'+encodeURIComponent(link.token),window.location.origin).toString()
+                const url=publicUrl(link.token)
                 const stageKey=link.link_scope?.replace('clearance:','')
                 const label=link.stage?.label||stages[stageKey]
                 return (
@@ -118,13 +120,14 @@ export default function ClearanceWorkflow(){
                       >
                         <Copy size={15}/> نسخ
                       </button>
-                      <button
-                        type="button"
-                        onClick={()=>window.open(url,'_blank','noopener,noreferrer')}
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="bg-[#b88618] text-white rounded-lg px-3 py-2 font-bold inline-flex gap-1"
                       >
                         <ExternalLink size={15}/> فتح
-                      </button>
+                      </a>
                     </div>
                   </div>
                 )
