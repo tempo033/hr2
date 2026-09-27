@@ -79,7 +79,7 @@ function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){
   )
 }
 
-export default function ClearancePublic({token}:{token:string}){
+export default function ClearancePublic({token,initialData}:{token:string;initialData?:any}){
   const [link,setLink]=useState<any>()
   const [d,setD]=useState<any>({})
   const [busy,setBusy]=useState(false)
@@ -88,6 +88,9 @@ export default function ClearancePublic({token}:{token:string}){
   const [locked,setLocked]=useState(false)
 
   useEffect(()=>{
+    if(initialData){
+      setLink(initialData.link);setD(initialData.data||{});setLocked(!!initialData.locked);setLoading(false);return
+    }
     fetch('/api/forms/public/'+token,{cache:'no-store'})
       .then(async r=>{
         const x=await r.json()
