@@ -102,7 +102,7 @@ export default function ClearanceWorkflow(){
             <div className="p-4 border-b font-black">الروابط التسعة</div>
             <div className="divide-y">
               {links.map(link=>{
-                const url=location.origin+'/forms/public/'+link.token
+                const url=new URL('/forms/public/'+encodeURIComponent(link.token),window.location.origin).toString()
                 const stageKey=link.link_scope?.replace('clearance:','')
                 const label=link.stage?.label||stages[stageKey]
                 return (
@@ -118,14 +118,13 @@ export default function ClearanceWorkflow(){
                       >
                         <Copy size={15}/> نسخ
                       </button>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={()=>window.open(url,'_blank','noopener,noreferrer')}
                         className="bg-[#b88618] text-white rounded-lg px-3 py-2 font-bold inline-flex gap-1"
                       >
                         <ExternalLink size={15}/> فتح
-                      </a>
+                      </button>
                     </div>
                   </div>
                 )
