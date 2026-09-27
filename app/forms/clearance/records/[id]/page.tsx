@@ -93,6 +93,9 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
   }catch(e){console.error(e)}finally{setSavingApply(false)}
  }
 
+
+ const sigHtml=(key:string,alt:string)=>{const v=key==='line_manager_signature'?clearance.managers?.line_manager_signature:key==='project_manager_signature'?clearance.managers?.project_manager_signature:key==='senior_signature'?clearance.senior?.senior_signature:undefined; const fallback=key==='finance_signature'?clearance.finance?.finance_signature:key==='hr_signature'?clearance.hr?.hr_signature:undefined; const value=v||fallback||clearance[key.replace('_signature','')]?.[key]||''; return value?<img src={String(value)} alt={alt}/>:<span>—</span>}
+ const decisionHtml=(key:string)=>{const v=key==='clearance_decision'?clearance.managers?.clearance_decision:key==='senior_decision'?clearance.senior?.senior_decision:clearance[key.replace('_decision','')]?.[key]||''; return v==='clear'?'يخلى طرفه / Clear':v==='not_clear'?'لا يخلى طرفه / Not Clear':v==='skip'?'لا ينطبق / N/A':'—'}
  const officialExport=()=>{if(allApproved)window.print()}
 
  if(loading)return <main dir="rtl" className="p-10 text-center">جارٍ تحميل ملف إخلاء الطرف...</main>
@@ -133,81 +136,167 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    </div>
   </section>
 
-  <section className="official-page mx-auto bg-white">
-   <header className="official-header">
-    <div className="company-mark">HR</div>
-    <div className="text-center flex-1"><div className="text-[10px] font-bold text-slate-500">الموارد البشرية</div><h1>إخلاء طرف موظف</h1><div className="subtitle">EMPLOYEE CLEARANCE — OFFICIAL CONSOLIDATED RECORD</div></div>
-    <div className={allApproved?'approval-stamp':'pending-stamp'}>{allApproved?'معتمد':'قيد الإخلاء'}</div>
-   </header>
+  <div className="official-export">
+   <section className="form-page">
+    <div className="form-header">
+     <div className="company-name">شركة البنية الأساسية للمقاولات</div>
+     <div className="form-title">نموذج إخلاء طرف</div>
+     <div className="form-subtitle">EMPLOYEE CLEARANCE</div>
+     <div className="form-meta">رقم الخطاب | {displayValue(employee.employee_number || '—')} &nbsp; | &nbsp; التاريخ: {displayValue(employee.last_work_date || '—')}</div>
+    </div>
 
-   <div className="employee-grid">
-    {[
-     ['اسم الموظف',employee.employee_name||rec.employee_name],
-     ['رقم الموظف',employee.employee_number||rec.employee_number],
-     ['الجنسية',employee.nationality],
-     ['الهوية / الإقامة',employee.national_id],
-     ['الإدارة / الموقع',employee.department_location],
-     ['القسم',employee.department||rec.department],
-     ['المسمى الوظيفي',employee.job_title||rec.job_title],
-     ['آخر يوم عمل',employee.last_work_date],
-     ['سبب الإخلاء',employee.reason],
-    ].map(([k,v])=><div key={k as string} className="employee-cell"><span>{k}</span><b>{displayValue(v)}</b></div>)}
+    <div className="section-title"><span>أولاً: بيانات الموظف</span><span>EMPLOYEE INFORMATION</span></div>
+    <table className="original-grid">
+     <tbody>
+      <tr><td>الاسم</td><td>{displayValue(employee.employee_name)}</td><td>Name</td></tr><tr><td>الجنسية</td><td>{displayValue(employee.nationality)}</td><td>Nationality</td></tr><tr><td>رقم الهوية / الإقامة</td><td>{displayValue(employee.national_id)}</td><td>ID Number</td></tr><tr><td>الرقم الوظيفي</td><td>{displayValue(employee.employee_number)}</td><td>Employee No</td></tr><tr><td>الإدارة / الموقع</td><td>{displayValue(employee.department_location)}</td><td>Department / Location</td></tr><tr><td>القسم</td><td>{displayValue(employee.department)}</td><td>Section</td></tr><tr><td>المسمى الوظيفي</td><td>{displayValue(employee.job_title)}</td><td>Job Title</td></tr><tr><td>تاريخ المباشرة</td><td>{displayValue(employee.joining_date)}</td><td>Joining Date</td></tr><tr><td>آخر يوم عمل</td><td>{displayValue(employee.last_work_date)}</td><td>Last Working Day</td></tr><tr><td>سبب إخلاء الطرف</td><td>{displayValue(employee.reason)}</td><td>Clearance Reason</td></tr>
+     </tbody>
+    </table>
+
+    <div className="section-title"><span>ثانياً: اعتمادات الجهات ذات العلاقة</span><span>Second Related Managements</span></div>
+    <table className="original-grid">
+     <tbody>
+      <tr><td>المدير المباشر</td><td>{displayValue(employee.line_manager_name || '—')}</td><td>Line Manager Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("line_manager_signature","توقيع المدير المباشر")}</td><td>Signature</td></tr>
+      <tr><td>مدير المشروع</td><td>{displayValue(employee.project_manager_name || '—')}</td><td>Project Manager Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("project_manager_signature","توقيع مدير المشروع")}</td><td>Signature</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("clearance_decision")}</td><td>Decision</td></tr>
+     </tbody>
+    </table>
+
+    {apply["it"]!==false && (
+    <div className="dept-card">
+     <div className="dept-head"><span>IT Department</span><b>إدارة الحاسب الآلي</b></div>
+     <table className="original-grid"><tbody>
+      <tr><td>الاسم</td><td>{displayValue(clearance.it?.it_name)}</td><td>Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("it_signature","توقيع إدارة الحاسب الآلي")}</td><td>Signature</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(clearance.it?.it_date)}</td><td>Date</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("it_decision")}</td><td>Decision</td></tr>
+     </tbody></table>
+    </div>
+   )}
+    {apply["transport"]!==false && (
+    <div className="dept-card">
+     <div className="dept-head"><span>Transportation Management</span><b>إدارة الحركة والصيانة</b></div>
+     <table className="original-grid"><tbody>
+      <tr><td>الاسم</td><td>{displayValue(clearance.transport?.transport_name)}</td><td>Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("transport_signature","توقيع إدارة الحركة والصيانة")}</td><td>Signature</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(clearance.transport?.transport_date)}</td><td>Date</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("transport_decision")}</td><td>Decision</td></tr>
+     </tbody></table>
+    </div>
+   )}
+    <div className="original-decision">{decisionHtml("clearance_decision")}</div>
+    <div className="copies">الأصل &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; صورة لشؤون الموظفين &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; صورة لملف المذكور &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; صورة للحسابات</div>
+   </section>
+
+   <section className="form-page page-two">
+    <div className="form-header compact">
+     <div className="company-name">شركة البنية الأساسية للمقاولات</div>
+     <div className="form-title">نموذج إخلاء طرف</div>
+     <div className="form-subtitle">EMPLOYEE CLEARANCE — الصفحة الثانية</div>
+    </div>
+
+    {apply["warehouse"]!==false && (
+    <div className="dept-card">
+     <div className="dept-head"><span>Stores</span><b>المستودعات</b></div>
+     <table className="original-grid"><tbody>
+      <tr><td>الاسم</td><td>{displayValue(clearance.warehouse?.warehouse_name)}</td><td>Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("warehouse_signature","توقيع المستودعات")}</td><td>Signature</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(clearance.warehouse?.warehouse_date)}</td><td>Date</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("warehouse_decision")}</td><td>Decision</td></tr>
+     </tbody></table>
+    </div>
+   )}
+    {apply["admin"]!==false && (
+    <div className="dept-card">
+     <div className="dept-head"><span>Administration</span><b>الشؤون الإدارية</b></div>
+     <table className="original-grid"><tbody>
+      <tr><td>الاسم</td><td>{displayValue(clearance.admin?.admin_name)}</td><td>Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("admin_signature","توقيع الشؤون الإدارية")}</td><td>Signature</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(clearance.admin?.admin_date)}</td><td>Date</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("admin_decision")}</td><td>Decision</td></tr>
+     </tbody></table>
+    </div>
+   )}
+    {apply.finance!==false && (
+   <div className="dept-card">
+    <div className="dept-head"><span>Financial</span><b>المالية</b></div>
+    <table className="original-grid"><tbody>
+     <tr><td>الاسم</td><td>{displayValue(clearance.finance?.finance_name)}</td><td>Name</td></tr>
+     <tr><td>التوقيع</td><td>{sigHtml("finance_signature","توقيع المالية")}</td><td>Signature</td></tr>
+     <tr><td>التاريخ</td><td>{displayValue(clearance.finance?.finance_date)}</td><td>Date</td></tr>
+     <tr><td>عهدة / أمانة</td><td>{clearance.finance?.financial_custody?displayValue(clearance.finance?.financial_custody_details):'لا يوجد'}</td><td>Custody</td></tr>
+     <tr><td>سلفة</td><td>{clearance.finance?.has_loan?displayValue(clearance.finance?.has_loan_details):'لا توجد'}</td><td>Loans</td></tr>
+     <tr><td>مستحقات مالية</td><td>{clearance.finance?.financial_entitlement?displayValue(clearance.finance?.financial_entitlement_details):'لا توجد'}</td><td>Entitlements</td></tr>
+     <tr><td>التزامات أخرى</td><td>{clearance.finance?.other_financial_obligation?displayValue(clearance.finance?.other_financial_obligation_details):'لا يوجد'}</td><td>Other</td></tr>
+     <tr><td>القرار</td><td>{decisionHtml("finance_decision")}</td><td>Decision</td></tr>
+    </tbody></table>
    </div>
+  )}
+    {apply["hr"]!==false && (
+    <div className="dept-card">
+     <div className="dept-head"><span>HR Department</span><b>الموارد البشرية</b></div>
+     <table className="original-grid"><tbody>
+      <tr><td>الاسم</td><td>{displayValue(clearance.hr?.hr_name)}</td><td>Name</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("hr_signature","توقيع الموارد البشرية")}</td><td>Signature</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(clearance.hr?.hr_date)}</td><td>Date</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("hr_decision")}</td><td>Decision</td></tr>
+     </tbody></table>
+    </div>
+   )}
 
-   <div className="section-title">اعتمادات الإدارات والتوقيعات</div>
-   <div className="approval-table">
-    <div className="row head"><div>الإدارة</div><div>المعتمد / المسؤول</div><div>القرار</div><div>التوقيع</div><div>التاريخ</div></div>
-    {stages.map(s=>{
-     const d=stageData(s.key)
-     const name=s.key==='employee'?employee.employee_name:(s.key==='managers'?(d.line_manager_name||d.project_manager_name||d.projects_manager_name):d[s.key+'_name']||d.deputy_general_manager||'')
-     const sigs=stageSignatures(s.key,d)
-     const date=s.key==='employee'?d.employee_signature_date:(s.key==='managers'?(d.line_manager_signature_date||d.project_manager_signature_date||''):(d[s.key+'_date']||d.senior_date||''))
-     const skipped= s.key!=='employee'&&apply[s.key]===false
-     const dec=skipped?'skip':stageDecision(s.key,d)
-     return <div className="row" key={s.key}>
-      <div className="font-black">{s.label}</div>
-      <div>{displayValue(name)}</div>
-      <div className={dec==='clear'?'decision clear':dec==='not_clear'?'decision no':'decision wait'}>{decisionLabel(dec)}</div>
-      <div className="sig-box">{sigs.length?sigs.map((sig:any,i:number)=><img key={i} src={String(sig)} alt={s.key==='managers'?(i===0?'توقيع المدير المباشر':'توقيع مدير المشروع'):'توقيع'}/>):'—'}</div>
-      <div>{displayValue(date)}</div>
-     </div>
-    })}
-   </div>
+    <div className="section-title"><span>الإدارة العليا</span><span>Senior management</span></div>
+    <table className="original-grid">
+     <tbody>
+      <tr><td>المدير العام / نائب المدير العام</td><td>{displayValue(employee.deputy_general_manager || '—')}</td><td>General Manager / Deputy</td></tr>
+      <tr><td>التوقيع</td><td>{sigHtml("senior_signature","توقيع الإدارة العليا")}</td><td>Signature</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(employee.senior_date || '—')}</td><td>Date</td></tr>
+      <tr><td>القرار</td><td>{decisionHtml("senior_decision")}</td><td>Decision</td></tr>
+     </tbody>
+    </table>
 
-   <div className="section-title">تفاصيل الإدارة المالية</div><div className="finance-details"><div><b>عهدة / أمانة:</b> {clearance.finance?.financial_custody?clearance.finance.financial_custody_details||'يوجد عهدة ولم يتم إدخال التفاصيل':'لا يوجد'}</div><div><b>سلفة:</b> {clearance.finance?.has_loan?clearance.finance.has_loan_details||'توجد سلفة ولم يتم إدخال التفاصيل':'لا توجد'}</div><div><b>مستحقات مالية:</b> {clearance.finance?.financial_entitlement?clearance.finance.financial_entitlement_details||'توجد مستحقات ولم يتم إدخال التفاصيل':'لا توجد'}</div><div><b>التزامات / ملاحظات أخرى:</b> {clearance.finance?.other_financial_obligation?clearance.finance.other_financial_obligation_details||'يوجد التزام ولم يتم إدخال التفاصيل':'لا يوجد'}</div></div><div className="section-title">حالة جميع الروابط</div><div className="link-status-table"><div className="row head"><div>الإدارة</div><div>الرابط</div><div>الحالة</div></div>{stages.map(s=>{const d=stageData(s.key);const link=links.find(x=>x.link_scope==='clearance:'+s.key);const skipped=s.key!=='employee'&&apply[s.key]===false;const dec=skipped?'skip':stageDecision(s.key,d);return <div className="row" key={'link-'+s.key}><div>{s.label}</div><div>{link?<span className="font-mono text-[7px]">{link.token}</span>:'—'}</div><div className={dec==='clear'?'decision clear':dec==='not_clear'?'decision no':'decision wait'}>{skipped?'لا ينطبق':dec==='clear'?'موافقة':dec==='not_clear'?'رفض':'قيد الانتظار'}</div></div>})}</div><div className="official-footer">
-    <div><b>حالة الإخلاء:</b> {allApproved?'معتمد نهائياً':'قيد الاستكمال'}</div>
-    <div><b>آخر تحديث:</b> {new Date(rec.updated_at).toLocaleString('ar-SA')}</div>
-   </div>
-   <div className="copies">الأصل — شؤون الموظفين &nbsp; | &nbsp; صورة لملف الموظف &nbsp; | &nbsp; صورة للحسابات</div>
-  </section>
-
+    <div className="final-status">
+     <b>حالة الإخلاء:</b> {allApproved?'معتمد نهائياً':'قيد الاستكمال'}
+    </div>
+    <div className="copies">الأصل &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; صورة لشؤون الموظفين &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; صورة لملف المذكور &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; صورة للحسابات</div>
+   </section>
+  </div>
   <style>{`
-   @page{size:A4 portrait;margin:6mm}
-   .official-page{width:210mm;min-height:297mm;padding:7mm 8mm;color:#172033;box-shadow:0 4px 18px rgba(0,0,0,.08)}
-   .official-header{display:flex;align-items:center;gap:10px;border-bottom:2px solid #b88618;padding-bottom:6px}
-   .company-mark{width:34px;height:34px;border:2px solid #09233f;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#09233f;font-size:12px}
-   .official-header h1{font-size:22px;font-weight:900;color:#09233f;margin:0}
-   .subtitle{font-size:8px;font-weight:800;color:#b88618;letter-spacing:.4px}
-   .approval-stamp,.pending-stamp{font-size:12px;font-weight:900;padding:8px 12px;border:2px solid;border-radius:6px;white-space:nowrap}
-   .approval-stamp{color:#166534;border-color:#166534;transform:rotate(-3deg)}
-   .pending-stamp{color:#a16207;border-color:#a16207}
-   .employee-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:7px}
-   .employee-cell{border:1px solid #d8dee7;padding:4px 6px;min-height:31px}.employee-cell span{display:block;font-size:7px;color:#64748b}.employee-cell b{font-size:9px}
-   .section-title{margin-top:7px;background:#09233f;color:white;font-weight:900;font-size:10px;padding:4px 7px}
-   .approval-table{border:1px solid #cbd5e1;border-top:0}
-   .row{display:grid;grid-template-columns:1.25fr 1.45fr 1fr 1.2fr .9fr;align-items:center;border-top:1px solid #e2e8f0;min-height:32px;font-size:8px}
-   .row>div{padding:3px 5px;border-left:1px solid #e2e8f0;min-height:32px;display:flex;align-items:center}.row>div:last-child{border-left:0}
-   .head{background:#f1f5f9;font-weight:900;min-height:25px}.head>div{min-height:25px}
-   .decision{font-weight:900}.decision.clear{color:#166534}.decision.no{color:#b91c1c}.decision.wait{color:#a16207}.decision.skip{color:#64748b}
-   .sig-box{height:30px;justify-content:center;gap:4px}.sig-box img{max-width:45px;height:27px;object-fit:contain}
-   .finance-details{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;border:1px solid #cbd5e1;padding:5px;font-size:8px}.link-status-table{border:1px solid #cbd5e1;border-top:0}.link-status-table .row{grid-template-columns:1.3fr 2fr 1fr}.official-footer{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;border-top:1px solid #cbd5e1;padding-top:5px}
-   .copies{text-align:center;font-size:7px;font-weight:800;margin-top:6px;color:#475569}
-   .apply-buttons{display:flex;gap:4px;width:100%}.apply-buttons button{flex:1;border:1px solid #cbd5e1;border-radius:7px;padding:3px 2px;font-size:9px;font-weight:800;background:#fff;color:#475569}.apply-buttons button.selected{background:#ecfdf5;color:#166534;border-color:#86efac}.apply-buttons button.selected.skip{background:#f1f5f9;color:#475569;border-color:#94a3b8}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.badge.ok{background:#ecfdf5;color:#166534}.badge.pending{background:#fffbeb;color:#a16207}
-   .link-card{position:relative;min-height:108px;border:1px solid #e2e8f0;border-radius:14px;padding:14px 10px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:#09233f;background:#fafbfc;transition:.15s}.link-card:hover{border-color:#b88618;transform:translateY(-1px)}
-   .icon{width:43px;height:43px;border-radius:12px;background:#eef2f7;display:grid;place-items:center;color:#475569}.icon.ok{background:#ecfdf5;color:#166534}
+   @page{size:A4 portrait;margin:0}
+   .official-export{font-family:Arial,Tahoma,sans-serif;color:#17104f}
+   .form-page{width:210mm;height:297mm;min-height:297mm;margin:0 auto 12px;background:#fff;position:relative;padding:17mm 18mm 18mm;box-shadow:0 2px 14px #0002;overflow:hidden;direction:rtl}
+   .form-page:before{content:"";position:absolute;top:8mm;left:18mm;right:18mm;height:1px;background:#bd921f}
+   .form-header{border-bottom:1.5px solid #bd921f;padding-bottom:3mm;margin-bottom:3mm;text-align:center}
+   .form-header.compact{margin-bottom:5mm}
+   .company-name{font-size:11px;font-weight:800;color:#17104f}
+   .form-title{font-size:20px;font-weight:800;margin:1mm 0}
+   .form-subtitle{color:#bd921f;letter-spacing:3px;font-weight:700;font-size:11px}
+   .form-meta{text-align:center;font-size:9px;margin-top:2mm}
+   .section-title{border-top:1.5px solid #bd921f;border-bottom:1.5px solid #bd921f;padding:4px 7px;margin:5mm 0 2mm;font-weight:700;display:flex;justify-content:space-between;direction:rtl}
+   .section-title span:last-child{color:#bd921f;direction:ltr}
+   .original-grid{width:100%;border-collapse:collapse;font-size:9px;direction:rtl}
+   .original-grid td{border-bottom:1px solid #c9c8d5;padding:4px 5px;vertical-align:middle}
+   .original-grid td:first-child{width:31%;font-weight:700;text-align:right}
+   .original-grid td:nth-child(2){width:38%;text-align:center;font-size:10px}
+   .original-grid td:last-child{width:31%;color:#666879;direction:ltr;text-align:left}
+   .sig-inline{display:inline-flex;align-items:center;justify-content:center;min-height:24px;width:100%}
+   .sig-inline img{max-width:95px;height:28px;object-fit:contain}
+   .sig-inline span{color:#94a3b8}
+   .dept-card{border-top:1.5px solid #bd921f;margin-top:4mm}
+   .dept-head{display:flex;justify-content:space-between;font-weight:700;padding:5px 7px;border-bottom:1px solid #bd921f}
+   .dept-head span{color:#a5831b;direction:ltr}
+   .original-decision{text-align:center;margin-top:4mm;font-size:9px}
+   .final-status{text-align:center;border-top:1px solid #bd921f;margin-top:8mm;padding-top:4mm;font-size:10px;font-weight:700}
+   .copies{text-align:center;font-size:8px;margin-top:5mm}
+   .no-print{display:block}
    @media print{
-    body{background:#fff!important}.no-print{display:none!important}.official-page{box-shadow:none!important;width:210mm!important;height:297mm!important;min-height:297mm!important;padding:5mm 6mm!important}.official-header h1{font-size:19px}.employee-grid{gap:2px}.employee-cell{padding:3px 5px;min-height:27px}.row{min-height:29px;font-size:7.5px}.row>div{min-height:29px;padding:2px 4px}.sig-box{height:27px}.sig-box img{height:24px;max-width:80px}.section-title{margin-top:5px}.official-footer{margin-top:4px}
+    html,body{width:210mm;margin:0;padding:0;background:#fff}
+    body{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    .no-print{display:none!important}
+    .official-export{width:210mm}
+    .form-page{box-shadow:none!important;margin:0!important;width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;padding:17mm 18mm 18mm!important;page-break-after:always!important;break-after:page!important;page-break-inside:avoid!important;break-inside:avoid!important}
+    .form-page:last-child{page-break-after:auto!important;break-after:auto!important}
    }
-  `}</style>
+  `}</style>>
  </main>
 }
