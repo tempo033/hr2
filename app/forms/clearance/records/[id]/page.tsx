@@ -96,6 +96,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
 
  const sigHtml=(key:string,alt:string)=>{const v=key==='line_manager_signature'?clearance.managers?.line_manager_signature:key==='project_manager_signature'?clearance.managers?.project_manager_signature:key==='senior_signature'?clearance.senior?.senior_signature:undefined; const fallback=key==='finance_signature'?clearance.finance?.finance_signature:key==='hr_signature'?clearance.hr?.hr_signature:undefined; const value=v||fallback||clearance[key.replace('_signature','')]?.[key]||''; return value?<img src={String(value)} alt={alt}/>:<span>—</span>}
  const decisionHtml=(key:string)=>{const v=key==='clearance_decision'?clearance.managers?.clearance_decision:key==='senior_decision'?clearance.senior?.senior_decision:clearance[key.replace('_decision','')]?.[key]||''; return v==='clear'?'يخلى طرفه / Clear':v==='not_clear'?'لا يخلى طرفه / Not Clear':v==='skip'?'لا ينطبق / N/A':'—'}
+ const noteHtml=(data:any)=>{const note=data?.clearance_notes||'';return note?<div className="clearance-note"><b>ملاحظات</b><span>{displayValue(note)}</span></div>:null}
  const officialExport=()=>{if(allApproved)window.print()}
 
  if(loading)return <main dir="rtl" className="p-10 text-center">جارٍ تحميل ملف إخلاء الطرف...</main>
@@ -162,26 +163,33 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
       <div className="signature-card">
        <b>المدير المباشر</b><span>{displayValue(clearance.managers?.line_manager_name)}</span><div className="signature-box">{sigHtml("line_manager_signature","توقيع المدير المباشر")}</div>
        <b>مدير المشروع</b><span>{displayValue(clearance.managers?.project_manager_name)}</span><div className="signature-box">{sigHtml("project_manager_signature","توقيع مدير المشروع")}</div>
-       <div className="decision-row">{decisionHtml("clearance_decision")}</div>
+       <div className="decision-row">{decisionHtml("clearance_decision")}</div>{noteHtml(clearance.managers)}
       </div>
 
-      {apply.it!==false&&<div className="signature-card"><div className="card-title">إدارة الحاسب الآلي <small>IT</small></div><span>{displayValue(clearance.it?.it_name)}</span><div className="signature-box">{sigHtml("it_signature","توقيع الحاسب الآلي")}</div><div className="decision-row">{decisionHtml("it_decision")}</div></div>}
-      {apply.transport!==false&&<div className="signature-card"><div className="card-title">إدارة الحركة والصيانة <small>TRANSPORT</small></div><span>{displayValue(clearance.transport?.transport_name)}</span><div className="signature-box">{sigHtml("transport_signature","توقيع الحركة والصيانة")}</div><div className="decision-row">{decisionHtml("transport_decision")}</div></div>}
-      {apply.warehouse!==false&&<div className="signature-card"><div className="card-title">المستودعات <small>STORES</small></div><span>{displayValue(clearance.warehouse?.warehouse_name)}</span><div className="signature-box">{sigHtml("warehouse_signature","توقيع المستودعات")}</div><div className="decision-row">{decisionHtml("warehouse_decision")}</div></div>}
+      {apply.it!==false&&<div className="signature-card"><div className="card-title">إدارة الحاسب الآلي <small>IT</small></div><span>{displayValue(clearance.it?.it_name)}</span><div className="signature-box">{sigHtml("it_signature","توقيع الحاسب الآلي")}</div><div className="decision-row">{decisionHtml("it_decision")}</div>{noteHtml(clearance.it)}</div>}
+      {apply.transport!==false&&<div className="signature-card"><div className="card-title">إدارة الحركة والصيانة <small>TRANSPORT</small></div><span>{displayValue(clearance.transport?.transport_name)}</span><div className="signature-box">{sigHtml("transport_signature","توقيع الحركة والصيانة")}</div><div className="decision-row">{decisionHtml("transport_decision")}</div>{noteHtml(clearance.transport)}</div>}
+      {apply.warehouse!==false&&<div className="signature-card"><div className="card-title">المستودعات <small>STORES</small></div><span>{displayValue(clearance.warehouse?.warehouse_name)}</span><div className="signature-box">{sigHtml("warehouse_signature","توقيع المستودعات")}</div><div className="decision-row">{decisionHtml("warehouse_decision")}</div>{noteHtml(clearance.warehouse)}</div>}
      </div>
 
      <div className="signature-column">
-      {apply.admin!==false&&<div className="signature-card"><div className="card-title">الشؤون الإدارية <small>ADMINISTRATION</small></div><span>{displayValue(clearance.admin?.admin_name)}</span><div className="signature-box">{sigHtml("admin_signature","توقيع الشؤون الإدارية")}</div><div className="decision-row">{decisionHtml("admin_decision")}</div></div>}
+      {apply.admin!==false&&<div className="signature-card"><div className="card-title">الشؤون الإدارية <small>ADMINISTRATION</small></div><span>{displayValue(clearance.admin?.admin_name)}</span><div className="signature-box">{sigHtml("admin_signature","توقيع الشؤون الإدارية")}</div><div className="decision-row">{decisionHtml("admin_decision")}</div>{noteHtml(clearance.admin)}</div>}
       {apply.finance!==false&&<div className="signature-card"><div className="card-title">المالية <small>FINANCE</small></div><span>{displayValue(clearance.finance?.finance_name)}</span><div className="signature-box">{sigHtml("finance_signature","توقيع المالية")}</div>
        <div className="finance-mini">عهدة: {clearance.finance?.financial_custody?displayValue(clearance.finance?.financial_custody_details):'لا يوجد'}<br/>سلفة: {clearance.finance?.has_loan?displayValue(clearance.finance?.has_loan_details):'لا توجد'}<br/>مستحقات: {clearance.finance?.financial_entitlement?displayValue(clearance.finance?.financial_entitlement_details):'لا توجد'}<br/>التزامات: {clearance.finance?.other_financial_obligation?displayValue(clearance.finance?.other_financial_obligation_details):'لا يوجد'}</div>
-       <div className="decision-row">{decisionHtml("finance_decision")}</div>
+       <div className="decision-row">{decisionHtml("finance_decision")}</div>{noteHtml(clearance.finance)}
       </div>}
-      {apply.hr!==false&&<div className="signature-card"><div className="card-title">الموارد البشرية <small>HR</small></div><span>{displayValue(clearance.hr?.hr_name)}</span><div className="signature-box">{sigHtml("hr_signature","توقيع الموارد البشرية")}</div><div className="decision-row">{decisionHtml("hr_decision")}</div></div>}
-      <div className="signature-card senior-card">
-       <div className="card-title">الإدارة العليا <small>SENIOR MANAGEMENT</small></div>
-       <span>{displayValue(clearance.senior?.deputy_general_manager)}</span><div className="signature-box">{sigHtml("senior_signature","توقيع الإدارة العليا")}</div>
-       <div className="decision-row">{decisionHtml("senior_decision")}</div>
+      {apply.hr!==false&&<div className="signature-card"><div className="card-title">الموارد البشرية <small>HR</small></div><span>{displayValue(clearance.hr?.hr_name)}</span><div className="signature-box">{sigHtml("hr_signature","توقيع الموارد البشرية")}</div><div className="decision-row">{decisionHtml("hr_decision")}</div>{noteHtml(clearance.hr)}</div>}
+     </div>
+    </div>
+
+    <div className="senior-approval">
+     <div className="signature-card senior-card">
+      <div className="card-title">الإدارة العليا / المدير العام <small>SENIOR MANAGEMENT / GENERAL MANAGER</small></div>
+      <div className="senior-grid">
+       <div><b>اسم المدير العام</b><span>{displayValue(clearance.senior?.deputy_general_manager)}</span></div>
+       <div><b>التوقيع</b><div className="signature-box">{sigHtml("senior_signature","توقيع الإدارة العليا")}</div></div>
+       <div><div className="decision-row">{decisionHtml("senior_decision")}</div>{clearance.senior?.senior_reason&&<div className="clearance-note"><b>سبب عدم الاعتماد</b><span>{displayValue(clearance.senior.senior_reason)}</span></div>}</div>
       </div>
+      {noteHtml(clearance.senior)}
      </div>
     </div>
 
@@ -228,6 +236,8 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    .official-export .signature-card .card-title{font-weight:900;border-bottom:1px solid #e4e7eb;padding-bottom:1mm;margin-bottom:1mm;font-size:8px;display:flex;justify-content:space-between;align-items:center}.official-export .signature-card>span{display:block;text-align:center;font-size:7.5px;min-height:10px;color:#334155}
    .official-export .signature-box{height:11mm;display:flex;align-items:center;justify-content:center;border-bottom:1px dashed #aeb5bf;margin-top:1mm}.official-export .signature-box img{max-width:70%;max-height:9.5mm;object-fit:contain}.official-export .decision-row{text-align:center;font-weight:900;font-size:7px;margin-top:1mm;color:#334155}
    .official-export .finance-mini{font-size:6.3px;line-height:1.3;text-align:right;margin-top:1mm;color:#4b5563}
+   .official-export .clearance-note{margin-top:1.2mm;padding:1.4mm 1.6mm;background:#faf7ed;border-right:2px solid #bd921f;font-size:6.6px;line-height:1.35;display:flex;gap:2mm;align-items:flex-start}.official-export .clearance-note b{white-space:nowrap;color:#6b5012}.official-export .clearance-note span{color:#374151;overflow-wrap:anywhere}
+   .official-export .senior-approval{margin-top:2mm;border-top:1.2px solid #17104f;padding-top:1.5mm}.official-export .senior-approval .signature-card{margin:0}.official-export .senior-grid{display:grid;grid-template-columns:1fr 1.15fr .95fr;gap:3mm;align-items:center}.official-export .senior-grid>div>b{font-size:7px}.official-export .senior-grid>div>span{display:block;text-align:center;font-size:7.5px;margin-top:1mm}.official-export .senior-grid .signature-box{height:9mm;margin-top:0}.official-export .senior-grid .decision-row{margin-top:0}
    .official-export .senior-card{border-color:#bd921f;background:#fffdf7}
    .official-export .final-status{text-align:center;border-top:1px solid #bd921f;margin-top:1.4mm;padding-top:1.2mm;font-size:8px;font-weight:900}.official-export .copies{text-align:center;font-size:6.5px;margin-top:1.2mm;color:#555}
    @media print{html,body{width:210mm;margin:0;padding:0;background:#fff}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.official-export{width:210mm}.official-export .form-page{width:210mm!important;height:297mm!important;margin:0!important;padding:11mm 13mm!important;box-shadow:none!important;page-break-after:auto!important;break-after:auto!important}}
