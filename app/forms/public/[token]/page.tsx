@@ -3,6 +3,8 @@ import RequestForm from '@/app/forms/shared/RequestForm'
 import ClearancePublic from '@/app/forms/clearance/ClearancePublic'
 import AdvanceApprovalPublic from '@/app/forms/advance/AdvanceApprovalPublic'
 import AdvanceEmployeePublic from '@/app/forms/advance/AdvanceEmployeePublic'
+import LeaveEmployeePublic from '@/app/forms/leave/LeaveEmployeePublic'
+import LeaveApprovalPublic from '@/app/forms/leave/LeaveApprovalPublic'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +34,8 @@ export default async function PublicFormPage({params}:{params:Promise<{token:str
     return <ClearancePublic token={token} initialData={data}/>
   }
   if(kind==='advance'&&(scope===''||scope==='advance:employee'))return <AdvanceEmployeePublic token={token}/>
+  if(kind==='leave'&&scope==='leave:employee')return <LeaveEmployeePublic token={token}/>
+  if(kind==='leave'&&scope.startsWith('leave:'))return <LeaveApprovalPublic token={token}/>
   if(kind==='advance'&&scope.startsWith('advance:'))return <AdvanceApprovalPublic token={token}/>
   return <RequestForm kind={kind} publicToken={token}/>
 }
