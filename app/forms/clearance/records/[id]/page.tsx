@@ -121,13 +121,14 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
      const Icon=s.icon; const d=stageData(s.key); const skipped=s.key!=='employee'&&apply[s.key]===false
      const complete=s.key==='employee'?Boolean(employee.employee_signature):skipped||stageSignatures(s.key,d).length>0&&stageDecision(s.key,d)==='clear'
      const link=links.find(x=>x.link_scope==='clearance:'+s.key)
-     return <a key={s.key} href={link?'/forms/public/'+link.token:'#'} target={link?'_blank':undefined} rel="noreferrer" className="link-card">
+     return <div key={s.key} className="link-card">
       <span className={complete?'icon ok':'icon'}><Icon size={21}/></span>
       <span className="font-black text-sm">{s.label}</span>
-      {role==='admin'&&link&&<button type="button" className="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-2 py-1 font-black" onClick={async e=>{e.preventDefault();e.stopPropagation();const r=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_id:link.id})});if(r.ok)await load();}} title="إعادة فتح هذا الرابط للتعديل">إعادة فتح الرابط</button>}{s.key!=='employee'&&<div className="apply-buttons"><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:true})}} className={apply[s.key]!==false?'selected':''}>ينطبق</button><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:false})}} className={apply[s.key]===false?'selected skip':''}>لا ينطبق</button></div>}
+      {link&&<a href={'/forms/public/'+encodeURIComponent(link.token)} className="open-link bg-[#09233f] text-white rounded-lg px-3 py-1.5 text-xs font-black inline-flex items-center gap-1" title="فتح رابط الإخلاء"><ExternalLink size={13}/> فتح الرابط</a>}
+      {role==='admin'&&link&&<button type="button" className="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-2 py-1 font-black" onClick={async e=>{e.preventDefault();e.stopPropagation();const r=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_id:link.id})});if(r.ok)await load();}} title="إعادة فتح هذا الرابط للتعديل">إعادة فتح الرابط</button>}
+      {s.key!=='employee'&&<div className="apply-buttons"><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:true})}} className={apply[s.key]!==false?'selected':''}>ينطبق</button><button type="button" disabled={savingApply} onClick={e=>{e.preventDefault();e.stopPropagation();void saveApplicability({...apply,[s.key]:false})}} className={apply[s.key]===false?'selected skip':''}>لا ينطبق</button></div>}
       <span className={apply[s.key]===false?'text-xs text-slate-500 font-bold':complete?'text-xs text-emerald-700 font-bold':'text-xs text-amber-700 font-bold'}>{apply[s.key]===false?'تم التخطي':complete?'تم الاعتماد':'قيد الانتظار'}</span>
-      <ExternalLink size={14} className="absolute left-3 top-3 text-slate-400"/>
-     </a>
+     </div>
     })}
    </div>
   </section>
