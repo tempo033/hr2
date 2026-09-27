@@ -81,7 +81,13 @@ function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){
 
 export default function ClearancePublic({token,initialData}:{token:string;initialData?:any}){
   const [link,setLink]=useState<any>()
-  const [d,setD]=useState<any>(()=>{\n    if(initialData?.link?.link_scope==='clearance:senior'&&initialData?.consolidated){\n      const x=initialData.consolidated\n      return {...x.employee,...x.managers,...x.it,...x.transport,...x.warehouse,...x.admin,...x.finance,...x.hr,...x.senior}\n    }\n    return initialData?.data||{}\n  })
+  const [d,setD]=useState<any>(()=>{ 
+    if(initialData?.link?.link_scope==='clearance:senior'&&initialData?.consolidated){
+      const x=initialData.consolidated
+      return {...x.employee,...x.managers,...x.it,...x.transport,...x.warehouse,...x.admin,...x.finance,...x.hr,...x.senior}
+    }
+    return initialData?.data||{}
+  })
   const [busy,setBusy]=useState(false)
   const [msg,setMsg]=useState('')
   const [loading,setLoading]=useState(!initialData)
