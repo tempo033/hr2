@@ -1,7 +1,7 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
-import {Eraser,RefreshCw,Save,Check} from 'lucide-react'
+import {Eraser,RefreshCw,Save} from 'lucide-react'
 
 type Props={
   employeeId?:string|null
@@ -16,7 +16,6 @@ type Props={
 export default function SignatureEditor({
   employeeId,publicToken,value='',onChange,onSaved,autoUseSaved=true,disabled=false
 }:Props){
-  const [color,setColor]=useState('#111827')
   const [preview,setPreview]=useState(value)
   const [saved,setSaved]=useState('')
   const [msg,setMsg]=useState('')
@@ -24,7 +23,6 @@ export default function SignatureEditor({
   const canvas=useRef<HTMLCanvasElement>(null)
   const drawing=useRef(false)
   const last=useRef<{x:number;y:number}|null>(null)
-  const hasStroke=useRef(false)
 
   useEffect(()=>{if(value)setPreview(value)},[value])
 
@@ -70,7 +68,7 @@ export default function SignatureEditor({
     const ctx=c.getContext('2d')!
     const p=point(e),q=last.current
     if(!q)return
-    ctx.strokeStyle=color
+    ctx.strokeStyle='#0b3d91'
     ctx.lineWidth=5
     ctx.lineCap='round'
     ctx.lineJoin='round'
@@ -78,7 +76,6 @@ export default function SignatureEditor({
     ctx.moveTo(q.x,q.y)
     ctx.lineTo(p.x,p.y)
     ctx.stroke()
-    hasStroke.current=true
     last.current=p
   }
 
@@ -114,7 +111,7 @@ export default function SignatureEditor({
           token:publicToken,
           signature_data:preview,
           signature_type:'drawn',
-          signature_color:color
+          signature_color:'#0b3d91'
         })
       })
       const d=await r.json()
@@ -131,58 +128,36 @@ export default function SignatureEditor({
   }
 
   return <section dir="rtl" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-    <div className="flex items-center justify-between gap-2 mb-3">
-      <h3 className="font-black text-[#09233f]">التوقيع الإلكتروني</h3>
-      {saved&&
-        <button type="button" onClick={()=>emit(saved)} className="rounded-lg bg-emerald-50 text-emerald-700 px-3 py-2 text-xs font-bold inline-flex gap-1">
-          <Check size={14}/>استخدام التوقيع المحفوظ
-        </button>
-      }
-    </div>
-
-    {saved&&
-      <div className="mb-3 rounded-xl bg-slate-50 p-2">
-        <div className="text-[11px] font-bold text-slate-500">التوقيع المحفوظ</div>
-        <img src={saved} alt="التوقيع المحفوظ" className="h-16 w-full object-contain"/>
-      </div>
-    }
-
-    <div className="flex items-center gap-2 mb-3 text-xs font-bold">
-      <span>لون التوقيع</span>
-      <button type="button" onClick={()=>setColor('#111827')} className="h-7 w-7 rounded-full bg-black ring-2 ring-slate-200" title="أسود"/>
-      <button type="button" onClick={()=>setColor('#0b3d91')} className="h-7 w-7 rounded-full bg-blue-800 ring-2 ring-slate-200" title="أزرق"/>
-    </div>
-
     <div className="mb-3">
-      <div className="text-sm font-bold mb-2">ارسم توقيعك</div>
-      <canvas
-        ref={canvas}
-        width={1200}
-        height={300}
-        onPointerDown={start}
-        onPointerMove={move}
-        onPointerUp={end}
-        onPointerCancel={end}
-        className="w-full rounded-xl border-2 touch-none bg-white" style={{aspectRatio:'4 / 1',height:'auto'}}
-      />
-      <button type="button" onClick={clear} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold inline-flex gap-1">
-        <Eraser size={14}/>مسح وإعادة الرسم
-      </button>
+      <h3 className="font-black text-[#09233f] mb-2">التوقيع الإلكتروني</h3>
+      <div className="text-sm font-bold">ارسم توقيعك</div>
     </div>
+
+    <canvas
+      ref={canvas}
+      width={1200}
+      height={300}
+      onPointerDown={start}
+      onPointerMove={move}
+      onPointerUp={end}
+      onPointerCancel={end}
+      className="w-full rounded-xl border-2 touch-none bg-white"
+      style={{aspectRatio:'4 / 1',height:'auto'}}
+    />
+
+    <button type="button" onClick={clear} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold inline-flex gap-1">
+      <Eraser size={14}/>مسح وإعادة الرسم
+    </button>
 
     <div className="mt-4 border-t pt-3">
-      <div className="text-sm font-bold mb-2">معاينة التوقيع</div>
-      <div className="min-h-24 rounded-xl border flex items-center justify-center p-2">
-        <img src={preview||value} alt="معاينة التوقيع" className="max-h-24 max-w-full object-contain"/>
-      </div>
-      <div className="mt-2 flex gap-2">
-        <button type="button" disabled={disabled||busy} onClick={save} className="rounded-lg bg-[#09233f] text-white px-4 py-2 text-sm font-bold inline-flex gap-1">
-          <Save size={15}/>حفظ التوقيع
-        </button>
-        <button type="button" disabled={disabled} onClick={()=>emit('')} className="rounded-lg border px-4 py-2 text-sm font-bold inline-flex gap-1">
-          <RefreshCw size={15}/>إعادة الرسم
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={disabled||busy}
+        onClick={save}
+        className="rounded-lg bg-[#09233f] text-white px-4 py-2 text-sm font-bold inline-flex gap-1"
+      >
+        <Save size={15}/>حفظ التوقيع
+      </button>
       {msg&&<div className="mt-2 text-xs font-bold">{msg}</div>}
     </div>
   </section>
