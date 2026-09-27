@@ -13,8 +13,9 @@ export type ServerAuth = {
 }
 
 export async function getServerAuth(req: NextRequest, allowedRoles: string[]): Promise<ServerAuth | null> {
-  const token = req.cookies.get(AUTH_COOKIE)?.value
-  if (!token || !PUBLIC_KEY) return null
+  const rawToken = req.cookies.get(AUTH_COOKIE)?.value?.trim() || ''
+  const token = rawToken.replace(/^Bearer\s+/i, '').trim()
+  if (!token || !PUBLIC_KEY || token.split('.').length !== 3) return null
 
   const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: PUBLIC_KEY, Authorization: `Bearer ${token}` },
