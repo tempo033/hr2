@@ -25,7 +25,8 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
   const user = await authRes.json()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || null
   const apiKey = serviceKey || PUBLIC_KEY
-  const authorization = serviceKey ? `Bearer ${serviceKey}` : `Bearer ${token}`
+  const legacyServiceJwt = !!serviceKey && serviceKey.split('.').length === 3
+  const authorization = legacyServiceJwt ? `Bearer ${serviceKey}` : `Bearer ${token}`
   const profileRes = await fetch(
     `${SUPABASE_URL}/rest/v1/app_users?select=role,is_active&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,
     { headers: { apikey: apiKey, Authorization: authorization }, cache: 'no-store' },
@@ -39,6 +40,7 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 
 export function supabaseHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
   const apiKey = auth.serviceKey || PUBLIC_KEY
-  const authorization = auth.serviceKey ? `Bearer ${auth.serviceKey}` : `Bearer ${auth.token}`
+  const legacyServiceJwt = !!auth.serviceKey && auth.serviceKey.split('.').length === 3
+  const authorization = legacyServiceJwt ? `Bearer ${auth.serviceKey}` : `Bearer ${auth.token}`
   return { apikey: apiKey, Authorization: authorization, Accept: 'application/json', 'Content-Type': 'application/json', ...extra }
 }
