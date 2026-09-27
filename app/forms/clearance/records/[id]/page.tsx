@@ -200,19 +200,19 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
   <style>{`
    /* Site links: presentation only; routes, hrefs, tokens and actions remain unchanged. */
    .clearance-links-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-   .clearance-link-card{min-width:0;min-height:205px;border:1px solid #e3e7ed;background:linear-gradient(180deg,#fff 0%,#fafbfc 100%);border-radius:14px;padding:13px 12px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;box-shadow:0 3px 12px rgba(15,23,42,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+   .clearance-link-card{min-width:0;min-height:235px;border:1px solid #e3e7ed;background:linear-gradient(180deg,#fff 0%,#fafbfc 100%);border-radius:14px;padding:14px 12px;display:grid;grid-template-rows:42px 24px minmax(36px,auto) minmax(34px,auto) auto 20px;align-items:center;gap:8px;text-align:center;box-shadow:0 3px 12px rgba(15,23,42,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
    .clearance-link-card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(15,23,42,.08);border-color:#cbd5e1}
    .clearance-link-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#eef2f6;color:#334155}
    .clearance-link-icon.ok{background:#e9f7ef;color:#137a43}
-   .clearance-link-title{font-size:14px;font-weight:900;color:#0f2740;line-height:1.35}
-   .clearance-link-card .open-link{width:100%;min-height:36px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 10px;border-radius:9px;background:#09233f;color:#fff;font-size:12px;font-weight:900;line-height:1.2;text-decoration:none;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+   .clearance-link-title{font-size:14px;font-weight:900;color:#0f2740;line-height:1.35;min-height:24px;display:flex;align-items:center;justify-content:center}
+   .clearance-link-card .open-link{width:100%;min-height:36px;height:36px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 10px;border-radius:9px;background:#09233f;color:#fff;font-size:12px;font-weight:900;line-height:1.2;text-decoration:none;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
    .clearance-link-card .open-link:hover{background:#123b61}
-   .clearance-link-card .reopen-link{width:100%;min-height:34px;padding:8px 9px;border-radius:9px;background:#fff7e6;color:#8a5a00;border:1px solid #efd69c;font-size:11px;font-weight:900;line-height:1.2;cursor:pointer;box-sizing:border-box;white-space:nowrap}
-   .clearance-apply-buttons{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:6px}
+   .clearance-link-card .reopen-link{width:100%;min-height:34px;height:34px;padding:0 9px;border-radius:9px;background:#fff7e6;color:#8a5a00;border:1px solid #efd69c;font-size:11px;font-weight:900;line-height:1.2;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+   .clearance-apply-buttons{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:6px;align-self:stretch;align-items:center}
    .clearance-apply-buttons button{padding:6px 5px;border:1px solid #d8dee6;border-radius:8px;background:#fff;color:#475569;font-size:11px;font-weight:800;cursor:pointer}
    .clearance-apply-buttons button.selected{background:#eef5fb;border-color:#8eacc5;color:#09233f}
    .clearance-apply-buttons button.selected.skip{background:#f4f5f7;border-color:#cbd5e1;color:#64748b}
-   .clearance-link-status{font-size:11px;font-weight:900}
+   .clearance-link-status{font-size:11px;font-weight:900;min-height:20px;display:flex;align-items:center;justify-content:center}
    .clearance-link-status.complete{color:#15803d}.clearance-link-status.pending{color:#b45309}.clearance-link-status.skipped{color:#64748b}
    @media(min-width:768px){.clearance-links-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
    @media(min-width:1100px){.clearance-links-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
