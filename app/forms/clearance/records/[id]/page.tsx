@@ -93,7 +93,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
   }catch(e){console.error(e)}finally{setSavingApply(false)}
  }
 
- const officialExport=()=>{if(allApproved)window.print()}
+ const officialExport=()=>{if(!allApproved)return; const seniorLink=links.find(x=>x.link_scope==='clearance:senior'); if(!seniorLink)return; const url=new URL('/forms/public/'+encodeURIComponent(seniorLink.token),window.location.origin).toString(); window.open(url,'_blank','noopener,noreferrer')}
 
  if(loading)return <main dir="rtl" className="p-10 text-center">جارٍ تحميل ملف إخلاء الطرف...</main>
  if(!rec)return <main dir="rtl" className="p-10 text-center">السجل غير موجود</main>
@@ -105,7 +105,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     <div className="flex gap-2">
      <button onClick={()=>void load()} className="border bg-white rounded-xl px-3 py-2 font-bold"><RefreshCw size={16}/></button>
      <button disabled={!allApproved} onClick={officialExport} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-black text-white disabled:bg-slate-300 bg-[#09233f]">
-      <FileCheck2 size={17}/> {allApproved?'اعتماد وتصدير الملف الرسمي':'يكتمل الاعتماد بعد موافقة جميع الإدارات'}
+      <FileCheck2 size={17}/> {allApproved?'فتح النموذج النهائي وتصديره':'يكتمل الاعتماد بعد موافقة جميع الإدارات'}
      </button>
     </div>
    </div>
