@@ -435,7 +435,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
             <div className="grid md:grid-cols-3 gap-3">
               <input value={ruleForm.activity_group} onChange={(e) => setRuleForm({ ...ruleForm, activity_group: e.target.value })} placeholder="النشاط الاقتصادي" className="border rounded-xl p-3" />
               <input value={ruleForm.source_title} onChange={(e) => setRuleForm({ ...ruleForm, source_title: e.target.value })} placeholder="مصدر القاعدة" className="border rounded-xl p-3" />
-              <input value={ruleForm.source_url} onChange={(e) => setRuleForm({ ...ruleForm, source_url: e.target.value })} placeholder="رابط المصدر" className="border rounded-xl p-3" />
+              <div className="flex gap-2"><input value={ruleForm.source_url} onChange={(e) => setRuleForm({ ...ruleForm, source_url: e.target.value })} placeholder="رابط المصدر" className="border rounded-xl p-3 flex-1" /><a href={ruleForm.source_url && /^https?:\/\//i.test(ruleForm.source_url) ? ruleForm.source_url : undefined} target="_blank" rel="noopener noreferrer" className={`border rounded-xl px-4 py-3 font-bold ${ruleForm.source_url && /^https?:\/\//i.test(ruleForm.source_url) ? 'bg-[#09233f] text-white' : 'bg-slate-100 text-slate-400 pointer-events-none'}`}>فتح الرابط</a></div>
               {bands.map((band) => (
                 <div key={band} className="border rounded-xl p-3 bg-white">
                   <div className="font-bold mb-2">{band}</div>
@@ -453,7 +453,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
               <tbody>{rules.map((r: any) => (
                 <tr className="border-b" key={r.id}>
                   <td className="p-3 font-bold">
-                    {r.activity_group}
+                    <div>{r.activity_group}</div>{r.source_url && /^https?:\/\//i.test(r.source_url) && <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-xs text-blue-700 underline">فتح المصدر الرسمي</a>}
                     <div className="flex gap-2 mt-2">
                       <button onClick={() => { setEditingRule(r); setRuleForm(r) }} className="text-xs border rounded-lg px-2 py-1">تعديل</button>
                       <button onClick={async () => { try { await save('toggle_rule', { id: r.id, active: !r.active }); await load() } catch (e) { alert(e instanceof Error ? e.message : 'تعذر التعديل') } }} className="text-xs border rounded-lg px-2 py-1">{r.active ? 'تعطيل' : 'تفعيل'}</button>
