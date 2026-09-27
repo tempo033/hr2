@@ -25,6 +25,30 @@ export async function POST(req: NextRequest) {
 
   const headers = { ...supabaseHeaders(auth), 'Content-Type': 'application/json', Prefer: 'return=representation' }
 
+  // طلب الإجازة يبدأ بموظف محدد، ويتم إنشاء رابط الموظف فقط. بعد إرسال الموظف تُنشأ روابط البديل/HR/المدير العام حسب البيانات.
+  if (formType === 'leave' && body.employee_id && !body.record_id) {
+    const employeeResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/employee_records?id=eq.${encodeURIComponent(body.employee_id)}&select=id,employee_number,full_name,department,job_title,nationality,national_id,phone,email,hire_date,work_location,project_name&limit=1`,
+      { headers: supabaseHeaders(auth), cache: 'no-store' }
+    )
+    const employees = await employeeResponse.json()
+    if (!employeeResponse.ok || !employees?.[0]) return NextResponse.json({ error: 'تعذر العثور على الموظف في ملف الموظفين.' }, { status: 404 })
+    const employee = employees[0]
+    const formData = { employee_name: employee.full_name || '', employee_number: employee.employee_number || '', department: employee.department || '', job_title: employee.job_title || '', phone: employee.phone || '' }
+    const recordResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_records`, {
+      method: 'POST', headers,
+      body: JSON.stringify({ form_type:'leave', employee_id:employee.id, employee_number:employee.employee_number||null, employee_name:employee.full_name||null, department:employee.department||null, job_title:employee.job_title||null, form_data:formData, status:'مسودة' })
+    })
+    const recordData = await recordResponse.json()
+    if (!recordResponse.ok || !recordData?.[0]?.id) return NextResponse.json({ error: recordData?.message || 'تعذر إنشاء سجل طلب الإجازة.' }, { status: 500 })
+    const now = new Date().toISOString()
+    const linkPayload = { token:crypto.randomUUID(), form_type:'leave', employee_id:employee.id, record_id:recordData[0].id, created_by:auth.user.id, link_scope:'leave:employee', status:'active', created_at:now, updated_at:now, expires_at:body.expires_at||null }
+    const linkResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, { method:'POST', headers, body:JSON.stringify(linkPayload) })
+    const linkData = await linkResponse.json()
+    if (!linkResponse.ok || !linkData?.[0]?.id) return NextResponse.json({ error:linkData?.message||'تعذر إنشاء رابط الموظف.' }, { status:500 })
+    return NextResponse.json({ link:linkData[0], record_id:recordData[0].id, links:[linkData[0]] })
+  }
+
   // طلب السلفة يبدأ بموظف محدد، ويتم إنشاء سجل الطلب وروابط الاعتماد الأربعة دفعة واحدة.
   if (formType === 'advance' && body.employee_id && !body.record_id) {
     const employeeResponse = await fetch(
