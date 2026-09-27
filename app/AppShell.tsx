@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays, WalletCards, Calculator, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import SessionTimeoutGuard from '@/app/components/auth/SessionTimeoutGuard'
 
 const sections = [
   { id:'recruitment', label:'التوظيف والاستقطاب', icon:BriefcaseBusiness, items:[
@@ -91,6 +92,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="mobile-topbar print-hidden"><button onClick={()=>setOpen(v=>!v)} className="rounded-xl p-2.5 text-white hover:bg-white/10" aria-label="فتح القائمة">{open?<X size={24}/>:<Menu size={24}/>}</button><Link href="/" className="flex items-center gap-2 font-black text-white"><span className="h-9 w-9 rounded-xl bg-[#b88618] grid place-items-center text-sm">HR</span><span>إدارة الموارد البشرية</span></Link></div>
     {open&&<div className="mobile-menu print-hidden"><NavItems mobile/><button onClick={logout} className="mt-3 w-full flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-extrabold text-slate-100 hover:bg-red-500/20"><LogOut size={20}/>تسجيل الخروج</button></div>}
     <main className="hr-main">{children}</main>
+    <SessionTimeoutGuard />
     <div className="print-pdf-control print-hidden"><button type="button" onClick={()=>window.print()} title="تصدير الصفحة الحالية إلى PDF بحجم A4" aria-label="تصدير الصفحة الحالية إلى PDF" className="pdf-export-btn"><FileDown size={17}/><span>تصدير PDF</span></button></div>
   </div>
 }
