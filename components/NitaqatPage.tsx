@@ -157,6 +157,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
   }
 
   const useCurrent = () => {
+    // الأرقام الحالية تأتي من الموظفين المحتسبين فقط؛ الموظفون خارج كفالة المنشأة مستبعدون من المصدر.
     setSaudi(Number(data.summary?.saudi || 0))
     setNonSaudi(Number(data.summary?.nonSaudi || 0))
     setActivity(company.main_activity || data.settings?.main_activity || '')
@@ -343,7 +344,7 @@ export default function NitaqatPage({ mode }: { mode: Mode }) {
             </select>
           </div>
 
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">الحاسبة تعتمد فقط على الموظفين المحتسبين داخل HR2، ويتم استبعاد أي موظف <b>خارج كفالة المنشأة</b> تلقائيًا. النشاط لا يُدخل يدويًا؛ يجب اختياره من قائمة الأنشطة الاقتصادية المحملة في قواعد نطاقات بالنظام.</div>
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">الحاسبة تعتمد فقط على الموظفين المحتسبين داخل HR2، ويتم استبعاد أي موظف <b>خارج كفالة المنشأة</b> تلقائيًا. بيانات المنشأة الحالية لا تشمل موظفي خارج الكفالة، ويمكنك مراجعة العدد المستبعد من صفحة الموظفين المحتسبين. النشاط لا يُدخل يدويًا؛ يجب اختياره من قائمة الأنشطة الاقتصادية المحملة في قواعد نطاقات بالنظام.</div>
 
           <div className="flex flex-wrap gap-2 mt-5">
             <button onClick={useCurrent} className="rounded-xl border px-4 py-2 font-bold">استخدام بيانات الموظفين الحالية</button>
