@@ -155,9 +155,9 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     <div className="section-title"><span>ثانياً: اعتمادات الجهات ذات العلاقة</span><span>Second Related Managements</span></div>
     <table className="original-grid">
      <tbody>
-      <tr><td>المدير المباشر</td><td>{displayValue(employee.line_manager_name || '—')}</td><td>Line Manager Name</td></tr>
+      <tr><td>المدير المباشر</td><td>{displayValue(clearance.managers?.line_manager_name || '—')}</td><td>Line Manager Name</td></tr>
       <tr><td>التوقيع</td><td>{sigHtml("line_manager_signature","توقيع المدير المباشر")}</td><td>Signature</td></tr>
-      <tr><td>مدير المشروع</td><td>{displayValue(employee.project_manager_name || '—')}</td><td>Project Manager Name</td></tr>
+      <tr><td>مدير المشروع</td><td>{displayValue(clearance.managers?.project_manager_name || '—')}</td><td>Project Manager Name</td></tr>
       <tr><td>التوقيع</td><td>{sigHtml("project_manager_signature","توقيع مدير المشروع")}</td><td>Signature</td></tr>
       <tr><td>القرار</td><td>{decisionHtml("clearance_decision")}</td><td>Decision</td></tr>
      </tbody>
@@ -248,9 +248,9 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     <div className="section-title"><span>الإدارة العليا</span><span>Senior management</span></div>
     <table className="original-grid">
      <tbody>
-      <tr><td>المدير العام / نائب المدير العام</td><td>{displayValue(employee.deputy_general_manager || '—')}</td><td>General Manager / Deputy</td></tr>
+      <tr><td>المدير العام / نائب المدير العام</td><td>{displayValue(clearance.senior?.deputy_general_manager || '—')}</td><td>General Manager / Deputy</td></tr>
       <tr><td>التوقيع</td><td>{sigHtml("senior_signature","توقيع الإدارة العليا")}</td><td>Signature</td></tr>
-      <tr><td>التاريخ</td><td>{displayValue(employee.senior_date || '—')}</td><td>Date</td></tr>
+      <tr><td>التاريخ</td><td>{displayValue(clearance.senior?.senior_date || '—')}</td><td>Date</td></tr>
       <tr><td>القرار</td><td>{decisionHtml("senior_decision")}</td><td>Decision</td></tr>
      </tbody>
     </table>
@@ -297,6 +297,6 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     .form-page{box-shadow:none!important;margin:0!important;width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;padding:17mm 18mm 18mm!important;page-break-after:always!important;break-after:page!important;page-break-inside:avoid!important;break-inside:avoid!important}
     .form-page:last-child{page-break-after:auto!important;break-after:auto!important}
    }
-  `}</style>>
+  `}</style>
  </main>
 }
