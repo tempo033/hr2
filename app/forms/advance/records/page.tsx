@@ -197,7 +197,7 @@ export default function Records() {
                       <td className="p-3">
                         <button
                           onClick={() => setSelected(r)}
-                          className="bg-emerald-700 text-white rounded-lg px-3 py-1.5 font-bold ml-1"
+                          className="bg-emerald-700 text-white rounded-lg px-3 py-1.5 font-bold ml-1 inline-flex items-center justify-center whitespace-nowrap leading-none gap-1.5"
                         >
                           روابط الاعتماد
                         </button>
