@@ -5,7 +5,7 @@ const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdr
 const ROLES=['admin','hr','manager']
 
 async function sb(path:string,auth:any,init:RequestInit={}){
- const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:supabaseHeaders(auth,{'Content-Type':'application/json',...(init.headers||{})}),cache:'no-store'})
+ const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:supabaseHeaders(auth,{'Content-Type':'application/json',...(init.headers instanceof Headers?Object.fromEntries(init.headers.entries()):Array.isArray(init.headers)?Object.fromEntries(init.headers):init.headers||{})}),cache:'no-store'})
  const text=await r.text();let data:any=null;try{data=text?JSON.parse(text):null}catch{data=text}
  if(!r.ok)throw new Error(typeof data==='string'?data:(data?.message||data?.hint||'Supabase request failed'))
  return data
