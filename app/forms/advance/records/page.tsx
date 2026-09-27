@@ -164,7 +164,7 @@ export default function Records() {
             <div className="p-10 text-center">جارٍ التحميل...</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[980px] text-sm">
                 <thead className="bg-slate-100">
                   <tr>
                     <th className="p-3 text-right">الموظف</th>
@@ -195,6 +195,7 @@ export default function Records() {
                         {new Date(r.updated_at).toLocaleString('ar-SA')}
                       </td>
                       <td className="p-3">
+                        <div className="record-actions">
                         <button
                           onClick={() => setSelected(r)}
                           className="bg-emerald-700 text-white rounded-lg px-3 py-1.5 font-bold ml-1 inline-flex items-center justify-center whitespace-nowrap leading-none gap-1.5"
@@ -203,10 +204,11 @@ export default function Records() {
                         </button>
                         <Link
                           href={`/forms/advance/records/${r.id}`}
-                          className="bg-[#09233f] text-white rounded-lg px-3 py-1.5 font-bold"
+                          className="bg-[#09233f] text-white rounded-lg px-3 py-1.5 font-bold inline-flex items-center justify-center whitespace-nowrap leading-none gap-1.5"
                         >
                           عرض / تعديل
                         </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -263,18 +265,18 @@ export default function Records() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       <a
                         target="_blank"
                         rel="noreferrer"
                         href={location.origin + '/forms/public/' + x.token}
-                        className="bg-[#09233f] text-white rounded-lg px-3 py-1.5 font-bold"
+                        className="bg-[#09233f] text-white rounded-lg px-3 py-1.5 font-bold inline-flex items-center justify-center whitespace-nowrap leading-none gap-1.5"
                       >
-                        فتح الرابط
+                        <ExternalLink size={15} /> فتح الرابط
                       </a>
                       <button
                         onClick={() => navigator.clipboard?.writeText(location.origin + '/forms/public/' + x.token)}
-                        className="border rounded-lg px-3 py-1.5 font-bold"
+                        className="border rounded-lg px-3 py-1.5 font-bold inline-flex items-center justify-center whitespace-nowrap leading-none gap-1.5"
                       >
                         نسخ
                       </button>
@@ -286,5 +288,8 @@ export default function Records() {
         )}
       </div>
     </main>
+      <style jsx>{`
+.record-actions{display:flex;align-items:center;gap:8px;white-space:nowrap;min-width:max-content}.record-actions button,.record-actions a{flex:0 0 auto}.record-actions svg{display:block;flex:0 0 auto}
+`}</style>
   )
 }
