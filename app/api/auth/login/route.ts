@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: response.status || 401 })
     }
 
+    if (typeof data.access_token !== 'string' || data.access_token.split('.').length !== 3) {
+      return NextResponse.json({ error: 'تعذر إنشاء جلسة دخول صالحة. يرجى إعادة تسجيل الدخول.' }, { status: 502 })
+    }
+
     const result = NextResponse.json({
       ok: true,
       session: {
