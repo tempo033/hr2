@@ -2,7 +2,7 @@ import {NextRequest,NextResponse} from 'next/server'
 import {getServerAuth,supabaseHeaders} from '@/lib/server-auth'
 const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
 const ROLES=['admin','hr','interviewer','manager']
-const FIELDS=['employee_number','full_name','nationality','national_id','residency_expiry_date','phone','email','date_of_birth','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','hire_date','contract_type','salary','employment_status','residency_status','basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances','notes','job_description_id']
+const FIELDS=['employee_number','full_name','nationality','national_id','phone','email','date_of_birth','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','hire_date','contract_type','salary','employment_status','residency_status','basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances','notes','job_description_id']
 function norm(v:any){return String(v??'').trim().toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ')}
 function clean(v:any){if(v===undefined||v===null)return null;const s=String(v).trim();return s||null}
 function money(v:any){if(v===undefined||v===null||v==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null}
@@ -30,7 +30,7 @@ export async function POST(req:NextRequest){
   let max=1000;current.forEach(x=>{const m=String(x.employee_number||'').match(/^EMP-(\d+)$/i);if(m)max=Math.max(max,Number(m[1]))})
   const used=new Set(current.map(x=>norm(x.employee_number)).filter(Boolean));const seen=new Set<string>();const result:any={created:[],updated:[],unchanged:[],ambiguous:[]}
   for(const raw of rows){
-   const input:any={};for(const f of FIELDS)if(Object.prototype.hasOwnProperty.call(raw,f))input[f]=raw[f];input.full_name=clean(input.full_name);if(!input.full_name)continue
+   const input:any={};for(const f of FIELDS)if(Object.prototype.hasOwnProperty.call(raw,f))input[f]=raw[f];if(Object.prototype.hasOwnProperty.call(raw,'residency_expiry_date'))input.residency_expiry_date=raw.residency_expiry_date;input.full_name=clean(input.full_name);if(!input.full_name)continue
    for(const f of ['employee_number','national_id','phone','email','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','contract_type','salary','employment_status','residency_status','notes'])if(f in input)input[f]=clean(input[f]);for(const f of ['date_of_birth','hire_date','residency_expiry_date'])if(f in input)input[f]=dateValue(input[f])
    for(const f of ['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances'])if(f in input)input[f]=money(input[f])
    let existing:any=null;if(input.employee_number)existing=byNo.get(norm(input.employee_number))||null;if(!existing&&input.national_id)existing=byNational.get(norm(input.national_id))||null;if(!existing&&input.phone)existing=byPhone.get(norm(input.phone))||null
