@@ -25,11 +25,17 @@ export async function POST(req:NextRequest){
   if(!rows.length)return NextResponse.json({error:'لا توجد بيانات للاستيراد'},{status:400})
   const currentRes=await rest('employee_records?select=*',auth);if(!currentRes.ok)return NextResponse.json({error:await currentRes.text()},{status:500})
   const current:any[]=await currentRes.json()
+  const companiesRes=await rest('employee_companies?select=id,name,unified_number',auth);if(!companiesRes.ok)return NextResponse.json({error:await companiesRes.text()},{status:500})
+  const companies:any[]=await companiesRes.json()
+  const companyByName=new Map(companies.map(c=>[norm(c.name),c]));const companyByNumber=new Map(companies.map(c=>[norm(c.unified_number),c]));
   const byNo=new Map(current.filter(x=>x.employee_number).map(x=>[norm(x.employee_number),x]));const byNational=new Map(current.filter(x=>x.national_id).map(x=>[norm(x.national_id),x]));const byPhone=new Map(current.filter(x=>x.phone).map(x=>[norm(x.phone),x]));const byName=new Map<string,any[]>();
   current.forEach(x=>{const k=norm(x.full_name);if(k){const a=byName.get(k)||[];a.push(x);byName.set(k,a)}})
   let max=1000;current.forEach(x=>{const m=String(x.employee_number||'').match(/^EMP-(\d+)$/i);if(m)max=Math.max(max,Number(m[1]))})
   const used=new Set(current.map(x=>norm(x.employee_number)).filter(Boolean));const seen=new Set<string>();const result:any={created:[],updated:[],unchanged:[],ambiguous:[]}
   for(const raw of rows){
+   const requestedCompany=clean(raw.company);const requestedCompanyNumber=clean(raw.company_unified_number);
+   let company:any=null;if(requestedCompanyNumber)company=companyByNumber.get(norm(requestedCompanyNumber))||null;if(!company&&requestedCompany)company=companyByName.get(norm(requestedCompany))||null;
+   if((requestedCompany||requestedCompanyNumber)&&!company)return NextResponse.json({error:'الشركة المحددة في ملف الاستيراد غير موجودة ضمن الشركات الثلاث المعتمدة: '+(requestedCompany||requestedCompanyNumber)},{status:400})
    const input:any={};for(const f of FIELDS)if(Object.prototype.hasOwnProperty.call(raw,f))input[f]=raw[f];if(Object.prototype.hasOwnProperty.call(raw,'residency_expiry_date'))input.residency_expiry_date=raw.residency_expiry_date;input.full_name=clean(input.full_name);if(!input.full_name)continue
    for(const f of ['employee_number','national_id','phone','email','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','contract_type','salary','employment_status','residency_status','notes'])if(f in input)input[f]=clean(input[f]);for(const f of ['date_of_birth','hire_date','residency_expiry_date'])if(f in input)input[f]=dateValue(input[f])
    for(const f of ['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances'])if(f in input)input[f]=money(input[f])
@@ -37,11 +43,12 @@ export async function POST(req:NextRequest){
    if(!existing){const matches=byName.get(norm(input.full_name))||[];if(matches.length===1)existing=matches[0];else if(matches.length>1){result.ambiguous.push({full_name:input.full_name,reason:'يوجد أكثر من موظف بنفس الاسم'});continue}}
    if(existing){
     const patch:any={};for(const f of FIELDS)if(Object.prototype.hasOwnProperty.call(input,f)&&input[f]!==null&&input[f]!==''&&String(input[f])!==String(existing[f]??''))patch[f]=input[f]
+    if(company && String(existing.company_id||'')!==String(company.id))patch.company_id=company.id
     if(!Object.keys(patch).length){result.unchanged.push({id:existing.id,full_name:existing.full_name});continue}
     const r=await rest('employee_records?id=eq.'+encodeURIComponent(existing.id),auth,{method:'PATCH',headers:{Prefer:'return=representation','Content-Type':'application/json'},body:JSON.stringify(patch)});if(!r.ok)return NextResponse.json({error:await r.text(),failedEmployee:existing.full_name},{status:500});const updatedEmployee=(await r.json())[0];await syncResidencyDocument(updatedEmployee.id,input,auth);result.updated.push(updatedEmployee)
    }else{
     let no=clean(input.employee_number);if(!no){do{max++;no='EMP-'+String(max).padStart(4,'0')}while(used.has(norm(no)))}const key=norm(no);if(seen.has(key)||used.has(key)){result.ambiguous.push({full_name:input.full_name,reason:'الرقم الوظيفي '+no+' مكرر'});continue};seen.add(key);used.add(key)
-    const payload:any={};for(const f of FIELDS)if(input[f]!==undefined&&input[f]!==null&&input[f]!=='')payload[f]=input[f];payload.employee_number=no
+    const payload:any={};for(const f of FIELDS)if(input[f]!==undefined&&input[f]!==null&&input[f]!=='')payload[f]=input[f];payload.employee_number=no;if(company)payload.company_id=company.id
     const r=await rest('employee_records',{method:'POST',headers:{Prefer:'return=representation','Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)return NextResponse.json({error:await r.text(),failedEmployee:input.full_name},{status:500});const createdEmployee=(await r.json())[0];await syncResidencyDocument(createdEmployee.id,input,auth);result.created.push(createdEmployee)
    }
   }
