@@ -9,6 +9,8 @@ const fields=[
  ['employee_number','الرقم الوظيفي',['الرقم الوظيفي','رقم الموظف','رقم العامل','employee number','employee no','emp no']],
  ['full_name','الاسم الكامل',['الاسم','اسم الموظف','اسم العامل','الاسم الكامل','full name','name']],
  ['nationality','الجنسية',['الجنسية','nationality']],
+ ['company','الشركة',['الشركة','اسم الشركة','company','company name']],
+ ['company_unified_number','الرقم الموحد للشركة',['الرقم الموحد','الرقم الموحد للشركة','unified number','company unified number']],
  ['national_id','رقم الهوية الوطنية / الإقامة',['رقم الاقامة','رقم الإقامة','رقم الهوية','الهوية الوطنية','رقم الهوية / الإقامة','رقم الهوية الوطنية / الإقامة','national id','iqama']],
  ['residency_expiry_date','تاريخ انتهاء الإقامة',['تاريخ انتهاء الإقامة','انتهاء الإقامة','تاريخ انتهاء الاقامة','iqama expiry','residency expiry']],
  ['phone','الجوال',['الجوال','رقم الجوال','الهاتف','phone','mobile']],
