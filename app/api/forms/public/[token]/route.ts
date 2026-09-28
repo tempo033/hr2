@@ -62,8 +62,9 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
   await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
   await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
   const stages=form.replacement?[['replacement','البديل'],['hr','الموارد البشرية'],['general_manager','المدير العام']]:[['hr','الموارد البشرية'],['general_manager','المدير العام']]
-  for(const [scope] of stages){const exr=await db('hr_form_links?select=id&form_type=eq.leave&record_id=eq.'+encodeURIComponent(link.record_id)+'&link_scope=eq.leave:'+scope+'&limit=1');const ex=await exr.json();if(!ex?.length)await db('hr_form_links',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'leave',record_id:link.record_id,employee_id:link.employee_id,created_by:link.created_by,link_scope:'leave:'+scope,status:'active',created_at:now,updated_at:now})})}
-  return NextResponse.json({ok:true,record_id:link.record_id})
+  const createdLinks:any[]=[]
+  for(const [scope] of stages){const exr=await db('hr_form_links?select=id,token,link_scope,status&form_type=eq.leave&record_id=eq.'+encodeURIComponent(link.record_id)+'&link_scope=eq.leave:'+scope+'&limit=1');const ex=await exr.json();if(!ex?.length){const cr=await db('hr_form_links',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'leave',record_id:link.record_id,employee_id:link.employee_id,created_by:link.created_by,link_scope:'leave:'+scope,status:'active',created_at:now,updated_at:now})});const cd=await cr.json().catch(()=>null);if(!cr.ok||!cd?.[0]?.id)return NextResponse.json({error:cd?.message||cd?.hint||'تعذر إنشاء روابط اعتماد طلب الإجازة.'},{status:500});createdLinks.push(cd[0])}else createdLinks.push(ex[0])}
+  return NextResponse.json({ok:true,record_id:link.record_id,links:createdLinks})
  }
 
  if(link.form_type==='leave'&&link.link_scope?.startsWith('leave:')){
