@@ -72,7 +72,9 @@ export default function EmployeesPage(){
   const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=Object.keys(data[0]).map(()=>({wch:24}))
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ملفات الموظفين')
   XLSX.writeFile(wb,'ملفات_الموظفين_'+new Date().toISOString().slice(0,10)+'.xlsx')
- }\n\n const deleteSelected = async (all = false) => {
+ }
+
+ const deleteSelected = async (all = false) => {
   if (!all && selected.length === 0) return
   if (!confirm(all ? 'سيتم حذف جميع ملفات الموظفين. هل أنت متأكد؟' : 'سيتم حذف الموظفين المحددين. هل أنت متأكد؟')) return
   setBusy(true)
