@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server'
-import {getServerAuth,supabaseHeaders} from '@/lib/server-auth'
+import {getServerAuth,PUBLIC_KEY} from '@/lib/server-auth'
 const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
 const ROLES=['admin','hr','interviewer','manager']
 const FIELDS=['employee_number','full_name','nationality','national_id','phone','email','date_of_birth','marital_status','degree','specialization','job_title','department','project_name','work_location','manager_name','hire_date','contract_type','salary','employment_status','residency_status','basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances','notes','job_description_id']
@@ -7,7 +7,7 @@ function norm(v:any){return String(v??'').trim().toLowerCase().replace(/[إأآ]
 function clean(v:any){if(v===undefined||v===null)return null;const s=String(v).trim();return s||null}
 function money(v:any){if(v===undefined||v===null||v==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null}
 function dateValue(v:any){if(v===undefined||v===null||v==='')return null;if(v instanceof Date&&!isNaN(v.getTime()))return v.toISOString().slice(0,10);const s=String(v).trim();if(!s)return null;let m=s.match(/^(\\d{4})[-\\/](\\d{1,2})[-\\/](\\d{1,2})$/);if(m){const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));if(d.getFullYear()===Number(m[1])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[3]))return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0')}m=s.match(/^(\\d{1,2})[-\\/](\\d{1,2})[-\\/](\\d{4})$/);if(m){const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));if(d.getFullYear()===Number(m[3])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1]))return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0')}return null}
-async function rest(path:string,auth:any,init?:RequestInit){const serviceKey=auth.serviceKey as string|null;const legacy=!!serviceKey&&serviceKey.split('.').length===3;const headers:Record<string,string>={apikey:serviceKey||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||'',Accept:'application/json','Content-Type':'application/json',...(init?.headers as Record<string,string>||{})};if(legacy)headers.Authorization=`Bearer ${serviceKey}`;else if(!serviceKey)headers.Authorization=`Bearer ${auth.token}`;return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers,cache:'no-store'})}
+async function rest(path:string,auth:any,init?:RequestInit){const headers:Record<string,string>={Accept:'application/json','Content-Type':'application/json',...(init?.headers as Record<string,string>||{})};headers.apikey=PUBLIC_KEY;headers.Authorization=`Bearer ${auth.token}`;return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers,cache:'no-store'})}
 async function syncResidencyDocument(employeeId:string,input:any,auth:any){
  if(norm(input.nationality)==='سعودي' || !input.residency_expiry_date) return null
  const docsRes=await rest('employee_documents?select=*&employee_id=eq.'+encodeURIComponent(employeeId)+'&order=updated_at.desc',auth)
@@ -49,7 +49,7 @@ export async function POST(req:NextRequest){
    }else{
     let no=clean(input.employee_number);if(!no){do{max++;no='EMP-'+String(max).padStart(4,'0')}while(used.has(norm(no)))}const key=norm(no);if(seen.has(key)||used.has(key)){result.ambiguous.push({full_name:input.full_name,reason:'الرقم الوظيفي '+no+' مكرر'});continue};seen.add(key);used.add(key)
     const payload:any={};for(const f of FIELDS)if(input[f]!==undefined&&input[f]!==null&&input[f]!=='')payload[f]=input[f];payload.employee_number=no;if(company)payload.company_id=company.id
-    const r=await rest('employee_records',{method:'POST',headers:{Prefer:'return=representation','Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)return NextResponse.json({error:await r.text(),failedEmployee:input.full_name},{status:500});const createdEmployee=(await r.json())[0];await syncResidencyDocument(createdEmployee.id,input,auth);result.created.push(createdEmployee)
+    const r=await rest('employee_records',auth,{method:'POST',headers:{Prefer:'return=representation','Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)return NextResponse.json({error:await r.text(),failedEmployee:input.full_name},{status:500});const createdEmployee=(await r.json())[0];await syncResidencyDocument(createdEmployee.id,input,auth);result.created.push(createdEmployee)
    }
   }
   return NextResponse.json({ok:true,...result,summary:{created:result.created.length,updated:result.updated.length,unchanged:result.unchanged.length,ambiguous:result.ambiguous.length}})
