@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     const headers = supabaseHeaders(auth)
     const [employeesRes, documentsRes] = await Promise.all([
-      fetch(`${URL}/rest/v1/employee_records?select=id,employee_number,full_name,national_id,nationality,job_title,department,residency_status,employment_status,hire_date&order=created_at.desc`, { headers, cache: 'no-store' }),
+      fetch(`${URL}/rest/v1/employee_records?select=id,employee_number,full_name,national_id,nationality,job_title,department,residency_status,employment_status,hire_date,company_id,company:employee_companies(id,name,unified_number)&order=created_at.desc`, { headers, cache: 'no-store' }),
       fetch(`${URL}/rest/v1/employee_documents?select=id,employee_id,document_type,document_name,document_number,issue_date,expiry_date,status,updated_at&order=updated_at.desc`, { headers, cache: 'no-store' }),
     ])
 
