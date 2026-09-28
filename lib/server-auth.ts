@@ -25,7 +25,7 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 
   const user = await authRes.json()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || null
-  const apiKey = serviceKey || PUBLIC_KEY
+  const apiKey = serviceKey && serviceKey.split('.').length !== 3 ? serviceKey : (PUBLIC_KEY || serviceKey || '')
   const legacyServiceJwt = !!serviceKey && serviceKey.split('.').length === 3
   const authorization = legacyServiceJwt ? `Bearer ${serviceKey}` : `Bearer ${token}`
   const profileRes = await fetch(
@@ -40,8 +40,8 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 }
 
 export function supabaseHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
-  const apiKey = auth.serviceKey || PUBLIC_KEY
   const legacyServiceJwt = !!auth.serviceKey && auth.serviceKey.split('.').length === 3
+  const apiKey = legacyServiceJwt ? auth.serviceKey! : (auth.serviceKey || PUBLIC_KEY)
   const headers: Record<string, string> = { apikey: apiKey, Accept: 'application/json', 'Content-Type': 'application/json', ...extra }
   if (auth.serviceKey && !legacyServiceJwt) delete headers.Authorization
   if (legacyServiceJwt) headers.Authorization = `Bearer ${auth.serviceKey}`
