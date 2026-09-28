@@ -43,7 +43,8 @@ function residencyFor(e:Employee) {
   return latestDoc(docsFor(e, ['إقامة','اقامة','residency','iqama']))
 }
 function workPermitFor(e:Employee) {
-  return latestDoc(docsFor(e, ['رخصة عمل','رخصه عمل','work permit','work_license','work licence']))
+  // مصدر واحد للتاريخ: انتهاء الإقامة لغير السعودي، ويستخدم لحساب حالة رخصة العمل أيضاً.
+  return isSaudi(e) ? null : residencyFor(e)
 }
 function statusLabel(state:string) {
   return state==='expired'?'منتهية':state==='30'?'تنتهي خلال 30 يوم':state==='valid'?'سارية لأكثر من 30 يوم':'غير متوفر'
