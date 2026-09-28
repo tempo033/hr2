@@ -50,7 +50,7 @@ function statusLabel(state:string) {
 }
 function StatusPill({state}:{state:string}) {
   const cls = state==='expired' ? 'bg-red-50 text-red-700 border-red-200' : state==='30' ? 'bg-amber-50 text-amber-700 border-amber-200' : state==='valid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'
-  return <span className={'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-black '+cls}>{stateLabel(state)}</span>
+  return <span className={'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-black '+cls}>{statusLabel(state)}</span>
 }
 function StatCard({title,value,icon:Icon,kind,onClick,active}:{title:string;value:number;icon:any;kind?:'blue'|'green'|'red'|'amber';onClick?:()=>void;active?:boolean}) {
   const tone = kind==='red'?'border-red-100 bg-red-50/60':kind==='amber'?'border-amber-100 bg-amber-50/60':kind==='green'?'border-emerald-100 bg-emerald-50/60':'border-slate-200 bg-white'
