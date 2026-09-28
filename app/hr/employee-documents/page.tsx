@@ -18,7 +18,7 @@ type Employee = {
 }
 type Filter =
   | 'all'|'saudi'|'sponsored'|'work_expired'|'work_30'|'res_expired'|'res_30'
-  | 'insurance_expired'|'no_insurance'|'missing'
+  | 'insurance_expired'|'insured'|'no_insurance'|'work_missing'|'res_missing'|'missing'
 
 const DAY = 86400000
 const norm = (v:any) => String(v ?? '').trim().toLowerCase()
@@ -99,7 +99,10 @@ export default function EmployeeDocumentsDashboard() {
       case 'res_expired': return e.resState==='expired'
       case 'res_30': return e.resState==='30'
       case 'insurance_expired': return e.insState==='expired'
+      case 'insured': return e.insState==='valid'||e.insState==='30'
       case 'no_insurance': return e.insState==='missing'
+      case 'work_missing': return e.workState==='missing'
+      case 'res_missing': return e.resState==='missing'
       case 'missing': return e.missing
       default: return true
     }
@@ -162,17 +165,17 @@ export default function EmployeeDocumentsDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
         <section className="rounded-2xl border bg-white p-5 shadow-sm"><h2 className="text-xl font-black text-[#09233f] mb-4">حالة رخص العمل</h2><div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            ['🔴 رخص عمل منتهية',stats.workExpired,'work_expired'],['🟠 تنتهي خلال 30 يوم',stats.work30,'work_30'],['🟢 سارية لأكثر من 30 يوم',stats.workValid,'all'],['⚪ بدون بيانات',stats.workMissing,'missing']
+            ['🔴 رخص عمل منتهية',stats.workExpired,'work_expired'],['🟠 تنتهي خلال 30 يوم',stats.work30,'work_30'],['🟢 سارية لأكثر من 30 يوم',stats.workValid,'all'],['⚪ بدون بيانات',stats.workMissing,'work_missing']
           ].map(([label,value,f])=><button key={label} onClick={()=>choose(f==='all'?'all':f as Filter)} className="rounded-xl border p-4 text-right hover:shadow-sm"><div className="font-black">{label}</div><div className="text-2xl font-black text-[#09233f] mt-1">{value}</div></button>)}
         </div></section>
         <section className="rounded-2xl border bg-white p-5 shadow-sm"><h2 className="text-xl font-black text-[#09233f] mb-4">حالة الإقامات</h2><div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            ['🔴 إقامات منتهية',stats.resExpired,'res_expired'],['🟠 تنتهي خلال 30 يوم',stats.res30,'res_30'],['🟢 سارية لأكثر من 30 يوم',stats.resValid,'all'],['⚪ بيانات إقامة ناقصة',stats.resMissing,'missing']
+            ['🔴 إقامات منتهية',stats.resExpired,'res_expired'],['🟠 تنتهي خلال 30 يوم',stats.res30,'res_30'],['🟢 سارية لأكثر من 30 يوم',stats.resValid,'all'],['⚪ بيانات إقامة ناقصة',stats.resMissing,'res_missing']
           ].map(([label,value,f])=><button key={label} onClick={()=>choose(f==='all'?'all':f as Filter)} className="rounded-xl border p-4 text-right hover:shadow-sm"><div className="font-black">{label}</div><div className="text-2xl font-black text-[#09233f] mt-1">{value}</div></button>)}
         </div></section>
       </div>
 
-      <section className="rounded-2xl border bg-white p-5 shadow-sm mb-6"><div className="flex items-center justify-between gap-3 mb-4"><h2 className="text-xl font-black text-[#09233f]">التأمين الطبي</h2><span className="text-sm text-slate-500">ساري: {stats.insured} · منتهي: {stats.insExpired} · بدون تأمين/بيانات: {stats.insMissing}</span></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><button onClick={()=>choose('all')} className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-right"><div className="font-black text-emerald-700">🟢 تأمين ساري</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insured}</div></button><button onClick={()=>choose('insurance_expired')} className="rounded-xl border border-red-200 bg-red-50 p-4 text-right"><div className="font-black text-red-700">🔴 تأمين منتهي</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insExpired}</div></button><button onClick={()=>choose('no_insurance')} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-right"><div className="font-black text-slate-600">⚪ بدون تأمين / بيانات</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insMissing}</div></button></div></section>
+      <section className="rounded-2xl border bg-white p-5 shadow-sm mb-6"><div className="flex items-center justify-between gap-3 mb-4"><h2 className="text-xl font-black text-[#09233f]">التأمين الطبي</h2><span className="text-sm text-slate-500">ساري: {stats.insured} · منتهي: {stats.insExpired} · بدون تأمين/بيانات: {stats.insMissing}</span></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><button onClick={()=>choose('insured')} className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-right"><div className="font-black text-emerald-700">🟢 تأمين ساري</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insured}</div></button><button onClick={()=>choose('insurance_expired')} className="rounded-xl border border-red-200 bg-red-50 p-4 text-right"><div className="font-black text-red-700">🔴 تأمين منتهي</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insExpired}</div></button><button onClick={()=>choose('no_insurance')} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-right"><div className="font-black text-slate-600">⚪ بدون تأمين / بيانات</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insMissing}</div></button></div></section>
 
       <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b flex flex-col lg:flex-row gap-3 justify-between"><div><h2 className="text-xl font-black text-[#09233f]">الموظفون المشمولون</h2><p className="text-sm text-slate-500 mt-1">عرض {rows.length} من {employees.length} موظفاً · التاريخ: {today.toLocaleDateString('ar-SA')}</p></div><div className="relative lg:w-[420px]"><Search className="absolute right-3 top-3 text-slate-400" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث بالاسم أو الرقم أو الوظيفة..." className="w-full border rounded-xl pr-10 pl-3 py-2.5"/></div></div>
