@@ -45,7 +45,9 @@ export async function GET(req: NextRequest) {
         documents: byEmployee.get(e.id) || [],
       }))
 
-    return NextResponse.json({ employees: rows, generated_at: new Date().toISOString() }, { headers: { 'Cache-Control': 'no-store' } })
+    const companiesRes=await fetch(`${URL}/rest/v1/employee_companies?select=id,name,unified_number&order=name.asc`, { headers, cache: 'no-store' })
+    const companies=companiesRes.ok?await companiesRes.json():[]
+    return NextResponse.json({ employees: rows, companies, generated_at: new Date().toISOString() }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'تعذر تحميل لوحة الموظفين' }, { status: 500 })
   }
