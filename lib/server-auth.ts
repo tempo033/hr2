@@ -25,12 +25,10 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 
   const user = await authRes.json()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || null
-  const apiKey = serviceKey && serviceKey.split('.').length !== 3 ? serviceKey : (PUBLIC_KEY || serviceKey || '')
-  const legacyServiceJwt = !!serviceKey && serviceKey.split('.').length === 3
-  const authorization = legacyServiceJwt ? `Bearer ${serviceKey}` : `Bearer ${token}`
+  // Always validate the signed-in user with the public key + user JWT. Never send a sb_secret key as Authorization.
   const profileRes = await fetch(
     `${SUPABASE_URL}/rest/v1/app_users?select=role,is_active&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,
-    { headers: { apikey: apiKey, Authorization: authorization }, cache: 'no-store' },
+    { headers: { apikey: PUBLIC_KEY, Authorization: `Bearer ${token}` }, cache: 'no-store' },
   )
   const rows = profileRes.ok ? await profileRes.json() : []
   const role = user.email?.toLowerCase() === BOOTSTRAP_EMAIL ? 'admin' : rows[0]?.role
