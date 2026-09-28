@@ -105,9 +105,6 @@ export default function EmployeeDocumentsDashboard() {
     }
   }
   const rows=prepared.filter(matches)
-  const setFilter=(f:Filter)=>setFilterState(f)
-  const setFilterState=(f:Filter)=>setFilter as any
-  // Replaced below by direct setter to keep the filter cards declarative.
   const choose=(f:Filter)=>setFilter(f)
 
   const stats=useMemo(()=>{
