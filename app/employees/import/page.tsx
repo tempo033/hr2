@@ -9,7 +9,8 @@ const fields=[
  ['employee_number','الرقم الوظيفي',['الرقم الوظيفي','رقم الموظف','رقم العامل','employee number','employee no','emp no']],
  ['full_name','الاسم الكامل',['الاسم','اسم الموظف','اسم العامل','الاسم الكامل','full name','name']],
  ['nationality','الجنسية',['الجنسية','nationality']],
- ['national_id','رقم الهوية / الإقامة',['رقم الاقامة','رقم الإقامة','رقم الهوية','الهوية الوطنية','رقم الهوية / الإقامة','national id','iqama']],
+ ['national_id','رقم الهوية الوطنية / الإقامة',['رقم الاقامة','رقم الإقامة','رقم الهوية','الهوية الوطنية','رقم الهوية / الإقامة','رقم الهوية الوطنية / الإقامة','national id','iqama']],
+ ['residency_expiry_date','تاريخ انتهاء الإقامة',['تاريخ انتهاء الإقامة','انتهاء الإقامة','تاريخ انتهاء الاقامة','iqama expiry','residency expiry']],
  ['phone','الجوال',['الجوال','رقم الجوال','الهاتف','phone','mobile']],
  ['email','البريد الإلكتروني',['البريد الإلكتروني','البريد الالكتروني','email']],
  ['date_of_birth','تاريخ الميلاد',['تاريخ الميلاد','date of birth','birth date']],
@@ -49,7 +50,7 @@ export default function EmployeeImportPage(){
    if(rows.length<2)throw new Error('الملف لا يحتوي على صفوف بيانات.')
    const headers=rows[0].map(norm);const maps=fields.map(([key,label,aliases])=>{const index=headers.findIndex(h=>(aliases as readonly string[]).some(a=>norm(a)===h));return{key,label,index,source:index>=0?String(rows[0][index]):'غير موجود'}});setMapping(maps)
    const usable=maps.filter(x=>x.index>=0);if(!usable.some(x=>x.key==='full_name'))throw new Error('لم أجد عمود الاسم. ارفع الملف وسيقوم النظام بمطابقة عناوين الأعمدة العربية أو الإنجليزية.')
-   const data=rows.slice(1).map((r:any[])=>{const o:any={};maps.forEach(m=>{if(m.index<0)return;let v=r[m.index];if(['hire_date','date_of_birth'].includes(m.key))v=dateValue(v);if(['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances'].includes(m.key))v=money(v);if(v!==''&&v!==null&&v!==undefined)o[m.key]=typeof v==='string'?v.trim():v});return o}).filter(x=>x.full_name)
+   const data=rows.slice(1).map((r:any[])=>{const o:any={};maps.forEach(m=>{if(m.index<0)return;let v=r[m.index];if(['hire_date','date_of_birth','residency_expiry_date'].includes(m.key))v=dateValue(v);if(['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances'].includes(m.key))v=money(v);if(v!==''&&v!==null&&v!==undefined)o[m.key]=typeof v==='string'?v.trim():v});return o}).filter(x=>x.full_name)
    if(!data.length)throw new Error('لم يتم العثور على موظفين صالحين.')
    setPreview(data.slice(0,10));setMessage('تم تحليل الملف. سيتم مطابقة الموظف بالرقم الوظيفي ثم الهوية/الإقامة ثم الجوال ثم الاسم. الحقول الفارغة في الملف لن تمسح البيانات القديمة.')
    const r=await fetch('/api/employees/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:data})});const b=await r.json();if(!r.ok)throw new Error(b.error||'تعذر الاستيراد')
