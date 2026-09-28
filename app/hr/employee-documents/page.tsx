@@ -11,9 +11,10 @@ type Doc = {
   id:string; document_type:string|null; document_name:string|null; document_number:string|null
   issue_date:string|null; expiry_date:string|null; status:string|null; updated_at:string|null
 }
+type Company = {id:string;name:string;unified_number:string}
 type Employee = {
   id:string; employee_number:string|null; full_name:string; national_id:string|null; nationality:string|null
-  job_title:string|null; department:string|null; residency_status:string|null; employment_status:string|null
+  job_title:string|null; department:string|null; company_id:string|null; company:Company|null; residency_status:string|null; employment_status:string|null
   hire_date:string|null; scope:'سعودي'|'أجنبي على الكفالة'; documents:Doc[]
 }
 type Filter =
@@ -62,9 +63,11 @@ function StatCard({title,value,icon:Icon,kind,onClick,active}:{title:string;valu
 
 export default function EmployeeDocumentsDashboard() {
   const [employees,setEmployees]=useState<Employee[]>([])
+  const [companies,setCompanies]=useState<Company[]>([])
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
   const [filter,setFilter]=useState<Filter>('all')
+  const [companyFilter,setCompanyFilter]=useState('all')
   const [query,setQuery]=useState('')
   const [today,setToday]=useState(new Date())
 
@@ -74,7 +77,7 @@ export default function EmployeeDocumentsDashboard() {
       const r=await fetch('/api/hr/employee-documents-dashboard',{cache:'no-store'})
       const b=await r.json()
       if(!r.ok) throw new Error(b.error||'تعذر تحميل البيانات')
-      setEmployees(b.employees||[]); setToday(new Date())
+      setEmployees(b.employees||[]); setCompanies(b.companies||[]); setToday(new Date())
     } catch(e) { setError(e instanceof Error?e.message:'تعذر تحميل البيانات') }
     finally { setLoading(false) }
   }
@@ -90,6 +93,7 @@ export default function EmployeeDocumentsDashboard() {
   }),[employees,today])
 
   const matches=(e:any)=>{
+    if(companyFilter!=='all' && e.company_id!==companyFilter) return false
     const q=query.trim().toLowerCase()
     if(q && ![e.full_name,e.employee_number,e.national_id,e.job_title,e.department,e.nationality].some((v:any)=>String(v||'').toLowerCase().includes(q))) return false
     switch(filter){
@@ -110,6 +114,8 @@ export default function EmployeeDocumentsDashboard() {
   }
   const rows=prepared.filter(matches)
   const choose=(f:Filter)=>setFilter(f)
+  const companyStats=(list:any[])=>({total:list.length,saudi:list.filter(isSaudi).length,sponsored:list.filter((e:any)=>!isSaudi(e)).length,resExpired:list.filter((e:any)=>e.resState==='expired').length,res30:list.filter((e:any)=>e.resState==='30').length,resValid:list.filter((e:any)=>e.resState==='valid').length,resMissing:list.filter((e:any)=>e.resState==='missing').length,workExpired:list.filter((e:any)=>e.workState==='expired').length,work30:list.filter((e:any)=>e.workState==='30').length,workValid:list.filter((e:any)=>e.workState==='valid').length,workMissing:list.filter((e:any)=>e.workState==='missing').length,insured:list.filter((e:any)=>e.insState==='valid'||e.insState==='30').length,insExpired:list.filter((e:any)=>e.insState==='expired').length,insMissing:list.filter((e:any)=>e.insState==='missing').length,missing:list.filter((e:any)=>e.missing).length})
+  const groupStats=useMemo(()=>companyStats(prepared),[prepared])
 
   const stats=useMemo(()=>{
     const scope=rows
@@ -158,7 +164,33 @@ export default function EmployeeDocumentsDashboard() {
         <StatCard title="الإقامات المنتهية" value={stats.resExpired} icon={IdCard} kind="red" onClick={()=>choose('res_expired')} active={filter==='res_expired'}/>
       </section>
 
-      <section className="rounded-2xl border border-amber-100 bg-white p-5 mb-6 shadow-sm">
+<section className="rounded-2xl border border-[#d9b45a] bg-white p-5 mb-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div><h2 className="text-2xl font-black text-[#09233f]">إجمالي المجموعة</h2><p className="text-sm text-slate-500 mt-1">إجمالي جميع الموظفين المشمولين وفق قواعد الداشبورد الحالية، بما في ذلك من لم يتم تحديد شركته بعد.</p></div>
+          <select value={companyFilter} onChange={e=>setCompanyFilter(e.target.value)} className="border rounded-xl px-4 py-3 bg-white font-bold min-w-[280px]">
+            <option value="all">كل الشركات</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name} — {c.unified_number}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mt-5">
+          {[['إجمالي الموظفين',groupStats.total],['السعوديون',groupStats.saudi],['الأجانب على الكفالة',groupStats.sponsored],['الإقامات المنتهية',groupStats.resExpired],['رخص العمل المنتهية',groupStats.workExpired],['لديهم تأمين طبي',groupStats.insured]].map(([label,value])=><div key={label} className="rounded-xl border bg-slate-50 p-4"><div className="text-sm font-bold text-slate-500">{label}</div><div className="text-2xl font-black text-[#09233f] mt-1">{value}</div></div>)}
+        </div>
+        <div className="mt-3 text-sm font-bold text-amber-700">موظفون بدون شركة: {prepared.filter(e=>!e.company_id).length}</div>
+      </section>
+
+      <section className="space-y-5 mb-6">
+        {companies.map(company=>{
+          const list=prepared.filter(e=>e.company_id===company.id)
+          const st=companyStats(list)
+          const cards=[['إجمالي الموظفين',st.total,'blue'],['السعوديون',st.saudi,'green'],['الأجانب على الكفالة',st.sponsored,'blue'],['الإقامات المنتهية',st.resExpired,'red'],['الإقامات خلال 30 يوم',st.res30,'amber'],['رخص العمل المنتهية',st.workExpired,'red'],['رخص العمل خلال 30 يوم',st.work30,'amber'],['رخص العمل > 30 يوم',st.workValid,'green'],['لديهم تأمين طبي',st.insured,'green'],['بدون تأمين طبي',st.insMissing,'amber'],['بيانات ناقصة',st.missing,'amber']]
+          return <section key={company.id} className="rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4"><div><h2 className="text-xl font-black text-[#09233f]">🏢 {company.name}</h2><div className="text-sm font-bold text-[#b88618] mt-1">الرقم الموحد: {company.unified_number}</div></div><button onClick={()=>setCompanyFilter(company.id)} className="rounded-xl border px-4 py-2 font-bold text-[#09233f]">عرض موظفي الشركة</button></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{cards.map(([label,value,kind])=><button key={label} onClick={()=>setCompanyFilter(company.id)} className={'rounded-xl border p-4 text-right '+(kind==='red'?'bg-red-50 border-red-200':kind==='amber'?'bg-amber-50 border-amber-200':kind==='green'?'bg-emerald-50 border-emerald-200':'bg-slate-50')}><div className="text-sm font-bold text-slate-600">{label}</div><div className="text-2xl font-black text-[#09233f] mt-1">{value}</div></button>)}</div>
+            <div className="mt-3 text-xs text-slate-500">الإقامات السارية لأكثر من 30 يوم: {st.resValid} · الإقامات بدون بيانات: {st.resMissing} · رخص العمل بدون بيانات: {st.workMissing} · التأمين المنتهي: {st.insExpired}</div>
+          </section>
+        })}
+      </section>
+
+            <section className="rounded-2xl border border-amber-100 bg-white p-5 mb-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4"><AlertTriangle className="text-amber-600"/><h2 className="text-xl font-black text-[#09233f]">يحتاج إلى إجراء</h2></div>
         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">{critical.map(([label,f,count,kind])=><button key={f} onClick={()=>choose(f as Filter)} className={'rounded-xl border p-3 text-right '+(kind==='red'?'bg-red-50 border-red-200 text-red-700':'bg-amber-50 border-amber-200 text-amber-700')}><div className="text-xs font-bold">{label}</div><div className="mt-1 text-2xl font-black">{count}</div></button>)}</div>
       </section>
@@ -180,9 +212,9 @@ export default function EmployeeDocumentsDashboard() {
 
       <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b flex flex-col lg:flex-row gap-3 justify-between"><div><h2 className="text-xl font-black text-[#09233f]">الموظفون المشمولون</h2><p className="text-sm text-slate-500 mt-1">عرض {rows.length} من {employees.length} موظفاً · التاريخ: {today.toLocaleDateString('ar-SA')}</p></div><div className="relative lg:w-[420px]"><Search className="absolute right-3 top-3 text-slate-400" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث بالاسم أو الرقم أو الوظيفة..." className="w-full border rounded-xl pr-10 pl-3 py-2.5"/></div></div>
-        <div className="overflow-auto"><table className="w-full min-w-[1900px]"><thead className="bg-[#09233f] text-white"><tr>{['اسم الموظف','رقم الموظف','الجنسية','المسمى الوظيفي','القسم','حالة الكفالة','رقم الإقامة/الهوية','انتهاء الإقامة','حالة الإقامة','انتهاء رخصة العمل','حالة رخصة العمل','التأمين الطبي','انتهاء التأمين الطبي','حالة الملف'].map(h=><th key={h} className="p-3 text-right whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
-          {loading?<tr><td colSpan={14} className="p-10 text-center text-slate-500">جاري تحميل بيانات الموظفين...</td></tr>:rows.length===0?<tr><td colSpan={14} className="p-10 text-center text-slate-500">لا توجد نتائج مطابقة.</td></tr>:rows.map(e=><tr key={e.id} className="border-b hover:bg-slate-50">
-            <td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{e.full_name}</Link></td>
+        <div className="overflow-auto"><table className="w-full min-w-[1900px]"><thead className="bg-[#09233f] text-white"><tr>{['اسم الموظف','رقم الموظف','الشركة','الجنسية','المسمى الوظيفي','القسم','حالة الكفالة','رقم الإقامة/الهوية','انتهاء الإقامة','حالة الإقامة','انتهاء رخصة العمل','حالة رخصة العمل','التأمين الطبي','انتهاء التأمين الطبي','حالة الملف'].map(h=><th key={h} className="p-3 text-right whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
+          {loading?<tr><td colSpan={15} className="p-10 text-center text-slate-500">جاري تحميل بيانات الموظفين...</td></tr>:rows.length===0?<tr><td colSpan={14} className="p-10 text-center text-slate-500">لا توجد نتائج مطابقة.</td></tr>:rows.map(e=><tr key={e.id} className="border-b hover:bg-slate-50">
+            <td className="p-3">{e.company?.name||'غير محددة'}</td><td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{e.full_name}</Link></td>
             <td className="p-3">{e.employee_number||'غير متوفر'}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.job_title||'غير متوفر'}</td><td className="p-3">{e.department||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3">{e.national_id||'غير متوفر'}</td>
             <td className="p-3">{e.res?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.resState==='na'?'غير مطلوب':<StatusPill state={e.resState}/>}</td><td className="p-3">{e.work?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.workState==='na'?'غير مطلوب':<StatusPill state={e.workState}/>}</td>
             <td className="p-3">{e.ins?e.ins.document_name||e.ins.document_type||'متوفر':'غير متوفر'}</td><td className="p-3">{e.ins?.expiry_date||'غير متوفر'}</td><td className="p-3"><span className={'inline-flex rounded-full px-2.5 py-1 text-xs font-black '+(e.missing?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{e.missing?'بيانات ناقصة':'مكتمل'}</span></td>
