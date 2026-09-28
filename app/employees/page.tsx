@@ -1,7 +1,8 @@
 'use client'
 import Link from 'next/link'
 import {useEffect,useMemo,useState} from 'react'
-import {ArrowLeft,Search,Users,Upload,RefreshCw,Trash2,CheckSquare,Square,Printer} from 'lucide-react'
+import * as XLSX from 'xlsx'
+import {ArrowLeft,Search,Users,Upload,RefreshCw,Trash2,CheckSquare,Square,Printer,Download} from 'lucide-react'
 type Employee={id:string;employee_number:string|null;full_name:string;nationality:string|null;national_id:string|null;residency_status:string|null;job_title:string|null;department:string|null;basic_salary:number|null;housing_allowance:number|null;transportation_allowance:number|null;other_allowances:number|null;total_salary_with_allowances:number|null;employment_status:string|null;hire_date:string|null;company_id:string|null;company:{name:string;unified_number:string}|null}
 export default function EmployeesPage(){
  const[employees,setEmployees]=useState<Employee[]>([]),[search,setSearch]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState(''),[selected,setSelected]=useState<string[]>([]),[busy,setBusy]=useState(false)
@@ -47,7 +48,31 @@ export default function EmployeesPage(){
   })
  }
 
- const deleteSelected = async (all = false) => {
+ const exportEmployees = () => {
+  const source = selected.length ? employees.filter(e=>selected.includes(e.id)) : rows
+  if (!source.length) { alert('لا توجد ملفات موظفين للتصدير'); return }
+  const data = source.map(e=>({
+   'الرقم الوظيفي':e.employee_number||'',
+   'اسم الموظف':e.full_name||'',
+   'الشركة':e.company?.name||'غير محددة',
+   'الرقم الموحد للشركة':e.company?.unified_number||'',
+   'الجنسية':e.nationality||'',
+   'رقم الهوية / الإقامة':e.national_id||'',
+   'حالة الإقامة / الكفالة':e.residency_status||'',
+   'المسمى الوظيفي':e.job_title||'',
+   'الإدارة':e.department||'',
+   'تاريخ التعيين':e.hire_date||'',
+   'الحالة الوظيفية':e.employment_status||'',
+   'الراتب الأساسي':e.basic_salary??'',
+   'بدل السكن':e.housing_allowance??'',
+   'بدل النقل':e.transportation_allowance??'',
+   'البدلات الأخرى':e.other_allowances??'',
+   'إجمالي الراتب':e.total_salary_with_allowances??''
+  }))
+  const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=Object.keys(data[0]).map(()=>({wch:24}))
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ملفات الموظفين')
+  XLSX.writeFile(wb,'ملفات_الموظفين_'+new Date().toISOString().slice(0,10)+'.xlsx')
+ }\n\n const deleteSelected = async (all = false) => {
   if (!all && selected.length === 0) return
   if (!confirm(all ? 'سيتم حذف جميع ملفات الموظفين. هل أنت متأكد؟' : 'سيتم حذف الموظفين المحددين. هل أنت متأكد؟')) return
   setBusy(true)
@@ -69,7 +94,7 @@ export default function EmployeesPage(){
   }
  }
  return <main className="min-h-screen bg-[#f5f7fa]" dir="rtl"><div className="max-w-7xl mx-auto p-5 md:p-8">
- <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7"><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center"><Users size={28}/></div><div><div className="text-sm text-[#b88618] font-bold">إدارة الموارد البشرية</div><h1 className="text-3xl font-black text-[#09233f]">ملفات الموظفين</h1><p className="text-slate-500 mt-1">قائمة موحدة للموظفين مع التحديد الجماعي والاستيراد والتحديث دون تكرار.</p></div></div><div className="flex flex-wrap gap-2"><button onClick={load} className="rounded-xl border bg-white px-4 py-2 font-bold inline-flex gap-2 items-center"><RefreshCw size={17}/> تحديث</button><Link href="/employees/import" className="rounded-xl bg-[#09233f] text-white px-4 py-2 font-bold inline-flex gap-2 items-center"><Upload size={17}/> استيراد / تحديث</Link><Link href="/" className="flex items-center gap-2 text-[#09233f] font-bold px-2"><ArrowLeft size={18}/> الرئيسية</Link></div></header>
+ <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7"><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center"><Users size={28}/></div><div><div className="text-sm text-[#b88618] font-bold">إدارة الموارد البشرية</div><h1 className="text-3xl font-black text-[#09233f]">ملفات الموظفين</h1><p className="text-slate-500 mt-1">قائمة موحدة للموظفين مع التحديد الجماعي والاستيراد والتحديث دون تكرار.</p></div></div><div className="flex flex-wrap gap-2"><button onClick={exportEmployees} className="rounded-xl border bg-white px-4 py-2 font-bold inline-flex gap-2 items-center"><Download size={17}/> تصدير ملفات الموظفين</button><button onClick={load} className="rounded-xl border bg-white px-4 py-2 font-bold inline-flex gap-2 items-center"><RefreshCw size={17}/> تحديث</button><Link href="/employees/import" className="rounded-xl bg-[#09233f] text-white px-4 py-2 font-bold inline-flex gap-2 items-center"><Upload size={17}/> استيراد / تحديث</Link><Link href="/" className="flex items-center gap-2 text-[#09233f] font-bold px-2"><ArrowLeft size={18}/> الرئيسية</Link></div></header>
  <section className="card overflow-hidden"><div className="p-4 border-b flex flex-col lg:flex-row gap-3 justify-between"><div className="relative flex-1"><Search className="absolute right-3 top-3 text-slate-400" size={18}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="البحث بالاسم أو الرقم أو الوظيفة أو الإقامة" className="w-full border rounded-xl pr-10 pl-3 py-2.5"/></div><div className="flex flex-wrap gap-2"><button onClick={selectVisible} className="rounded-xl border px-3 py-2 font-bold inline-flex gap-2 items-center">{allVisible?<CheckSquare size={17}/>:<Square size={17}/>} {allVisible?'إلغاء تحديد الظاهر':'تحديد الكل الظاهر'}</button><button onClick={()=>setSelected(employees.map(e=>e.id))} className="rounded-xl border px-3 py-2 font-bold">تحديد الكل</button><button disabled={!selected.length||busy} onClick={()=>deleteSelected(false)} className="rounded-xl border border-red-200 text-red-700 px-3 py-2 font-bold inline-flex gap-2 items-center"><Trash2 size={17}/> حذف المحدد ({selected.length})</button><button disabled={busy||!employees.length} onClick={()=>deleteSelected(true)} className="rounded-xl bg-red-700 text-white px-3 py-2 font-bold">حذف الكل</button></div></div>
  {loading?<div className="p-10 text-center text-slate-500">جاري التحميل...</div>:error?<div className="p-10 text-center text-red-600">{error}</div>:rows.length===0?<div className="p-10 text-center text-slate-500">لا توجد ملفات موظفين.</div>:<div className="overflow-auto"><table className="w-full min-w-[1750px]"><thead className="bg-[#09233f] text-white"><tr><th className="p-3"><input type="checkbox" checked={allVisible} onChange={selectVisible}/></th>{['الرقم الوظيفي','الاسم','الشركة','الجنسية','رقم الهوية / الإقامة','تاريخ التعيين','الحالة','المسمى الوظيفي','الإدارة','الراتب الأساسي','بدل النقل','بدل السكن','البدلات الأخرى','الإجمالي','إجراء'].map(h=><th key={h} className="p-3 text-right">{h}</th>)}</tr></thead><tbody>{rows.map(e=><tr key={e.id} className={selected.includes(e.id)?'border-b bg-amber-50':'border-b hover:bg-slate-50'}><td className="p-3"><input type="checkbox" checked={selected.includes(e.id)} onChange={()=>toggle(e.id)}/></td><td className="p-3 font-bold">{e.employee_number||'—'}</td><td className="p-3"><Link href={'/employees/'+e.id} className="font-black text-[#09233f] hover:underline">{e.full_name}</Link></td><td className="p-3">{e.company?.name||'غير محددة'}</td><td className="p-3">{e.nationality||'—'}</td><td className="p-3">{e.national_id||'—'}</td><td className="p-3">{e.hire_date||'—'}</td><td className="p-3">{e.residency_status||e.employment_status||'—'}</td><td className="p-3">{e.job_title||'—'}</td><td className="p-3">{e.department||'—'}</td><td className="p-3">{e.basic_salary??'—'}</td><td className="p-3">{e.transportation_allowance??'—'}</td><td className="p-3">{e.housing_allowance??'—'}</td><td className="p-3">{e.other_allowances??'—'}</td><td className="p-3">{e.total_salary_with_allowances??'—'}</td><td className="p-3"><div className="flex gap-2"><Link href={'/employees/'+e.id} className="rounded-lg bg-[#09233f] text-white px-3 py-1.5 font-bold">فتح الملف</Link><Link href={'/employees/'+e.id+'/print'} className="rounded-lg border px-3 py-1.5 font-bold inline-flex gap-1"><Printer size={15}/> طباعة</Link></div></td></tr>)}</tbody></table></div>}
  </section></div></main>
