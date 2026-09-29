@@ -72,10 +72,8 @@ function StatusPill({state}:{state:string}) {
   return <span className={'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-black '+cls}>{statusLabel(state)}</span>
 }
 function StatCard({title,value,icon:Icon,kind,onClick,active}:{title:string;value:number;icon:any;kind?:'blue'|'green'|'red'|'amber';onClick?:()=>void;active?:boolean}) {
-  const tone = kind==='red'?'border-red-100 bg-red-50/60':kind==='amber'?'border-amber-100 bg-amber-50/60':kind==='green'?'border-emerald-100 bg-emerald-50/60':'border-slate-200 bg-white'
-  return <button onClick={onClick} className={'text-right rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md '+tone+(active?' ring-2 ring-[#b88618]':'')}>
-    <div className="flex items-start justify-between gap-3"><div><div className="text-sm font-bold text-slate-500">{title}</div><div className="mt-2 text-3xl font-black text-[#09233f]">{value}</div></div><div className="rounded-xl bg-[#09233f] p-3 text-[#d4a72c]"><Icon size={21}/></div></div>
-  </button>
+ const tone=kind==='red'?'critical':kind==='amber'?'warning':kind==='green'?'positive':'neutral'
+ return <button onClick={onClick} className={'res-stat '+tone+(active?' active':'')}><span className="res-stat-icon"><Icon size={18}/></span><span className="res-stat-copy"><small>{title}</small><strong>{value}</strong></span></button>
 }
 
 export default function EmployeeDocumentsDashboard() {
@@ -289,7 +287,7 @@ export default function EmployeeDocumentsDashboard() {
   return <main dir="rtl" className="min-h-screen bg-[#f5f7fa]">
     <div className="max-w-[1800px] mx-auto p-5 md:p-8">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 print:mb-3">
-        <div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center shadow-sm print:hidden"><Users size={29}/></div><div><div className="text-sm font-bold text-[#b88618]">إدارة الموارد البشرية</div><h1 className="text-3xl font-black text-[#09233f]">Dashboard الإقامات الحالية</h1><p className="text-slate-500 mt-1">بيانات مباشرة من ملفات الموظفين الحالية دون إنشاء سجل موظفين جديد.</p></div></div>
+        <div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center shadow-sm print:hidden"><Users size={29}/></div><div><div className="text-sm font-bold text-[#b88618]">إدارة الموارد البشرية</div><span className="hr-page-kicker">RESIDENCE CONTROL CENTER</span><h1 className="text-3xl font-black text-[#09233f]">مركز التحكم في الإقامات والوثائق</h1><p className="text-slate-500 mt-1">متابعة الوثائق والاستحقاقات والتكاليف من بيانات الموظفين الحالية.</p></div></div>
         <div className="flex flex-wrap gap-2 print:hidden">
           {!shareMode&&<button onClick={()=>void createShare()} disabled={shareLoading} className="rounded-xl border border-[#b88618] bg-amber-50 px-4 py-2.5 font-black text-[#09233f] inline-flex items-center gap-2">{shareCopied?<Check size={17}/>:<Share2 size={17}/>} {shareLoading?'جاري إنشاء الرابط...':shareCopied?'تم نسخ الرابط':'مشاركة Dashboard'}</button>}
           {(shareAllowExport||!shareMode)&&<><button onClick={()=>void exportExcel()} className="rounded-xl bg-[#09233f] text-white px-4 py-2.5 font-black inline-flex items-center gap-2"><FileSpreadsheet size={17}/> تصدير Excel</button><button onClick={exportPdf} className="rounded-xl bg-[#b88618] text-white px-4 py-2.5 font-black inline-flex items-center gap-2"><FileDown size={17}/> تصدير PDF</button></>}
