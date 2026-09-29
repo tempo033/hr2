@@ -93,7 +93,8 @@ export default function EmployeeDocumentsDashboard() {
   }),[employees,today])
 
   const matches=(e:any)=>{
-    if(companyFilter!=='all' && e.company_id!==companyFilter) return false
+    if(companyFilter==='undefined' && e.company_id) return false
+    if(companyFilter!=='all' && companyFilter!=='undefined' && e.company_id!==companyFilter) return false
     const q=query.trim().toLowerCase()
     if(q && ![e.full_name,e.employee_number,e.national_id,e.job_title,e.department,e.nationality].some((v:any)=>String(v||'').toLowerCase().includes(q))) return false
     switch(filter){
@@ -168,7 +169,7 @@ export default function EmployeeDocumentsDashboard() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div><h2 className="text-2xl font-black text-[#09233f]">إجمالي المجموعة</h2><p className="text-sm text-slate-500 mt-1">إجمالي جميع الموظفين المشمولين وفق قواعد الداشبورد الحالية، بما في ذلك من لم يتم تحديد شركته بعد.</p></div>
           <select value={companyFilter} onChange={e=>setCompanyFilter(e.target.value)} className="border rounded-xl px-4 py-3 bg-white font-bold min-w-[280px]">
-            <option value="all">كل الشركات</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name} — {c.unified_number}</option>)}
+            <option value="all">جميع الشركات</option><option value="undefined">غير محددة</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name} — {c.unified_number}</option>)}
           </select>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mt-5">
