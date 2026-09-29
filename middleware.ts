@@ -7,7 +7,11 @@ function isPublicExternalLink(pathname: string) {
 }
 
 function isPublicExternalApi(pathname: string) {
-  return /^\/api\/(evaluation|candidate|offer)\/[^/]+\/?$/.test(pathname) || /^\/api\/forms\/public\/[^/]+\/?$/.test(pathname)
+  return /^\/api\/(evaluation|candidate|offer)\/[^/]+\/?$/.test(pathname) || /^\/api\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/api\/hr\/employee-documents-dashboard\/share\/[0-9a-f-]{36}\/?$/i.test(pathname)
+}
+
+function isPublicDashboardShare(request: NextRequest) {
+  return request.nextUrl.pathname === '/hr/employee-documents' && /^[0-9a-f-]{36}$/i.test(request.nextUrl.searchParams.get('share') || '')
 }
 
 export async function middleware(request: NextRequest) {
@@ -19,7 +23,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
     isPublicExternalLink(pathname) ||
-    isPublicExternalApi(pathname)
+    isPublicExternalApi(pathname) ||
+    isPublicDashboardShare(request)
   ) return NextResponse.next()
 
   const token = request.cookies.get(COOKIE)?.value
