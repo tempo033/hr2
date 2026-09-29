@@ -44,7 +44,7 @@ export default function CompaniesPage(){
     return companies.filter(c=>{
       if(!includeInactive&&!c.is_active)return false
       if(!q)return true
-      return [c.name,c.name_en,c.unified_number,c.commercial_registration,c.company_type,c.parent?.name].some(v=>String(v||'').toLowerCase().includes(q))
+      return [c.name,c.name_en,c.unified_number,c.commercial_registration,c.company_type,companies.find(p=>p.id===c.parent_company_id)?.name].some(v=>String(v||'').toLowerCase().includes(q))
     })
   },[companies,search,includeInactive])
 
