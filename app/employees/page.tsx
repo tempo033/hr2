@@ -11,6 +11,7 @@ const emptyFilters:Filters={nationality:'',department:'',job_title:'',employment
 function norm(v:any){return String(v??'').trim().toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ')}
 function isSaudi(v:any){return ['سعودي','السعودي','السعوديه','السعودية','saudi','saudi arabian','saudi arabia'].includes(norm(v))}
 function residencyState(e:Employee){if(isSaudi(e.nationality))return 'غير مطبق';if(!e.residency_expiry_date)return 'غير محددة';const today=new Date(new Date().toISOString().slice(0,10)+'T00:00:00').getTime();const expiry=new Date(e.residency_expiry_date+'T00:00:00').getTime();const diff=(expiry-today)/86400000;if(diff<0)return 'منتهية';if(diff<=30)return 'تنتهي خلال 30 يوم';return 'سارية'}
+function dateState(date:string){const today=new Date(new Date().toISOString().slice(0,10)+'T00:00:00').getTime();const expiry=new Date(date+'T00:00:00').getTime();const diff=(expiry-today)/86400000;if(diff<0)return 'منتهية';if(diff<=30)return 'تنتهي خلال 30 يوم';return 'سارية'}
 function dateOk(value:string,min:string,max:string){if(!value)return !min&&!max;if(min&&value<min)return false;if(max&&value>max)return false;return true}
 
 export default function EmployeesPage(){
