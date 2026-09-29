@@ -183,6 +183,12 @@ export default function EmployeeDocumentsDashboard() {
     }
   },[rows])
 
+  const filteredRenewalStats=useMemo(()=>({
+    work:rows.reduce((s:any,e:any)=>s+e.renewal.workCost,0),
+    residency:rows.reduce((s:any,e:any)=>s+e.renewal.residencyCost,0),
+    total:rows.reduce((s:any,e:any)=>s+e.renewal.totalCost,0),
+  }),[rows])
+
   const toggleCompany=(id:string)=>setExpandedCompanies(prev=>{
     const next=new Set(prev)
     if(next.has(id)) next.delete(id); else next.add(id)
@@ -213,9 +219,9 @@ export default function EmployeeDocumentsDashboard() {
       ['Dashboard الإقامات الحالية',''],
       ['تاريخ إنشاء التقرير',today.toLocaleDateString('ar-SA')],
       ['إجمالي الموظفين المشمولين',stats.total],
-      ['إجمالي تكلفة رخص العمل',renewalStats.work],
-      ['إجمالي تكلفة الإقامات',renewalStats.residency],
-      ['إجمالي التكلفة',renewalStats.total],
+      ['إجمالي تكلفة رخص العمل',filteredRenewalStats.work],
+      ['إجمالي تكلفة الإقامات',filteredRenewalStats.residency],
+      ['إجمالي التكلفة',filteredRenewalStats.total],
     ]
     const ws2=XLSX.utils.aoa_to_sheet(summary)
     const wb=XLSX.utils.book_new()
@@ -291,7 +297,7 @@ export default function EmployeeDocumentsDashboard() {
         </div>
       </header>
       {shareMode&&<div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center justify-between gap-3 print:hidden"><div><div className="font-black text-emerald-800">وضع العرض فقط</div><div className="text-sm text-emerald-700 mt-1">هذا الرابط للعرض فقط ولا يمنح أي صلاحية لتعديل الموظفين أو الشركات أو التكاليف.</div></div><span className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 border border-emerald-200">Read Only</span></div>}
-      {shareUrl&&!shareMode&&<div className="mb-5 rounded-2xl border border-[#d9b45a] bg-white p-4 print:hidden"><div className="font-black text-[#09233f] mb-2">رابط المشاركة</div><div className="flex flex-col md:flex-row gap-2"><input readOnly value={shareUrl} className="flex-1 border rounded-xl px-3 py-2.5 bg-slate-50" /><button onClick={()=>{void navigator.clipboard?.writeText(shareUrl);setShareCopied(true)}} className="rounded-xl bg-[#09233f] text-white px-4 py-2.5 font-black inline-flex items-center justify-center gap-2"><Copy size={16}/> نسخ الرابط</button></div></div>
+      {shareUrl&&!shareMode&&<div className="mb-5 rounded-2xl border border-[#d9b45a] bg-white p-4 print:hidden"><div className="font-black text-[#09233f] mb-2">رابط المشاركة</div><div className="flex flex-col md:flex-row gap-2"><input readOnly value={shareUrl} className="flex-1 border rounded-xl px-3 py-2.5 bg-slate-50" /><button onClick={()=>{void navigator.clipboard?.writeText(shareUrl);setShareCopied(true)}} className="rounded-xl bg-[#09233f] text-white px-4 py-2.5 font-black inline-flex items-center justify-center gap-2"><Copy size={16}/> نسخ الرابط</button></div></div>}
 
       {error&&<div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
@@ -316,7 +322,7 @@ export default function EmployeeDocumentsDashboard() {
         <div className="mt-3 text-sm font-bold text-amber-700">موظفون بدون شركة: {prepared.filter(e=>!e.company_id).length}</div>
       </section>
 
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-6 shadow-sm">
+      {!shareMode&&<section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <div className="font-black text-amber-800">موظفون على كفالة الشركة بدون شركة محددة</div>
@@ -333,7 +339,7 @@ export default function EmployeeDocumentsDashboard() {
           </table>
         </div>}
         {showExcludedWithoutCompany&&excludedWithoutCompany.length===0&&<div className="mt-3 text-sm font-bold text-emerald-700">لا يوجد موظفون على كفالة الشركة بدون شركة محددة.</div>}
-      </section>
+      </section>}
 
       <section className="rounded-2xl border border-[#d9b45a] bg-white p-5 mb-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
@@ -414,7 +420,7 @@ export default function EmployeeDocumentsDashboard() {
             <td className="p-3">{e.ins?e.ins.document_name||e.ins.document_type||'متوفر':'غير متوفر'}</td><td className="p-3">{e.ins?.expiry_date||'غير متوفر'}</td><td className="p-3"><span className={'inline-flex rounded-full px-2.5 py-1 text-xs font-black '+(e.missing?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{e.missing?'بيانات ناقصة':'مكتمل'}</span></td>
           </tr>)}</tbody></table></div>
       </section>
-      <div className="hidden print:block mt-6 text-xs text-slate-500 border-t pt-3">تاريخ إنشاء التقرير: {today.toLocaleDateString('ar-SA')} · إجمالي الموظفين المشمولين: {stats.total} · إجمالي تكلفة رخص العمل: {money(renewalStats.work)} · إجمالي تكلفة الإقامات: {money(renewalStats.residency)} · إجمالي التكلفة: {money(renewalStats.total)}</div>
+      <div className="hidden print:block mt-6 text-xs text-slate-500 border-t pt-3">تاريخ إنشاء التقرير: {today.toLocaleDateString('ar-SA')} · إجمالي الموظفين المشمولين: {stats.total} · إجمالي تكلفة رخص العمل: {money(filteredRenewalStats.work)} · إجمالي تكلفة الإقامات: {money(filteredRenewalStats.residency)} · إجمالي التكلفة: {money(filteredRenewalStats.total)}</div>
     </div>
   </main>
 }
