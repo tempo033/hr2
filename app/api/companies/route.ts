@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuth, supabaseHeaders } from '@/lib/server-auth'
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
 const VIEW_ROLES = ['admin','hr','interviewer','manager','finance','general_manager']
 const MANAGE_ROLES = ['admin','hr']
 
 async function rest(path:string, auth:any, init?:RequestInit) {
-  return fetch(`${URL}/rest/v1/${path}`, {
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: { ...supabaseHeaders(auth), ...(init?.headers || {}) },
     cache: 'no-store',
