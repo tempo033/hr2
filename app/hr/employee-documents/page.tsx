@@ -253,7 +253,7 @@ export default function EmployeeDocumentsDashboard() {
             {(() => { const m=mapEmployee(e); return <>
             <td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{m.employee_number||'غير متوفر'}</Link></td>
             <td className="p-3">{m.employee_name||'غير متوفر'}</td>
-            <td className="p-3">{m.company_name||'غير محددة'}</td><td className="p-3">{m.nationality||'غير متوفر'}</td><td className="p-3">{e.job_title||'غير متوفر'}</td><td className="p-3">{e.department||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3">{e.national_id||'غير متوفر'}</td>
+            <td className="p-3">{m.company_name||'غير محددة'}</td><td className="p-3">{m.nationality||'غير متوفر'}</td><td className="p-3">{m.job_title||'غير متوفر'}</td><td className="p-3">{m.department||'غير متوفر'}</td><td className="p-3">{m.sponsorship_status||'غير متوفر'}</td><td className="p-3">{m.national_id||'غير متوفر'}</td>
             <td className="p-3">{e.res?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.resState==='na'?'غير مطلوب':<StatusPill state={e.resState}/>}</td><td className="p-3">{e.work?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.workState==='na'?'غير مطلوب':<StatusPill state={e.workState}/>}</td>
             <td className="p-3">{e.ins?e.ins.document_name||e.ins.document_type||'متوفر':'غير متوفر'}</td><td className="p-3">{e.ins?.expiry_date||'غير متوفر'}</td><td className="p-3"><span className={'inline-flex rounded-full px-2.5 py-1 text-xs font-black '+(e.missing?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{e.missing?'بيانات ناقصة':'مكتمل'}</span></td>
           </tr>)}</tbody></table></div>
