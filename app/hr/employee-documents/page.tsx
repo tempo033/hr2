@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   AlertTriangle, BadgeCheck, BriefcaseBusiness, Building2, CalendarClock, ChevronDown,
-  FileWarning, HeartPulse, IdCard, RefreshCw, Search, ShieldCheck, UserRound, Users
+  FileWarning, HeartPulse, IdCard, RefreshCw, Search, ShieldCheck, UserRound, Users,
+  Download, FileSpreadsheet, FileDown, Share2, Copy, Check, ChevronUp
 } from 'lucide-react'
 
 type Doc = {
@@ -88,18 +89,30 @@ export default function EmployeeDocumentsDashboard() {
   const [today,setToday]=useState(new Date())
   const [excludedWithoutCompany,setExcludedWithoutCompany]=useState<Array<{id:string;employee_number:string|null;full_name:string;nationality:string|null;residency_status:string|null}>>([])
   const [showExcludedWithoutCompany,setShowExcludedWithoutCompany]=useState(false)
+  const [expandedCompanies,setExpandedCompanies]=useState<Set<string>>(new Set())
+  const [shareMode,setShareMode]=useState(false)
+  const [shareAllowExport,setShareAllowExport]=useState(true)
+  const [shareUrl,setShareUrl]=useState('')
+  const [shareLoading,setShareLoading]=useState(false)
+  const [shareCopied,setShareCopied]=useState(false)
 
-  const load = async () => {
+  const load = async (shareToken?:string) => {
     setLoading(true); setError('')
     try {
-      const r=await fetch('/api/hr/employee-documents-dashboard',{cache:'no-store'})
+      const endpoint=shareToken ? '/api/hr/employee-documents-dashboard/share/'+encodeURIComponent(shareToken) : '/api/hr/employee-documents-dashboard'
+      const r=await fetch(endpoint,{cache:'no-store'})
       const b=await r.json()
       if(!r.ok) throw new Error(b.error||'تعذر تحميل البيانات')
       setEmployees(b.employees||[]); setCompanies(b.companies||[]); setExcludedWithoutCompany(b.excluded_without_company||[]); setToday(new Date())
+      setShareMode(Boolean(shareToken))
+      setShareAllowExport(b.share?.allow_export !== false)
     } catch(e) { setError(e instanceof Error?e.message:'تعذر تحميل البيانات') }
     finally { setLoading(false) }
   }
-  useEffect(()=>{ void load() },[])
+  useEffect(()=>{
+    const token=new URLSearchParams(window.location.search).get('share') || ''
+    void load(token || undefined)
+  },[])
 
   const prepared=useMemo(()=>employees.map(e=>{
     const res=residencyFor(e), work=workPermitFor(e), ins=insuranceFor(e)
@@ -170,6 +183,93 @@ export default function EmployeeDocumentsDashboard() {
     }
   },[rows])
 
+  const toggleCompany=(id:string)=>setExpandedCompanies(prev=>{
+    const next=new Set(prev)
+    if(next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
+
+  const exportExcel=async()=>{
+    if(shareMode && !shareAllowExport) return
+    const XLSX=await import('xlsx')
+    const rowsForExport=rows.map((e:any)=>({
+      'رقم الموظف':e.employee_number||'',
+      'اسم الموظف':e.full_name||'',
+      'الشركة':e.company?.name||'',
+      'الجنسية':e.nationality||'',
+      'رقم الهوية / الإقامة':e.national_id||'',
+      'المسمى الوظيفي':e.job_title||'',
+      'حالة الكفالة':e.residency_status||'',
+      'تاريخ انتهاء الإقامة':e.res?.expiry_date||'',
+      'حالة الإقامة':e.resState==='na'?'غير مطلوب':statusLabel(e.resState),
+      'عدد أيام الانتهاء':isSaudi(e)?0:e.renewal.daysExpired,
+      'مدة التجديد':isSaudi(e)?'غير مطلوب':(e.renewal.months?e.renewal.months+' أشهر':'0'),
+      'تكلفة رخصة العمل':e.renewal.workCost,
+      'تكلفة الإقامة':e.renewal.residencyCost,
+      'إجمالي تكلفة التجديد':e.renewal.totalCost,
+    }))
+    const ws=XLSX.utils.json_to_sheet(rowsForExport)
+    const summary=[
+      ['Dashboard الإقامات الحالية',''],
+      ['تاريخ إنشاء التقرير',today.toLocaleDateString('ar-SA')],
+      ['إجمالي الموظفين المشمولين',stats.total],
+      ['إجمالي تكلفة رخص العمل',renewalStats.work],
+      ['إجمالي تكلفة الإقامات',renewalStats.residency],
+      ['إجمالي التكلفة',renewalStats.total],
+    ]
+    const ws2=XLSX.utils.aoa_to_sheet(summary)
+    const wb=XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb,ws,'الموظفون')
+    XLSX.utils.book_append_sheet(wb,ws2,'الإحصائيات')
+    XLSX.writeFile(wb,'Dashboard-الإقامات.xlsx')
+  }
+
+  const exportPdf=()=>{
+    if(shareMode && !shareAllowExport) return
+    const oldTitle=document.title
+    document.title='Dashboard الإقامات الحالية'
+    window.print()
+    window.setTimeout(()=>{document.title=oldTitle},1000)
+  }
+
+  const createShare=async()=>{
+    if(shareMode) return
+    setShareLoading(true); setShareCopied(false)
+    try{
+      const r=await fetch('/api/hr/employee-documents-dashboard/share',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+      const b=await r.json()
+      if(!r.ok) throw new Error(b.error||'تعذر إنشاء رابط المشاركة')
+      const absolute=new URL(b.path,window.location.origin).toString()
+      setShareUrl(absolute)
+      await navigator.clipboard?.writeText(absolute)
+      setShareCopied(true)
+    }catch(e){setError(e instanceof Error?e.message:'تعذر إنشاء رابط المشاركة')}
+    finally{setShareLoading(false)}
+  }
+
+  const employeeTable=(list:any[])=> <div className="mt-4 overflow-auto rounded-xl border border-slate-200 bg-white">
+    <table className="w-full min-w-[1700px] text-sm">
+      <thead className="bg-[#09233f] text-white"><tr>
+        {['رقم الموظف','اسم الموظف','الجنسية','رقم الهوية / الإقامة','المسمى الوظيفي','حالة الكفالة','تاريخ انتهاء الإقامة','حالة الإقامة','عدد أيام الانتهاء','مدة التجديد','تكلفة رخصة العمل','تكلفة الإقامة','إجمالي التكلفة'].map(h=><th key={h} className="p-3 text-right whitespace-nowrap">{h}</th>)}
+      </tr></thead>
+      <tbody>{list.map((e:any)=><tr key={e.id} className="border-b last:border-0 hover:bg-slate-50">
+        <td className="p-3">{e.employee_number||'غير متوفر'}</td>
+        <td className="p-3 font-black">{e.full_name||'غير متوفر'}</td>
+        <td className="p-3">{e.nationality||'غير متوفر'}</td>
+        <td className="p-3">{e.national_id||'غير متوفر'}</td>
+        <td className="p-3">{e.job_title||'غير متوفر'}</td>
+        <td className="p-3">{e.residency_status||'غير متوفر'}</td>
+        <td className="p-3">{e.res?.expiry_date||'غير متوفر'}</td>
+        <td className="p-3">{e.resState==='na'?'غير مطلوب':<StatusPill state={e.resState}/>}</td>
+        <td className="p-3">{isSaudi(e)?'غير مطلوب':e.renewal.daysExpired+' يوم'}</td>
+        <td className="p-3 font-bold">{isSaudi(e)?'غير مطلوب':(e.renewal.months?e.renewal.months+' أشهر':'0')}</td>
+        <td className="p-3">{isSaudi(e)?'0 ريال':money(e.renewal.workCost)}</td>
+        <td className="p-3">{isSaudi(e)?'0 ريال':money(e.renewal.residencyCost)}</td>
+        <td className="p-3 font-black text-[#09233f]">{isSaudi(e)?'0 ريال':money(e.renewal.totalCost)}</td>
+      </tr>)}</tbody>
+    </table>
+  </div>
+
   const critical=[
     ['إقامة منتهية','res_expired',stats.resExpired,'red'],
     ['رخصة عمل منتهية','work_expired',stats.workExpired,'red'],
@@ -182,10 +282,16 @@ export default function EmployeeDocumentsDashboard() {
 
   return <main dir="rtl" className="min-h-screen bg-[#f5f7fa]">
     <div className="max-w-[1800px] mx-auto p-5 md:p-8">
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center shadow-sm"><Users size={29}/></div><div><div className="text-sm font-bold text-[#b88618]">إدارة الموارد البشرية</div><h1 className="text-3xl font-black text-[#09233f]">لوحة متابعة الموظفين والوثائق</h1><p className="text-slate-500 mt-1">بيانات مباشرة من ملفات الموظفين الحالية دون إنشاء سجل موظفين جديد.</p></div></div>
-        <button onClick={()=>void load()} className="rounded-xl border bg-white px-4 py-2.5 font-black text-[#09233f] inline-flex items-center gap-2"><RefreshCw size={17}/> تحديث البيانات</button>
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 print:mb-3">
+        <div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-[#09233f] text-[#d4a72c] grid place-items-center shadow-sm print:hidden"><Users size={29}/></div><div><div className="text-sm font-bold text-[#b88618]">إدارة الموارد البشرية</div><h1 className="text-3xl font-black text-[#09233f]">Dashboard الإقامات الحالية</h1><p className="text-slate-500 mt-1">بيانات مباشرة من ملفات الموظفين الحالية دون إنشاء سجل موظفين جديد.</p></div></div>
+        <div className="flex flex-wrap gap-2 print:hidden">
+          {!shareMode&&<button onClick={()=>void createShare()} disabled={shareLoading} className="rounded-xl border border-[#b88618] bg-amber-50 px-4 py-2.5 font-black text-[#09233f] inline-flex items-center gap-2">{shareCopied?<Check size={17}/>:<Share2 size={17}/>} {shareLoading?'جاري إنشاء الرابط...':shareCopied?'تم نسخ الرابط':'مشاركة Dashboard'}</button>}
+          {(shareAllowExport||!shareMode)&&<><button onClick={()=>void exportExcel()} className="rounded-xl bg-[#09233f] text-white px-4 py-2.5 font-black inline-flex items-center gap-2"><FileSpreadsheet size={17}/> تصدير Excel</button><button onClick={exportPdf} className="rounded-xl bg-[#b88618] text-white px-4 py-2.5 font-black inline-flex items-center gap-2"><FileDown size={17}/> تصدير PDF</button></>}
+          {!shareMode&&<button onClick={()=>void load()} className="rounded-xl border bg-white px-4 py-2.5 font-black text-[#09233f] inline-flex items-center gap-2"><RefreshCw size={17}/> تحديث البيانات</button>}
+        </div>
       </header>
+      {shareMode&&<div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center justify-between gap-3 print:hidden"><div><div className="font-black text-emerald-800">وضع العرض فقط</div><div className="text-sm text-emerald-700 mt-1">هذا الرابط للعرض فقط ولا يمنح أي صلاحية لتعديل الموظفين أو الشركات أو التكاليف.</div></div><span className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 border border-emerald-200">Read Only</span></div>}
+      {shareUrl&&!shareMode&&<div className="mb-5 rounded-2xl border border-[#d9b45a] bg-white p-4 print:hidden"><div className="font-black text-[#09233f] mb-2">رابط المشاركة</div><div className="flex flex-col md:flex-row gap-2"><input readOnly value={shareUrl} className="flex-1 border rounded-xl px-3 py-2.5 bg-slate-50" /><button onClick={()=>{void navigator.clipboard?.writeText(shareUrl);setShareCopied(true)}} className="rounded-xl bg-[#09233f] text-white px-4 py-2.5 font-black inline-flex items-center justify-center gap-2"><Copy size={16}/> نسخ الرابط</button></div></div>
 
       {error&&<div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
@@ -223,7 +329,7 @@ export default function EmployeeDocumentsDashboard() {
         {showExcludedWithoutCompany&&excludedWithoutCompany.length>0&&<div className="mt-4 overflow-auto rounded-xl border border-amber-200 bg-white">
           <table className="w-full text-sm">
             <thead className="bg-[#09233f] text-white"><tr><th className="p-3 text-right">رقم الموظف</th><th className="p-3 text-right">اسم الموظف</th><th className="p-3 text-right">الجنسية</th><th className="p-3 text-right">حالة الكفالة</th><th className="p-3 text-right">الإجراء</th></tr></thead>
-            <tbody>{excludedWithoutCompany.map(e=><tr key={e.id} className="border-b last:border-0"><td className="p-3">{e.employee_number||'غير متوفر'}</td><td className="p-3 font-bold">{e.full_name}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3"><Link href={'/employees/'+e.id} className="text-[#09233f] font-black hover:underline">فتح الملف</Link></td></tr>)}</tbody>
+            <tbody>{excludedWithoutCompany.map(e=><tr key={e.id} className="border-b last:border-0"><td className="p-3">{e.employee_number||'غير متوفر'}</td><td className="p-3 font-bold">{e.full_name}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3"><span className="text-slate-500">متاح للمستخدم الإداري فقط</span></td></tr>)}</tbody>
           </table>
         </div>}
         {showExcludedWithoutCompany&&excludedWithoutCompany.length===0&&<div className="mt-3 text-sm font-bold text-emerald-700">لا يوجد موظفون على كفالة الشركة بدون شركة محددة.</div>}
@@ -247,7 +353,7 @@ export default function EmployeeDocumentsDashboard() {
           ].map(([label,value])=><div key={label} className="rounded-xl border bg-slate-50 p-4"><div className="text-sm font-bold text-slate-500">{label}</div><div className="text-xl font-black text-[#09233f] mt-1">{value}</div></div>)}
         </div>
         <div className="mt-3 text-xs text-slate-500">السعوديون والتجديدات غير المطلوبة/غير المنتهية = 0 ريال.</div>
-      </section>
+      </section>}
 
       <section className="space-y-5 mb-6">
         {companies.map(company=>{
@@ -261,12 +367,13 @@ export default function EmployeeDocumentsDashboard() {
           }
           const cards=[['إجمالي الموظفين',st.total,'blue'],['السعوديون',st.saudi,'green'],['الأجانب على الكفالة',st.sponsored,'blue'],['الإقامات المنتهية',st.resExpired,'red'],['الإقامات خلال 30 يوم',st.res30,'amber'],['رخص العمل المنتهية',st.workExpired,'red'],['رخص العمل خلال 30 يوم',st.work30,'amber'],['رخص العمل > 30 يوم',st.workValid,'green'],['لديهم تأمين طبي',st.insured,'green'],['بدون تأمين طبي',st.insMissing,'amber'],['بيانات ناقصة',st.missing,'amber']]
           return <section key={company.id} className="rounded-2xl border bg-white p-5 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4"><div><h2 className="text-xl font-black text-[#09233f]">🏢 {company.name}</h2><div className="text-sm font-bold text-[#b88618] mt-1">الرقم الموحد: {company.unified_number}</div></div><button onClick={()=>setCompanyFilter(company.id)} className="rounded-xl border px-4 py-2 font-bold text-[#09233f]">عرض موظفي الشركة</button></div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4"><div><h2 className="text-xl font-black text-[#09233f]">🏢 {company.name}</h2><div className="text-sm font-bold text-[#b88618] mt-1">الرقم الموحد: {company.unified_number}</div></div><button onClick={()=>toggleCompany(company.id)} className="rounded-xl border border-[#b88618] bg-amber-50 px-4 py-2 font-black text-[#09233f] inline-flex items-center gap-2">{expandedCompanies.has(company.id)?<><ChevronUp size={17}/> إخفاء موظفي الشركة</>:<><ChevronDown size={17}/> عرض موظفي الشركة</>}</button></div>
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{cards.map(([label,value,kind])=><button key={label} onClick={()=>setCompanyFilter(company.id)} className={'rounded-xl border p-4 text-right '+(kind==='red'?'bg-red-50 border-red-200':kind==='amber'?'bg-amber-50 border-amber-200':kind==='green'?'bg-emerald-50 border-emerald-200':'bg-slate-50')}><div className="text-sm font-bold text-slate-600">{label}</div><div className="text-2xl font-black text-[#09233f] mt-1">{value}</div></button>)}</div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
               {[['رخص العمل',money(renewalCompany.work)],['الإقامات',money(renewalCompany.residency)],['إجمالي التجديد',money(renewalCompany.total)],['الموظفون المحتسبون',renewalCompany.count]].map(([label,value])=><div key={label} className="rounded-xl border border-amber-100 bg-amber-50/50 p-3"><div className="text-xs font-bold text-slate-500">{label}</div><div className="text-lg font-black text-[#09233f] mt-1">{value}</div></div>)}
             </div>
             <div className="mt-3 text-xs text-slate-500">الإقامات السارية لأكثر من 30 يوم: {st.resValid} · الإقامات بدون بيانات: {st.resMissing} · رخص العمل بدون بيانات: {st.workMissing} · التأمين المنتهي: {st.insExpired}</div>
+            {expandedCompanies.has(company.id)&&employeeTable(list)}
           </section>
         })}
       </section>
@@ -291,11 +398,11 @@ export default function EmployeeDocumentsDashboard() {
 
       <section className="rounded-2xl border bg-white p-5 shadow-sm mb-6"><div className="flex items-center justify-between gap-3 mb-4"><h2 className="text-xl font-black text-[#09233f]">التأمين الطبي</h2><span className="text-sm text-slate-500">ساري: {stats.insured} · منتهي: {stats.insExpired} · بدون تأمين/بيانات: {stats.insMissing}</span></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><button onClick={()=>choose('insured')} className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-right"><div className="font-black text-emerald-700">🟢 تأمين ساري</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insured}</div></button><button onClick={()=>choose('insurance_expired')} className="rounded-xl border border-red-200 bg-red-50 p-4 text-right"><div className="font-black text-red-700">🔴 تأمين منتهي</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insExpired}</div></button><button onClick={()=>choose('no_insurance')} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-right"><div className="font-black text-slate-600">⚪ بدون تأمين / بيانات</div><div className="text-2xl font-black text-[#09233f] mt-1">{stats.insMissing}</div></button></div></section>
 
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden print:break-before-auto">
         <div className="p-4 border-b flex flex-col lg:flex-row gap-3 justify-between"><div><h2 className="text-xl font-black text-[#09233f]">الموظفون المشمولون</h2><p className="text-sm text-slate-500 mt-1">عرض {rows.length} من {employees.length} موظفاً · التاريخ: {today.toLocaleDateString('ar-SA')}</p></div><div className="relative lg:w-[420px]"><Search className="absolute right-3 top-3 text-slate-400" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث بالاسم أو الرقم أو الوظيفة..." className="w-full border rounded-xl pr-10 pl-3 py-2.5"/></div></div>
         <div className="overflow-auto"><table className="w-full min-w-[1900px]"><thead className="bg-[#09233f] text-white"><tr>{['اسم الموظف','رقم الموظف','الشركة','الجنسية','المسمى الوظيفي','القسم','حالة الكفالة','رقم الإقامة/الهوية','انتهاء الإقامة','حالة الإقامة','أيام انتهاء الإقامة','مدة التجديد','تكلفة رخصة العمل','تكلفة الإقامة','إجمالي تكلفة التجديد','انتهاء رخصة العمل','حالة رخصة العمل','التأمين الطبي','انتهاء التأمين الطبي','حالة الملف'].map(h=><th key={h} className="p-3 text-right whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
           {loading?<tr><td colSpan={20} className="p-10 text-center text-slate-500">جاري تحميل بيانات الموظفين...</td></tr>:rows.length===0?<tr><td colSpan={20} className="p-10 text-center text-slate-500">لا توجد نتائج مطابقة.</td></tr>:rows.map(e=><tr key={e.id} className="border-b hover:bg-slate-50">
-            <td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{e.full_name||'غير متوفر'}</Link></td>
+            <td className="p-3 font-black"><span className="text-[#09233f]">{e.full_name||'غير متوفر'}</span></td>
             <td className="p-3">{e.employee_number||'غير متوفر'}</td>
             <td className="p-3">{e.company?.name||'غير محددة'}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.job_title||'غير متوفر'}</td><td className="p-3">{e.department||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3">{e.national_id||'غير متوفر'}</td>
             <td className="p-3">{e.res?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.resState==='na'?'غير مطلوب':<StatusPill state={e.resState}/>}</td>
@@ -307,6 +414,7 @@ export default function EmployeeDocumentsDashboard() {
             <td className="p-3">{e.ins?e.ins.document_name||e.ins.document_type||'متوفر':'غير متوفر'}</td><td className="p-3">{e.ins?.expiry_date||'غير متوفر'}</td><td className="p-3"><span className={'inline-flex rounded-full px-2.5 py-1 text-xs font-black '+(e.missing?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{e.missing?'بيانات ناقصة':'مكتمل'}</span></td>
           </tr>)}</tbody></table></div>
       </section>
+      <div className="hidden print:block mt-6 text-xs text-slate-500 border-t pt-3">تاريخ إنشاء التقرير: {today.toLocaleDateString('ar-SA')} · إجمالي الموظفين المشمولين: {stats.total} · إجمالي تكلفة رخص العمل: {money(renewalStats.work)} · إجمالي تكلفة الإقامات: {money(renewalStats.residency)} · إجمالي التكلفة: {money(renewalStats.total)}</div>
     </div>
   </main>
 }
