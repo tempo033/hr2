@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await getServerAuth(req, ALLOWED)
     if (!auth) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
-    const r = await fetch(`${URL}/rest/v1/employee_companies?select=id,name,unified_number&order=name.asc`, { headers: supabaseHeaders(auth), cache: 'no-store' })
+    const r = await fetch(`${URL}/rest/v1/employee_companies?select=id,name,unified_number&order=unified_number.asc`, { headers: supabaseHeaders(auth), cache: 'no-store' })
     if (!r.ok) return NextResponse.json({ error: await r.text() }, { status: 500 })
     return NextResponse.json({ companies: await r.json() }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
