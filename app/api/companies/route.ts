@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const auth = await getServerAuth(req, VIEW_ROLES)
     if (!auth) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
     const includeInactive = new URL(req.url).searchParams.get('include_inactive') === '1'
-    const select = 'id,name,name_en,unified_number,commercial_registration,company_type,parent_company_id,is_active,notes,created_at,updated_at,parent:employee_companies!employee_companies_parent_company_id_fkey(id,name,unified_number)'
+    const select = 'id,name,name_en,unified_number,commercial_registration,company_type,parent_company_id,is_active,notes,created_at,updated_at'
     const filter = includeInactive ? '' : '&is_active=eq.true'
     const r = await rest(`employee_companies?select=${select}${filter}&order=is_active.desc,name.asc`, auth)
     if (!r.ok) return NextResponse.json({ error: await r.text() }, { status: 500 })
