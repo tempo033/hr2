@@ -38,11 +38,19 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 }
 
 export function supabaseHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
-  const legacyServiceJwt = !!auth.serviceKey && auth.serviceKey.split('.').length === 3
-  const apiKey = legacyServiceJwt ? auth.serviceKey! : (auth.serviceKey || PUBLIC_KEY)
-  const headers: Record<string, string> = { apikey: apiKey, Accept: 'application/json', 'Content-Type': 'application/json', ...extra }
-  if (auth.serviceKey && !legacyServiceJwt) delete headers.Authorization
-  if (legacyServiceJwt) headers.Authorization = `Bearer ${auth.serviceKey}`
-  else if (!auth.serviceKey) headers.Authorization = `Bearer ${auth.token}`
+  // Supabase API keys and user access tokens have different jobs:
+  // - apikey: project API key (secret/service_role or publishable/anon)
+  // - Authorization: the authenticated user's JWT
+  // Never put an sb_* secret/publishable key in Authorization: Bearer.
+  const configuredKey = auth.serviceKey?.replace(/^Bearer\\s+/i, '').trim() || ''
+  const legacyServiceJwt = configuredKey.split('.').length === 3
+  const apiKey = configuredKey || PUBLIC_KEY
+  const headers: Record<string, string> = {
+    apikey: apiKey,
+    Authorization: `Bearer ${legacyServiceJwt ? configuredKey : auth.token}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    ...extra,
+  }
   return headers
 }
