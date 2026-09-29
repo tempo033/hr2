@@ -60,6 +60,7 @@ const sections = [
     ['/reports/initial','تقارير التقييم المبدئي',ClipboardList,['admin','hr','manager']],
   ]},
   { id:'system', label:'إدارة النظام والصلاحيات', icon:UserCog, items:[
+    ['/companies','إدارة الشركات',Building2,['admin','hr']],
     ['/users','المستخدمون والصلاحيات',UserCog,['admin']],
   ]},
 ] as const
