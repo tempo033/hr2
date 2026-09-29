@@ -70,6 +70,8 @@ export default function EmployeeDocumentsDashboard() {
   const [companyFilter,setCompanyFilter]=useState('all')
   const [query,setQuery]=useState('')
   const [today,setToday]=useState(new Date())
+  const [excludedWithoutCompany,setExcludedWithoutCompany]=useState<Array<{id:string;employee_number:string|null;full_name:string;nationality:string|null;residency_status:string|null}>>([])
+  const [showExcludedWithoutCompany,setShowExcludedWithoutCompany]=useState(false)
 
   const load = async () => {
     setLoading(true); setError('')
@@ -77,7 +79,7 @@ export default function EmployeeDocumentsDashboard() {
       const r=await fetch('/api/hr/employee-documents-dashboard',{cache:'no-store'})
       const b=await r.json()
       if(!r.ok) throw new Error(b.error||'تعذر تحميل البيانات')
-      setEmployees(b.employees||[]); setCompanies(b.companies||[]); setToday(new Date())
+      setEmployees(b.employees||[]); setCompanies(b.companies||[]); setExcludedWithoutCompany(b.excluded_without_company||[]); setToday(new Date())
     } catch(e) { setError(e instanceof Error?e.message:'تعذر تحميل البيانات') }
     finally { setLoading(false) }
   }
@@ -176,6 +178,25 @@ export default function EmployeeDocumentsDashboard() {
           {[['إجمالي الموظفين',groupStats.total],['السعوديون',groupStats.saudi],['الأجانب على الكفالة',groupStats.sponsored],['الإقامات المنتهية',groupStats.resExpired],['رخص العمل المنتهية',groupStats.workExpired],['لديهم تأمين طبي',groupStats.insured]].map(([label,value])=><div key={label} className="rounded-xl border bg-slate-50 p-4"><div className="text-sm font-bold text-slate-500">{label}</div><div className="text-2xl font-black text-[#09233f] mt-1">{value}</div></div>)}
         </div>
         <div className="mt-3 text-sm font-bold text-amber-700">موظفون بدون شركة: {prepared.filter(e=>!e.company_id).length}</div>
+      </section>
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div className="font-black text-amber-800">موظفون على كفالة الشركة بدون شركة محددة</div>
+            <div className="text-sm text-amber-700 mt-1">هؤلاء الموظفون مستبعدون من جميع إحصائيات داشبورد الإقامات حتى يتم تحديد الشركة يدوياً من ملف الموظف.</div>
+          </div>
+          <button onClick={()=>setShowExcludedWithoutCompany(v=>!v)} className="rounded-xl border border-amber-300 bg-white px-4 py-2 font-black text-amber-800">
+            {showExcludedWithoutCompany?'إخفاء القائمة':'عرض القائمة'} ({excludedWithoutCompany.length})
+          </button>
+        </div>
+        {showExcludedWithoutCompany&&excludedWithoutCompany.length>0&&<div className="mt-4 overflow-auto rounded-xl border border-amber-200 bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-[#09233f] text-white"><tr><th className="p-3 text-right">رقم الموظف</th><th className="p-3 text-right">اسم الموظف</th><th className="p-3 text-right">الجنسية</th><th className="p-3 text-right">حالة الكفالة</th><th className="p-3 text-right">الإجراء</th></tr></thead>
+            <tbody>{excludedWithoutCompany.map(e=><tr key={e.id} className="border-b last:border-0"><td className="p-3">{e.employee_number||'غير متوفر'}</td><td className="p-3 font-bold">{e.full_name}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3"><Link href={'/employees/'+e.id} className="text-[#09233f] font-black hover:underline">فتح الملف</Link></td></tr>)}</tbody>
+          </table>
+        </div>}
+        {showExcludedWithoutCompany&&excludedWithoutCompany.length===0&&<div className="mt-3 text-sm font-bold text-emerald-700">لا يوجد موظفون على كفالة الشركة بدون شركة محددة.</div>}
       </section>
 
       <section className="space-y-5 mb-6">
