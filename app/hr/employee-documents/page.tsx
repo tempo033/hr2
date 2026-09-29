@@ -73,6 +73,20 @@ export default function EmployeeDocumentsDashboard() {
   const [excludedWithoutCompany,setExcludedWithoutCompany]=useState<Array<{id:string;employee_number:string|null;full_name:string;nationality:string|null;residency_status:string|null}>>([])
   const [showExcludedWithoutCompany,setShowExcludedWithoutCompany]=useState(false)
 
+  // Mapping صريح لبيانات الجدول: كل قيمة تأتي من Employee record أو Relation المحدد.
+  const mapEmployee=(e:Employee)=>({
+    employee_number:e.employee_number,
+    employee_name:e.full_name,
+    company_id:e.company_id,
+    company_name:e.company?.name||null,
+    unified_number:e.company?.unified_number||null,
+    nationality:e.nationality,
+    national_id:e.national_id,
+    job_title:e.job_title,
+    department:e.department,
+    sponsorship_status:e.residency_status,
+  })
+
   const load = async () => {
     setLoading(true); setError('')
     try {
@@ -236,8 +250,10 @@ export default function EmployeeDocumentsDashboard() {
         <div className="p-4 border-b flex flex-col lg:flex-row gap-3 justify-between"><div><h2 className="text-xl font-black text-[#09233f]">الموظفون المشمولون</h2><p className="text-sm text-slate-500 mt-1">عرض {rows.length} من {employees.length} موظفاً · التاريخ: {today.toLocaleDateString('ar-SA')}</p></div><div className="relative lg:w-[420px]"><Search className="absolute right-3 top-3 text-slate-400" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث بالاسم أو الرقم أو الوظيفة..." className="w-full border rounded-xl pr-10 pl-3 py-2.5"/></div></div>
         <div className="overflow-auto"><table className="w-full min-w-[1900px]"><thead className="bg-[#09233f] text-white"><tr>{['اسم الموظف','رقم الموظف','الشركة','الجنسية','المسمى الوظيفي','القسم','حالة الكفالة','رقم الإقامة/الهوية','انتهاء الإقامة','حالة الإقامة','انتهاء رخصة العمل','حالة رخصة العمل','التأمين الطبي','انتهاء التأمين الطبي','حالة الملف'].map(h=><th key={h} className="p-3 text-right whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
           {loading?<tr><td colSpan={15} className="p-10 text-center text-slate-500">جاري تحميل بيانات الموظفين...</td></tr>:rows.length===0?<tr><td colSpan={14} className="p-10 text-center text-slate-500">لا توجد نتائج مطابقة.</td></tr>:rows.map(e=><tr key={e.id} className="border-b hover:bg-slate-50">
-            <td className="p-3">{e.company?.name||'غير محددة'}</td><td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{e.full_name}</Link></td>
-            <td className="p-3">{e.employee_number||'غير متوفر'}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.job_title||'غير متوفر'}</td><td className="p-3">{e.department||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3">{e.national_id||'غير متوفر'}</td>
+            {(() => { const m=mapEmployee(e); return <>
+            <td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{m.employee_number||'غير متوفر'}</Link></td>
+            <td className="p-3">{m.employee_name||'غير متوفر'}</td>
+            <td className="p-3">{m.company_name||'غير محددة'}</td><td className="p-3">{m.nationality||'غير متوفر'}</td><td className="p-3">{e.job_title||'غير متوفر'}</td><td className="p-3">{e.department||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3">{e.national_id||'غير متوفر'}</td>
             <td className="p-3">{e.res?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.resState==='na'?'غير مطلوب':<StatusPill state={e.resState}/>}</td><td className="p-3">{e.work?.expiry_date||'غير متوفر'}</td><td className="p-3">{e.workState==='na'?'غير مطلوب':<StatusPill state={e.workState}/>}</td>
             <td className="p-3">{e.ins?e.ins.document_name||e.ins.document_type||'متوفر':'غير متوفر'}</td><td className="p-3">{e.ins?.expiry_date||'غير متوفر'}</td><td className="p-3"><span className={'inline-flex rounded-full px-2.5 py-1 text-xs font-black '+(e.missing?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{e.missing?'بيانات ناقصة':'مكتمل'}</span></td>
           </tr>)}</tbody></table></div>
