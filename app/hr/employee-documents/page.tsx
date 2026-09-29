@@ -48,9 +48,9 @@ function workPermitFor(e:Employee) {
   return isSaudi(e) ? null : residencyFor(e)
 }
 const RENEWAL_COSTS = { work: 9700, residency: 650 }
-function renewalCostFor(e:Employee, today:Date) {
+function renewalCostFor(e:Employee, today:Date, expiryDate:string|null) {
   if (isSaudi(e)) return { daysExpired:0, months:0, workCost:0, residencyCost:0, totalCost:0 }
-  const expiry = e.res?.expiry_date ? dateOnly(e.res.expiry_date) : null
+  const expiry = expiryDate ? dateOnly(expiryDate) : null
   if (!expiry) return { daysExpired:0, months:0, workCost:0, residencyCost:0, totalCost:0 }
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   const expiryStart = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate())
@@ -107,7 +107,7 @@ export default function EmployeeDocumentsDashboard() {
     const workState=isSaudi(e)?'na':docState(work,today)
     const insState=docState(ins,today)
     const missing = !e.national_id || !e.job_title || !e.department || (!isSaudi(e) && (!res?.expiry_date || !work?.expiry_date))
-    const renewal = renewalCostFor({...e,res} as Employee,today)
+    const renewal = renewalCostFor(e,today,res?.expiry_date||null)
     return {...e,res,resState,work,workState,ins,insState,missing,renewal}
   }),[employees,today])
 
@@ -253,6 +253,12 @@ export default function EmployeeDocumentsDashboard() {
         {companies.map(company=>{
           const list=prepared.filter(e=>e.company_id===company.id)
           const st=companyStats(list)
+          const renewalCompany = {
+            work:list.reduce((sum,e)=>sum+e.renewal.workCost,0),
+            residency:list.reduce((sum,e)=>sum+e.renewal.residencyCost,0),
+            total:list.reduce((sum,e)=>sum+e.renewal.totalCost,0),
+            count:list.filter(e=>e.renewal.totalCost>0).length,
+          }
           const cards=[['إجمالي الموظفين',st.total,'blue'],['السعوديون',st.saudi,'green'],['الأجانب على الكفالة',st.sponsored,'blue'],['الإقامات المنتهية',st.resExpired,'red'],['الإقامات خلال 30 يوم',st.res30,'amber'],['رخص العمل المنتهية',st.workExpired,'red'],['رخص العمل خلال 30 يوم',st.work30,'amber'],['رخص العمل > 30 يوم',st.workValid,'green'],['لديهم تأمين طبي',st.insured,'green'],['بدون تأمين طبي',st.insMissing,'amber'],['بيانات ناقصة',st.missing,'amber']]
           return <section key={company.id} className="rounded-2xl border bg-white p-5 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4"><div><h2 className="text-xl font-black text-[#09233f]">🏢 {company.name}</h2><div className="text-sm font-bold text-[#b88618] mt-1">الرقم الموحد: {company.unified_number}</div></div><button onClick={()=>setCompanyFilter(company.id)} className="rounded-xl border px-4 py-2 font-bold text-[#09233f]">عرض موظفي الشركة</button></div>
@@ -288,7 +294,7 @@ export default function EmployeeDocumentsDashboard() {
       <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b flex flex-col lg:flex-row gap-3 justify-between"><div><h2 className="text-xl font-black text-[#09233f]">الموظفون المشمولون</h2><p className="text-sm text-slate-500 mt-1">عرض {rows.length} من {employees.length} موظفاً · التاريخ: {today.toLocaleDateString('ar-SA')}</p></div><div className="relative lg:w-[420px]"><Search className="absolute right-3 top-3 text-slate-400" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث بالاسم أو الرقم أو الوظيفة..." className="w-full border rounded-xl pr-10 pl-3 py-2.5"/></div></div>
         <div className="overflow-auto"><table className="w-full min-w-[1900px]"><thead className="bg-[#09233f] text-white"><tr>{['اسم الموظف','رقم الموظف','الشركة','الجنسية','المسمى الوظيفي','القسم','حالة الكفالة','رقم الإقامة/الهوية','انتهاء الإقامة','حالة الإقامة','أيام انتهاء الإقامة','مدة التجديد','تكلفة رخصة العمل','تكلفة الإقامة','إجمالي تكلفة التجديد','انتهاء رخصة العمل','حالة رخصة العمل','التأمين الطبي','انتهاء التأمين الطبي','حالة الملف'].map(h=><th key={h} className="p-3 text-right whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
-          {loading?<tr><td colSpan={20} className="p-10 text-center text-slate-500">جاري تحميل بيانات الموظفين...</td></tr>:rows.length===0?<tr><td colSpan={15} className="p-10 text-center text-slate-500">لا توجد نتائج مطابقة.</td></tr>:rows.map(e=><tr key={e.id} className="border-b hover:bg-slate-50">
+          {loading?<tr><td colSpan={20} className="p-10 text-center text-slate-500">جاري تحميل بيانات الموظفين...</td></tr>:rows.length===0?<tr><td colSpan={20} className="p-10 text-center text-slate-500">لا توجد نتائج مطابقة.</td></tr>:rows.map(e=><tr key={e.id} className="border-b hover:bg-slate-50">
             <td className="p-3 font-black"><Link href={'/employees/'+e.id} className="text-[#09233f] hover:underline">{e.full_name||'غير متوفر'}</Link></td>
             <td className="p-3">{e.employee_number||'غير متوفر'}</td>
             <td className="p-3">{e.company?.name||'غير محددة'}</td><td className="p-3">{e.nationality||'غير متوفر'}</td><td className="p-3">{e.job_title||'غير متوفر'}</td><td className="p-3">{e.department||'غير متوفر'}</td><td className="p-3">{e.residency_status||'غير متوفر'}</td><td className="p-3">{e.national_id||'غير متوفر'}</td>
