@@ -80,9 +80,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(()=>setOpen(false),[pathname])
   if(pathname==='/login'||isExternalTokenPage(pathname)||isSharedDashboard) return <>{children}</>
   async function logout(){await supabase.auth.signOut();await fetch('/api/auth/logout',{method:'POST'});router.replace('/login');router.refresh()}
+  const visibleSections=sections.map(s=>({...s,items:s.items.filter(([, , , roles])=>role&&roles.includes(role as never))})).filter(s=>s.items.length)
   const pageTitle=pathname==='/'?'الرئيسية':visibleSections.flatMap(s=>s.items).find(([href])=>pathname===href||pathname.startsWith(href+'/'))?.[1]||'نظام الموارد البشرية'
   const toggleSection=(id:string)=>setOpenSections(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
-  const visibleSections=sections.map(s=>({...s,items:s.items.filter(([, , , roles])=>role&&roles.includes(role as never))})).filter(s=>s.items.length)
   const NavItems=({mobile=false}:{mobile?:boolean})=><div className={mobile?'flex flex-col gap-1.5':'flex flex-col gap-1.5'}>
     <Link href="/" className={`nav-item flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-extrabold transition ${pathname==='/'?'bg-[#b88618] text-white shadow-md':'text-slate-100 hover:bg-white/10'}`}><Home size={20}/><span>الرئيسية</span></Link>
     {visibleSections.map(({id,label,icon:SectionIcon,items})=>{const expanded=openSections.includes(id); return <div key={id} className="mt-1">
