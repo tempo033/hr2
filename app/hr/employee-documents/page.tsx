@@ -87,6 +87,13 @@ export default function EmployeeDocumentsDashboard() {
     sponsorship_status:e.residency_status,
   })
 
+  useEffect(()=>{
+    if(employees.length>0){
+      const m=mapEmployee(employees[0])
+      console.debug('[Residency Dashboard Mapping]',m)
+    }
+  },[employees])
+
   const load = async () => {
     setLoading(true); setError('')
     try {
