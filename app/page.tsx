@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link';
 import { Activity, ArrowLeft, BriefcaseBusiness, Building2, Calculator, ClipboardCheck, FileText, UserPlus, Users, WalletCards, ShieldAlert, Search } from 'lucide-react';
 
