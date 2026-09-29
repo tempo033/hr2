@@ -359,7 +359,7 @@ export default function EmployeeDocumentsDashboard() {
           ].map(([label,value])=><div key={label} className="rounded-xl border bg-slate-50 p-4"><div className="text-sm font-bold text-slate-500">{label}</div><div className="text-xl font-black text-[#09233f] mt-1">{value}</div></div>)}
         </div>
         <div className="mt-3 text-xs text-slate-500">السعوديون والتجديدات غير المطلوبة/غير المنتهية = 0 ريال.</div>
-      </section>}
+      </section>
 
       <section className="space-y-5 mb-6">
         {companies.map(company=>{
