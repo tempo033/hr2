@@ -13,6 +13,12 @@ function isCompanySponsored(value: unknown) {
   return v === 'على الكفالة' || v === 'على كفالة الشركة'
 }
 
+const APPROVED_UNIFIED_NUMBERS = new Set(['7030224054', '7041914610', '7041965620'])
+
+function isApprovedCompany(company: any) {
+  return !!company && APPROVED_UNIFIED_NUMBERS.has(String(company.unified_number || '').trim())
+}
+
 export async function GET(req: NextRequest) {
   try {
     const auth = await getServerAuth(req, ALLOWED)
@@ -37,17 +43,31 @@ export async function GET(req: NextRequest) {
       byEmployee.set(doc.employee_id, list)
     }
 
-    const rows = employees
-      .filter((e: any) => isSaudi(e.nationality) || isCompanySponsored(e.residency_status))
+    const sponsoredForeign = employees.filter((e: any) => !isSaudi(e.nationality) && isCompanySponsored(e.residency_status))
+    const excludedWithoutCompany = sponsoredForeign.filter((e: any) => !e.company_id || !e.company)
+    const excludedUnapprovedCompany = sponsoredForeign.filter((e: any) => e.company && !isApprovedCompany(e.company))
+
+    // موظفو الداشبورد: غير سعودي + على كفالة الشركة + شركة محددة فعلياً + شركة معتمدة بالرقم الموحد.
+    // لا يتم تعديل أي سجل موظف؛ الموظف غير المطابق يُستبعد من إحصائيات هذه اللوحة فقط.
+    const rows = sponsoredForeign
+      .filter((e: any) => isApprovedCompany(e.company))
       .map((e: any) => ({
         ...e,
-        scope: isSaudi(e.nationality) ? 'سعودي' : 'أجنبي على الكفالة',
+        scope: 'أجنبي على الكفالة' as const,
         documents: byEmployee.get(e.id) || [],
       }))
 
     const companiesRes=await fetch(`${URL}/rest/v1/employee_companies?select=id,name,unified_number&order=name.asc`, { headers, cache: 'no-store' })
-    const companies=companiesRes.ok?await companiesRes.json():[]
-    return NextResponse.json({ employees: rows, companies, generated_at: new Date().toISOString() }, { headers: { 'Cache-Control': 'no-store' } })
+    const allCompanies=companiesRes.ok?await companiesRes.json():[]
+    const companies=allCompanies.filter((c: any) => APPROVED_UNIFIED_NUMBERS.has(String(c.unified_number || '').trim()))
+    return NextResponse.json({
+      employees: rows,
+      companies,
+      excluded_without_company: excludedWithoutCompany.map((e: any) => ({ id:e.id, employee_number:e.employee_number, full_name:e.full_name, nationality:e.nationality, residency_status:e.residency_status })),
+      excluded_without_company_count: excludedWithoutCompany.length,
+      excluded_unapproved_company_count: excludedUnapprovedCompany.length,
+      generated_at: new Date().toISOString()
+    }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'تعذر تحميل لوحة الموظفين' }, { status: 500 })
   }
