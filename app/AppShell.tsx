@@ -82,6 +82,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if(pathname==='/login'||isExternalTokenPage(pathname)||isSharedDashboard) return <>{children}</>
   async function logout(){await supabase.auth.signOut();await fetch('/api/auth/logout',{method:'POST'});router.replace('/login');router.refresh()}
   const visibleSections=sections.map(s=>({...s,items:s.items.filter(([, , , roles])=>role&&roles.includes(role as never))})).filter(s=>s.items.length)
+  useEffect(()=>{const active=visibleSections.find(s=>s.items.some(([href])=>pathname===href||pathname.startsWith(href+'/')));if(active)setOpenSections(v=>v.includes(active.id)?v:[...v,active.id])},[pathname,role])
   const pageTitle=pathname==='/'?'الرئيسية':visibleSections.flatMap(s=>s.items).find(([href])=>pathname===href||pathname.startsWith(href+'/'))?.[1]||'نظام الموارد البشرية'
   const toggleSection=(id:string)=>setOpenSections(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
   const NavItems=({mobile=false}:{mobile?:boolean})=><div className={mobile?'flex flex-col gap-1':'flex flex-col gap-1'}>
