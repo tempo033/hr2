@@ -73,26 +73,20 @@ export default function EmployeeDocumentsDashboard() {
   const [excludedWithoutCompany,setExcludedWithoutCompany]=useState<Array<{id:string;employee_number:string|null;full_name:string;nationality:string|null;residency_status:string|null}>>([])
   const [showExcludedWithoutCompany,setShowExcludedWithoutCompany]=useState(false)
 
-  // Mapping صريح لبيانات الجدول: كل قيمة تأتي من Employee record أو Relation المحدد.
-  const mapEmployee=(e:Employee)=>({
-    employee_number:e.employee_number,
-    employee_name:e.full_name,
-    company_id:e.company_id,
-    company_name:e.company?.name||null,
-    unified_number:e.company?.unified_number||null,
-    nationality:e.nationality,
-    national_id:e.national_id,
-    job_title:e.job_title,
-    department:e.department,
-    sponsorship_status:e.residency_status,
-  })
+const mapEmployee=(e:Employee)=>({
+  employee_number:e.employee_number,
+  employee_name:e.full_name,
+  company_id:e.company_id,
+  company_name:e.company?.name||null,
+  unified_number:e.company?.unified_number||null,
+  nationality:e.nationality,
+  national_id:e.national_id,
+  job_title:e.job_title,
+  department:e.department,
+  sponsorship_status:e.residency_status,
+})
 
-  useEffect(()=>{
-    if(employees.length>0){
-      const m=mapEmployee(employees[0])
-      console.debug('[Residency Dashboard Mapping]',m)
-    }
-  },[employees])
+
 
   const load = async () => {
     setLoading(true); setError('')
