@@ -69,6 +69,7 @@ const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offe
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname=usePathname(); const router=useRouter(); const [role,setRole]=useState<string>(''); const [open,setOpen]=useState(false)
+  const [collapsed,setCollapsed]=useState(false)
   const [openSections,setOpenSections]=useState<string[]>([])
   const [isSharedDashboard,setIsSharedDashboard]=useState(false)
   useEffect(()=>{
@@ -79,6 +80,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(()=>setOpen(false),[pathname])
   if(pathname==='/login'||isExternalTokenPage(pathname)||isSharedDashboard) return <>{children}</>
   async function logout(){await supabase.auth.signOut();await fetch('/api/auth/logout',{method:'POST'});router.replace('/login');router.refresh()}
+  const pageTitle=pathname==='/'?'الرئيسية':visibleSections.flatMap(s=>s.items).find(([href])=>pathname===href||pathname.startsWith(href+'/'))?.[1]||'نظام الموارد البشرية'
   const toggleSection=(id:string)=>setOpenSections(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
   const visibleSections=sections.map(s=>({...s,items:s.items.filter(([, , , roles])=>role&&roles.includes(role as never))})).filter(s=>s.items.length)
   const NavItems=({mobile=false}:{mobile?:boolean})=><div className={mobile?'flex flex-col gap-1.5':'flex flex-col gap-1.5'}>
@@ -90,15 +92,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {expanded&&<div className="mr-4 mt-1 border-r border-white/15 pr-2 flex flex-col gap-1">{items.map(([href,label,Icon])=><Link key={href} href={href} className={`nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-bold transition ${pathname===href||pathname.startsWith(href+'/')?'bg-[#b88618] text-white shadow-md':'text-slate-200 hover:bg-white/10'}`}><Icon size={17}/><span>{label}</span></Link>)}</div>}
     </div>})}
   </div>
-  return <div className="min-h-screen app-shell bg-[#f5f7fa]">
+  return <div className={`min-h-screen app-shell bg-[#f5f7fa] ${collapsed?"sidebar-collapsed":""}`}>
     <aside className="hr-sidebar print-hidden">
       <div className="flex items-center gap-3 px-2 pb-5 mb-4 border-b border-white/10"><div className="h-11 w-11 rounded-2xl bg-[#b88618] grid place-items-center font-black text-white shadow-lg text-lg">HR</div><div><div className="font-black text-[17px] text-white">إدارة الموارد البشرية</div><div className="text-[11px] text-slate-300 mt-0.5">نظام إدارة التوظيف والموارد البشرية</div></div></div>
       <NavItems />
+      <button type="button" onClick={()=>setCollapsed(v=>!v)} className="sidebar-collapse print-hidden" aria-label={collapsed?"توسيع القائمة":"تصغير القائمة"}>{collapsed?<ChevronDown size={18}/>:<ChevronDown size={18} className="rotate-90" />}<span>{collapsed?"توسيع":"تصغير القائمة"}</span></button>
       <button onClick={logout} className="mt-4 w-full flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-extrabold text-slate-100 hover:bg-red-500/20 hover:text-white"><LogOut size={20}/>تسجيل الخروج</button>
     </aside>
     <div className="mobile-topbar print-hidden"><button onClick={()=>setOpen(v=>!v)} className="rounded-xl p-2.5 text-white hover:bg-white/10" aria-label="فتح القائمة">{open?<X size={24}/>:<Menu size={24}/>}</button><Link href="/" className="flex items-center gap-2 font-black text-white"><span className="h-9 w-9 rounded-xl bg-[#b88618] grid place-items-center text-sm">HR</span><span>إدارة الموارد البشرية</span></Link></div>
     {open&&<div className="mobile-menu print-hidden"><NavItems mobile/><button onClick={logout} className="mt-3 w-full flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-extrabold text-slate-100 hover:bg-red-500/20"><LogOut size={20}/>تسجيل الخروج</button></div>}
-    <main className="hr-main">{children}</main>
+    <main className="hr-main">
+      <header className="hr-topbar print-hidden">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="breadcrumb-kicker">إدارة الموارد البشرية</div>
+          <span className="breadcrumb-separator">/</span>
+          <h1 className="topbar-title truncate">{pageTitle}</h1>
+        </div>
+        <div className="topbar-actions">
+          <Link href="/" className="topbar-icon" title="الرئيسية" aria-label="الرئيسية"><Home size={18}/></Link>
+          <div className="topbar-user"><span className="topbar-avatar">{role ? role.slice(0,1).toUpperCase() : 'HR'}</span><div className="hidden sm:block"><div className="text-xs text-slate-500">الحساب الحالي</div><div className="text-sm font-black text-[#09233f]">{role==='admin'?'مدير النظام':role==='hr'?'الموارد البشرية':role||'المستخدم'}</div></div></div>
+        </div>
+      </header>
+      <div className="hr-content">{children}</div>
+    </main>
     <SessionTimeoutGuard />
     <div className="print-pdf-control print-hidden"><button type="button" onClick={()=>window.print()} title="تصدير الصفحة الحالية إلى PDF بحجم A4" aria-label="تصدير الصفحة الحالية إلى PDF" className="pdf-export-btn"><FileDown size={17}/><span>تصدير PDF</span></button></div>
   </div>
