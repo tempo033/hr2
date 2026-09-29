@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Home, ClipboardList, Users, UserCheck, BriefcaseBusiness, FileText, Send, FilePenLine, BarChart3, Files, Link2, FileDown, LogOut, UserCog, Menu, X, ChevronDown, CalendarDays, WalletCards, Calculator, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -67,11 +67,12 @@ const sections = [
 const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/forms\/investigation\/(respond|review)\/[^/]+\/?$/.test(pathname)
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname=usePathname(); const router=useRouter(); const [role,setRole]=useState<string>(''); const [open,setOpen]=useState(false)
+  const pathname=usePathname(); const searchParams=useSearchParams(); const router=useRouter(); const [role,setRole]=useState<string>(''); const [open,setOpen]=useState(false)
   const [openSections,setOpenSections]=useState<string[]>([])
-  useEffect(()=>{if(pathname!=='/login'&&!isExternalTokenPage(pathname)) fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>setRole(d?.user?.role||''))},[pathname])
+  const isSharedDashboard=pathname==='/hr/employee-documents' && /^[0-9a-f-]{36}$/i.test(searchParams.get('share')||'')
+  useEffect(()=>{if(pathname!=='/login'&&!isExternalTokenPage(pathname)&&!isSharedDashboard) fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>setRole(d?.user?.role||''))},[pathname,isSharedDashboard])
   useEffect(()=>setOpen(false),[pathname])
-  if(pathname==='/login'||isExternalTokenPage(pathname)) return <>{children}</>
+  if(pathname==='/login'||isExternalTokenPage(pathname)||isSharedDashboard) return <>{children}</>
   async function logout(){await supabase.auth.signOut();await fetch('/api/auth/logout',{method:'POST'});router.replace('/login');router.refresh()}
   const toggleSection=(id:string)=>setOpenSections(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
   const visibleSections=sections.map(s=>({...s,items:s.items.filter(([, , , roles])=>role&&roles.includes(role as never))})).filter(s=>s.items.length)
