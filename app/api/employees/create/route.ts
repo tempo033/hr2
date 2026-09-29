@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 import {NextRequest,NextResponse} from 'next/server'
 import {getServerAuth,PUBLIC_KEY} from '@/lib/server-auth'
 
