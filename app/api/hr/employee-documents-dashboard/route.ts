@@ -49,11 +49,14 @@ export async function GET(req: NextRequest) {
 
     // موظفو الداشبورد: غير سعودي + على كفالة الشركة + شركة محددة فعلياً + شركة معتمدة بالرقم الموحد.
     // لا يتم تعديل أي سجل موظف؛ الموظف غير المطابق يُستبعد من إحصائيات هذه اللوحة فقط.
-    const rows = sponsoredForeign
+    // شرط الدخول الأساسي: شركة محددة ومعتمدة. السعودي يدخل مباشرة،
+    // وغير السعودي يجب أن يكون على كفالة الشركة. لا يتم تعديل أي سجل في قاعدة البيانات.
+    const rows = employees
       .filter((e: any) => isApprovedCompany(e.company))
+      .filter((e: any) => isSaudi(e) || isCompanySponsored(e.residency_status))
       .map((e: any) => ({
         ...e,
-        scope: 'أجنبي على الكفالة' as const,
+        scope: isSaudi(e) ? 'سعودي' as const : 'أجنبي على الكفالة' as const,
         documents: byEmployee.get(e.id) || [],
       }))
 
