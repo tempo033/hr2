@@ -123,7 +123,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
 
     if(signatureMissing){
       setMsg(stage==='managers'
-        ?'يجب إدخال توقيع المدير المباشر وتوقيع مدير المشروع قبل الحفظ والإرسال.'
+        ?'يجب إدخال توقيع المدير المباشر قبل الحفظ والإرسال.'
         :'يجب إدخال التوقيع قبل الحفظ والإرسال.')
       return
     }
@@ -195,14 +195,54 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
 
           {stage==='project_manager' && (
             <div className="mt-5">
-              <h3 className="section">مدير المشروع / مدير المشاريع</h3>
-              <div className="border rounded-lg p-4 bg-slate-50 mb-5">
-                <div className="font-black mb-3">ملخص جميع الاعتمادات والملاحظات السابقة</div>
-                <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(d,null,2)}</pre>
+              <div className="text-center border-b-2 border-[#09233f] pb-3 mb-5">
+                <div className="text-xs font-bold text-[#b88618]">مرحلة الاعتماد قبل المدير العام</div>
+                <h2 className="text-xl font-black text-[#09233f]">مدير المشروع / مدير المشاريع</h2>
+                <p className="text-xs text-slate-500 mt-1">بيانات الموظف وجميع الاعتمادات والتوقيعات والملاحظات السابقة.</p>
               </div>
+
+              <h3 className="section">بيانات الموظف</h3>
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                {[
+                  ['الاسم','employee_name'],['الرقم الوظيفي','employee_number'],['الجنسية','nationality'],
+                  ['رقم الهوية / الإقامة','national_id'],['الإدارة / الموقع','department_location'],
+                  ['القسم','department'],['المسمى الوظيفي','job_title'],['آخر يوم عمل','last_work_date']
+                ].map(([label,key])=>(
+                  <div key={key} className="border-b border-slate-200 pb-2">
+                    <div className="text-xs text-slate-500">{label}</div>
+                    <div className="font-bold">{d[key]||'—'}</div>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="section">الاعتمادات السابقة</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  ['المدير المباشر','line_manager_name','line_manager_signature','clearance_decision','clearance_reason'],
+                  ['إدارة الحاسب الآلي','it_name','it_signature','it_decision','it_reason'],
+                  ['إدارة الحركة','transport_name','transport_signature','transport_decision','transport_reason'],
+                  ['إدارة المستودعات','warehouse_name','warehouse_signature','warehouse_decision','warehouse_reason'],
+                  ['الشؤون الإدارية','admin_name','admin_signature','admin_decision','admin_reason'],
+                  ['الإدارة المالية','finance_name','finance_signature','finance_decision','finance_reason'],
+                  ['الموارد البشرية','hr_name','hr_signature','hr_decision','hr_reason']
+                ].map(([label,nameKey,sigKey,decisionKey,reasonKey])=>(
+                  <div key={label} className="border rounded-xl p-4">
+                    <div className="font-black text-[#09233f]">{label}</div>
+                    <div className="text-sm mt-2">المعتمد: <b>{d[nameKey]||'—'}</b></div>
+                    <div className="text-sm">الحالة: <b>{d[decisionKey]==='clear'?'تم الإخلاء':d[decisionKey]==='not_clear'?'لم يتم الإخلاء':d[decisionKey]==='skip'?'لا ينطبق':'—'}</b></div>
+                    {d[reasonKey]&&<div className="text-sm mt-1">الملاحظة: {d[reasonKey]}</div>}
+                    <div className="mt-2 h-16 flex items-center justify-center border-b border-slate-200">
+                      {d[sigKey]?<img src={String(d[sigKey])} alt={'توقيع '+label} className="max-h-14 max-w-full object-contain"/>:<span>—</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="section">اعتماد مدير المشروع / مدير المشاريع</h3>
               <SignatureField nameValue={d.project_manager_name||''} signatureValue={d.project_manager_signature||''} onNameChange={v=>set('project_manager_name',v)} onSignatureChange={v=>set('project_manager_signature',v)} />
               <input type="date" className="field" value={d.project_manager_date||''} onChange={e=>set('project_manager_date',e.target.value)}/>
               <textarea className="field min-h-20 mt-3" placeholder="ملاحظات مدير المشروع / مدير المشاريع" value={d.project_manager_notes||''} onChange={e=>set('project_manager_notes',e.target.value)}/>
+              <Decision d={d} set={set} prefix="project_manager"/>
             </div>
           )}
 
