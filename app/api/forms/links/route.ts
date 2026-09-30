@@ -21,6 +21,22 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ links })
 }
 
+export async function PATCH(req: NextRequest) {
+  const auth = await getServerAuth(req, ['admin','hr','manager'])
+  if (!auth) return NextResponse.json({ error: 'غير مصرح.' }, { status: 403 })
+  const body = await req.json().catch(() => ({}))
+  if (!body.link_id) return NextResponse.json({ error: 'معرف الرابط مطلوب.' }, { status: 400 })
+  const headers = { ...supabaseHeaders(auth), 'Content-Type': 'application/json', Prefer: 'return=representation' }
+  const currentRes = await fetch(SUPABASE_URL + '/rest/v1/hr_form_links?id=eq.' + encodeURIComponent(body.link_id) + '&select=id,form_type,link_scope,record_id,status,last_submitted_at', { headers: supabaseHeaders(auth), cache: 'no-store' })
+  const current = await currentRes.json()
+  if (!currentRes.ok || !current?.[0]) return NextResponse.json({ error: 'الرابط غير موجود.' }, { status: 404 })
+  if (current[0].form_type !== 'leave') return NextResponse.json({ error: 'إعادة الفتح متاحة حاليًا لروابط طلبات الإجازة فقط.' }, { status: 400 })
+  const response = await fetch(SUPABASE_URL + '/rest/v1/hr_form_links?id=eq.' + encodeURIComponent(body.link_id), { method: 'PATCH', headers, body: JSON.stringify({ last_submitted_at: null, status: 'active', expires_at: null, updated_at: new Date().toISOString() }) })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) return NextResponse.json({ error: data?.message || JSON.stringify(data) }, { status: response.status })
+  return NextResponse.json({ ok: true, link: data?.[0] || null })
+}
+
 export async function POST(req: NextRequest) {
   const auth = await getServerAuth(req, allowed)
   if (!auth) return NextResponse.json({ error: 'غير مصرح.' }, { status: 403 })
