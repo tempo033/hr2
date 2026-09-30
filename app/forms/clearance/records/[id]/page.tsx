@@ -9,14 +9,15 @@ type RecordRow={id:string;employee_name:string|null;employee_number:string|null;
 
 const stages=[
  {key:'employee',label:'الموظف',icon:UserCheck},
- {key:'managers',label:'المديرون',icon:Users},
+ {key:'managers',label:'المدير المباشر',icon:Users},
  {key:'it',label:'الحاسب الآلي',icon:Monitor},
  {key:'transport',label:'الحركة',icon:Truck},
  {key:'warehouse',label:'المستودعات',icon:Warehouse},
  {key:'admin',label:'الشؤون الإدارية',icon:BriefcaseBusiness},
  {key:'finance',label:'المالية',icon:WalletCards},
  {key:'hr',label:'الموارد البشرية',icon:Users},
- {key:'senior',label:'الإدارة العليا',icon:ShieldCheck},
+ {key:'project_manager',label:'مدير المشروع / مدير المشاريع',icon:UserCheck},
+ {key:'senior',label:'المدير العام',icon:ShieldCheck},
 ] as const
 
 const displayValue=(value:unknown)=>{
@@ -35,7 +36,7 @@ const stageDecision=(stage:string,data:any)=>{
 }
 const stageSignatures=(stage:string,data:any)=>{
  if(stage==='employee') return data?.employee_signature?[data.employee_signature]:[]
- if(stage==='managers') return [data?.line_manager_signature,data?.project_manager_signature].filter(Boolean)
+ if(stage==='managers') return [data?.line_manager_signature].filter(Boolean)
  if(stage==='senior') return data?.senior_signature?[data.senior_signature]:[]
  return data?.[stage+'_signature']?[data[stage+'_signature']]:[]
 }
@@ -85,6 +86,11 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
  const saveApplicability=async(next:Record<string,boolean>)=>{
   setSavingApply(true)
   try{
+   const changed=Object.keys(next).find(k=>next[k]!==apply[k]&&k!=='employee')
+   if(changed){
+    const wr=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_id:links.find(x=>x.link_scope==='clearance:'+changed)?.id,skip:next[changed]===false})})
+    if(!wr.ok)throw new Error('تعذر تحديث حالة المرحلة')
+   }
    const form={...(rec?.form_data||{}),clearance:{...(rec?.form_data?.clearance||{}),applicability:next}}
    const r=await fetch('/api/forms/records?id='+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({form,status:'قيد الإخلاء'})})
    if(!r.ok)throw new Error('تعذر حفظ حالة الإدارات')
@@ -159,10 +165,10 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
     <div className="columns-title"><span>اعتمادات وإخلاءات الجهات</span><span>DEPARTMENT CLEARANCES & SIGNATURES</span></div>
     <div className="signature-columns">
      <div className="signature-column">
-      <div className="column-title">المدير المباشر ومدير المشروع <small>MANAGERS</small></div>
+      <div className="column-title">المدير المباشر <small>LINE MANAGER</small></div>
       <div className="signature-card">
        <b>المدير المباشر</b><span>{displayValue(clearance.managers?.line_manager_name)}</span><div className="signature-box">{sigHtml("line_manager_signature","توقيع المدير المباشر")}</div>
-       <b>مدير المشروع</b><span>{displayValue(clearance.managers?.project_manager_name)}</span><div className="signature-box">{sigHtml("project_manager_signature","توقيع مدير المشروع")}</div>
+       
        <div className="decision-row">{decisionHtml("clearance_decision")}</div>{noteHtml(clearance.managers)}
       </div>
 
