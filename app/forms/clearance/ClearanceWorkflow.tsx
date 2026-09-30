@@ -52,7 +52,7 @@ export default function ClearanceWorkflow(){
       return
     }
     setLinks(data.links||[])
-    setMsg('تم إنشاء روابط إخلاء الطرف التسعة وربطها بملف الموظف.')
+    setMsg('تم إنشاء 10 روابط لإخلاء الطرف وربطها بملف الموظف، بما فيها رابط مدير المشروع / مدير المشاريع.')
   }
 
   const copy=async(url:string)=>{await navigator.clipboard.writeText(url);setCopied(url);setMsg('تم نسخ الرابط بنجاح');window.setTimeout(()=>setMsg(''),1800)}
@@ -94,7 +94,7 @@ export default function ClearanceWorkflow(){
 
         {links.length>0&&(
           <section className="bg-white border rounded-2xl overflow-hidden">
-            <div className="p-4 border-b font-black">الروابط التسعة</div>
+            <div className="p-4 border-b font-black">روابط إخلاء الطرف — 10 مراحل</div>
             <div className="divide-y">
               {links.map(link=>{
                 const url=link.public_url||location.origin+'/forms/public/'+link.token
