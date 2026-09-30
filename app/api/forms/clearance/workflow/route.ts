@@ -23,8 +23,24 @@ export async function POST(req:NextRequest){
  return NextResponse.json({record_id:recordId,employee:e,links})
 }
 export async function PATCH(req:NextRequest){
- const auth=await getServerAuth(req,['admin']);if(!auth)return NextResponse.json({error:'مدير النظام فقط يمكنه إعادة فتح الرابط.'},{status:403})
- const body=await req.json().catch(()=>({}));const linkId=body.link_id
+ const body=await req.json().catch(()=>({}))
+ const auth=await getServerAuth(req,['admin','hr','manager']);if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
+ const linkId=body.link_id
+ if(body.ensure_project_manager_link===true){
+  const recordId=body.record_id
+  if(!recordId)return NextResponse.json({error:'معرف السجل مطلوب.'},{status:400})
+  const existing=await db('hr_form_links?select=id,token,link_scope,status,last_submitted_at&form_type=eq.clearance&record_id=eq.'+encodeURIComponent(recordId)+'&link_scope=eq.clearance:project_manager&limit=1',auth)
+  const rows=await existing.json()
+  if(rows?.[0]) return NextResponse.json({ok:true,link:rows[0],created:false})
+  const rr=await db('hr_form_records?select=employee_id&id=eq.'+encodeURIComponent(recordId)+'&limit=1',auth)
+  const recs=await rr.json(); const employeeId=recs?.[0]?.employee_id
+  if(!employeeId)return NextResponse.json({error:'الموظف المرتبط بالسجل غير موجود.'},{status:404})
+  const now=new Date().toISOString()
+  const cr=await db('hr_form_links',auth,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'clearance',record_id:recordId,employee_id:employeeId,created_by:auth.user.id,link_scope:'clearance:project_manager',status:'active',created_at:now,updated_at:now})})
+  const data=await cr.json()
+  if(!cr.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:500})
+  return NextResponse.json({ok:true,link:data?.[0]||null,created:true})
+ }
  if(!linkId)return NextResponse.json({error:'معرف الرابط مطلوب.'},{status:400})
  const now=new Date().toISOString()
  if(body.skip===true){
@@ -43,6 +59,7 @@ export async function PATCH(req:NextRequest){
   const ld=await lr2.json();if(!lr2.ok)return NextResponse.json({error:ld?.message||JSON.stringify(ld)},{status:lr2.status})
   return NextResponse.json({ok:true,skipped:true,link:ld?.[0]||null})
  }
+ if(auth.user.role!=='admin')return NextResponse.json({error:'إعادة فتح الرابط متاحة لمدير النظام فقط.'},{status:403})
  const reopened=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance',auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({last_submitted_at:null,status:'active',updated_at:now})})
  const data=await reopened.json();if(!reopened.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:reopened.status})
  return NextResponse.json({ok:true,link:data?.[0]||null})
