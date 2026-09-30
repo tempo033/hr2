@@ -8,13 +8,14 @@ import EmployeeSearchSelect from '@/components/EmployeeSearchSelect'
 
 const stages:any={
   employee:'الموظف',
-  managers:'المدير المباشر / مدير المشروع / مدير المشاريع',
+  managers:'المدير المباشر',
   it:'إدارة الحاسب الآلي',
   transport:'إدارة الحركة',
   warehouse:'إدارة المستودعات',
   admin:'إدارة الشؤون الإدارية',
   finance:'الإدارة المالية',
   hr:'إدارة الموارد البشرية',
+  project_manager:'مدير المشروع / مدير المشاريع',
   senior:'الإدارة العليا — الاعتماد النهائي',
 }
 
