@@ -1,15 +1,16 @@
 'use client'
 import {useEffect,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,RefreshCw,ExternalLink,Scale} from 'lucide-react'
+import {ArrowLeft,RefreshCw,ExternalLink,Copy,CheckCircle2,Scale} from 'lucide-react'
 
 export default function Records(){
  const [data,setData]=useState<any>({investigations:[],employees:[]})
  const [selected,setSelected]=useState<any>(null)
  const [busy,setBusy]=useState(false)
- const [message,setMessage]=useState('')
+ const [message,setMessage]=useState('');const [copied,setCopied]=useState('')
 
  const load=async()=>{const r=await fetch('/api/administrative-investigations',{cache:'no-store'});setData(await r.json())}
+ const copy=async(url:string)=>{await navigator.clipboard.writeText(url);setCopied(url);setMessage('تم نسخ الرابط بنجاح');window.setTimeout(()=>{setCopied('');setMessage('')},1800)}
  useEffect(()=>{load()},[])
 
  const detail=async(id:string)=>{
@@ -47,9 +48,9 @@ export default function Records(){
        <button onClick={finalize} disabled={busy} className="bg-[#b88618] text-white rounded-xl px-5 py-3 font-black inline-flex gap-2"><Scale size={18}/>{busy?'جاري التحليل...':'التحليل النهائي والجزاءات المحتملة'}</button>
       </div>
       <div className="mt-5">
-       {(selected.parties||[]).map((p:any)=><div key={p.id} className="border rounded-xl p-4 mb-3"><div className="font-black">الموظف: {(data.employees||[]).find((e:any)=>e.id===p.employee_id)?.full_name||p.employee_id}</div><div className="text-sm mt-2">حالة الأقوال: {p.employee_submitted_at?'تم الإرسال':'لم يتم الإرسال'}</div><a className="text-[#b88618] inline-flex gap-1 mt-2" href={location.origin+'/forms/investigation/respond/'+p.employee_token} target="_blank" rel="noreferrer"><ExternalLink size={15}/> فتح رابط الموظف</a></div>)}
+       {(selected.parties||[]).map((p:any)=><div key={p.id} className="border rounded-xl p-4 mb-3"><div className="font-black">الموظف: {(data.employees||[]).find((e:any)=>e.id===p.employee_id)?.full_name||p.employee_id}</div><div className="text-sm mt-2">حالة الأقوال: {p.employee_submitted_at?'تم الإرسال':'لم يتم الإرسال'}</div><div className="flex gap-2 mt-2"><a className="text-[#b88618] inline-flex gap-1" href={location.origin+'/forms/investigation/respond/'+p.employee_token} target="_blank" rel="noreferrer" title="فتح الرابط"><ExternalLink size={15}/> فتح الرابط</a><button className="text-[#b88618] inline-flex gap-1" onClick={()=>copy(location.origin+'/forms/investigation/respond/'+p.employee_token)} title="نسخ الرابط">{copied===location.origin+'/forms/investigation/respond/'+p.employee_token?<CheckCircle2 size={15}/>:<Copy size={15}/>} نسخ</button></div></div>)}
       </div>
-      {(selected.reviews||[]).map((r:any)=><div key={r.id} className="border rounded-xl p-4 mb-4"><div className="font-black">الإدارة المختصة: {r.department_name||'غير محددة'} — {r.reviewer_name||'لم يحدد المسؤول'}</div><p className="whitespace-pre-wrap mt-2">{r.opinion||'لم يصل رأي الإدارة بعد.'}</p><a className="text-[#b88618] inline-flex gap-1 mt-2" href={location.origin+'/forms/investigation/review/'+r.review_token} target="_blank" rel="noreferrer"><ExternalLink size={15}/> فتح رابط الإدارة</a></div>)}
+      {(selected.reviews||[]).map((r:any)=><div key={r.id} className="border rounded-xl p-4 mb-4"><div className="font-black">الإدارة المختصة: {r.department_name||'غير محددة'} — {r.reviewer_name||'لم يحدد المسؤول'}</div><p className="whitespace-pre-wrap mt-2">{r.opinion||'لم يصل رأي الإدارة بعد.'}</p><div className="flex gap-2 mt-2"><a className="text-[#b88618] inline-flex gap-1" href={location.origin+'/forms/investigation/review/'+r.review_token} target="_blank" rel="noreferrer" title="فتح الرابط"><ExternalLink size={15}/> فتح الرابط</a><button className="text-[#b88618] inline-flex gap-1" onClick={()=>copy(location.origin+'/forms/investigation/review/'+r.review_token)} title="نسخ الرابط">{copied===location.origin+'/forms/investigation/review/'+r.review_token?<CheckCircle2 size={15}/>:<Copy size={15}/>} نسخ</button></div></div>)}
       {selected.investigation.final_analysis && (
        <div className="border-2 border-[#b88618] rounded-xl p-5">
         <h3 className="font-black text-xl mb-3">التحليل النهائي</h3><p className="font-bold">{selected.investigation.final_analysis.summary}</p>
