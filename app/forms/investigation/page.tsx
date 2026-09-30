@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,FileSearch,Plus,Trash2,Users,ClipboardList} from 'lucide-react'
+import EmployeeSearchSelect from '@/components/EmployeeSearchSelect'
 
 export default function InvestigationPage(){
  const [employees,setEmployees]=useState<any[]>([])
@@ -40,10 +41,13 @@ export default function InvestigationPage(){
    <section className="bg-white rounded-2xl border p-6 shadow-sm">
     <div className="flex items-center gap-2 mb-5"><FileSearch/><h2 className="text-xl font-black">بيانات التحقيق</h2></div>
     <label className="block font-bold mb-2">الموظفون محل التحقيق</label>
-    <select onChange={e=>{addEmployee(e.target.value);e.target.value=''}} className="w-full border-2 rounded-xl p-3">
-      <option value="">اختر موظفاً لإضافته — يمكن إضافة أكثر من طرف</option>
-      {employees.map(e=><option key={e.id} value={e.id}>{e.full_name}{e.job_title?' — '+e.job_title:''}{e.department?' — '+e.department:''}</option>)}
-    </select>
+    <EmployeeSearchSelect
+      employees={employees}
+      value=""
+      onChange={addEmployee}
+      placeholder="اختر موظفاً لإضافته — يمكن إضافة أكثر من طرف"
+      className="w-full"
+    />
     <div className="flex flex-wrap gap-2 mt-3">{selected.map(id=><div key={id} className="border rounded-xl px-3 py-2 bg-slate-50 flex items-center gap-2"><Users size={15}/><span className="font-bold">{employeeName(id)}</span><button onClick={()=>setSelected(x=>x.filter(v=>v!==id))} className="text-red-600"><Trash2 size={15}/></button></div>)}</div>
 
     <label className="block font-bold mb-2 mt-6">موضوع التحقيق</label>
