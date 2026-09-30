@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react'
 import Link from 'next/link'
 import {Copy,ExternalLink,RefreshCw,ArrowLeft} from 'lucide-react'
 import {supabase} from '@/lib/supabase'
+import EmployeeSearchSelect from '@/components/EmployeeSearchSelect'
 
 const stages:any={
   employee:'الموظف',
@@ -72,18 +73,13 @@ export default function ClearanceWorkflow(){
         <section className="bg-white border rounded-2xl p-5 mb-6">
           <label className="font-bold">
             اختيار الموظف
-            <select
-              className="block w-full mt-1.5 border border-slate-300 rounded-[10px] px-2.5 py-2.5 bg-white"
+            <EmployeeSearchSelect
+              employees={employees}
               value={employeeId}
-              onChange={e=>setEmployeeId(e.target.value)}
-            >
-              <option value="">اختر الموظف...</option>
-              {employees.map(employee=>(
-                <option key={employee.id} value={employee.id}>
-                  {employee.employee_number||'بدون رقم'} — {employee.full_name||'بدون اسم'}
-                </option>
-              ))}
-            </select>
+              onChange={setEmployeeId}
+              placeholder="اختر الموظف..."
+              className="mt-1.5"
+            />
           </label>
           <button
             disabled={!employeeId||busy}
