@@ -244,20 +244,18 @@ export default function Records() {
                       <a
                         target="_blank"
                         rel="noreferrer"
-                        href={location.origin + '/forms/public/' + x.token}
+                        href={x.public_url}
                         className="min-h-[36px] flex-1 min-w-[105px] bg-[#09233f] text-white rounded-lg px-3 py-2 font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none text-xs"
                       >
                         <ExternalLink size={14} /> فتح الرابط
                       </a>
                       <button
                         onClick={() =>
-                          navigator.clipboard?.writeText(
-                            location.origin + '/forms/public/' + x.token
-                          )
+                          copy(x.public_url)
                         }
                         className="min-h-[36px] bg-white border rounded-lg px-3 py-2 font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none text-xs"
                       >
-                        <Copy size={14} /> نسخ
+                        {copied===x.public_url?<CheckCircle2 size={14}/>:<Copy size={14}/>} نسخ
                       </button>
                     </div>
                   </div>
@@ -271,6 +269,6 @@ export default function Records() {
           </section>
         )}
       </div>
-    </main>
+    {copied&&<div className="form-copy-toast">تم نسخ الرابط بنجاح</div>}</main>
   )
 }
