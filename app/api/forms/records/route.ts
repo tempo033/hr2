@@ -22,6 +22,15 @@ export async function GET(req:NextRequest){
    employees=Array.isArray(ed)?ed:[]
  }
  const employeeMap=new Map(employees.map((e:any)=>[e.id,e]))
+ const companyIds=[...new Set(employees.map((e:any)=>e.company_id).filter(Boolean))]
+ let companies:any[]=[]
+ if(companyIds.length){
+   const cr=await fetch(SUPABASE_URL+'/rest/v1/employee_companies?select=id,name,unified_number&id=in.('+companyIds.join(',')+')',{headers:supabaseHeaders(auth),cache:'no-store'})
+   const cd=await cr.json()
+   if(!cr.ok) return NextResponse.json({error:JSON.stringify(cd)},{status:cr.status})
+   companies=Array.isArray(cd)?cd:[]
+ }
+ const companyMap=new Map(companies.map((x:any)=>[x.id,x]))
  const linkQuery=new URLSearchParams({select:'*',order:'created_at.asc'})
  if(type) linkQuery.set('form_type','eq.'+type)
  if(id) linkQuery.set('record_id','eq.'+id)
@@ -42,6 +51,7 @@ export async function GET(req:NextRequest){
    return {
      ...record,
      employee:employee||null,
+     company:employee?.company_id?companyMap.get(employee.company_id)||null:null,
      employee_name:employee?.full_name??record.employee_name??null,
      employee_number:employee?.employee_number??record.employee_number??null,
      department:employee?.department??record.department??null,
