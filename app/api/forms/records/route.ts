@@ -74,6 +74,8 @@ export async function PATCH(req:NextRequest){
 export async function DELETE(req:NextRequest){
  const auth=await getServerAuth(req,allowed); if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
  const id=req.nextUrl.searchParams.get('id'); if(!id)return NextResponse.json({error:'معرف النموذج مطلوب.'},{status:400})
+ const lr=await fetch(SUPABASE_URL+'/rest/v1/hr_form_links?record_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:supabaseHeaders(auth)})
+ if(!lr.ok){const d=await lr.text();return NextResponse.json({error:d},{status:lr.status})}
  const r=await fetch(SUPABASE_URL+'/rest/v1/hr_form_records?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:supabaseHeaders(auth)})
  if(!r.ok){const d=await r.text();return NextResponse.json({error:d},{status:r.status})}
  return NextResponse.json({ok:true})
