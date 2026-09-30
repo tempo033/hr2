@@ -61,7 +61,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    const rd=await rr.json(); const ld=await lr.json()
    if(!rr.ok) throw new Error(rd?.error||'تعذر تحميل ملف الإخلاء')
    setRec(rd.records?.[0]||null)
-   setLinks((ld.links||[]).filter((x:LinkRow)=>x.record_id===id))
+   setLinks((rd.records?.[0]?.links||[]).filter((x:LinkRow)=>x.record_id===id))
    const savedApply=rd.records?.[0]?.form_data?.clearance?.applicability||{}
    setApply(Object.fromEntries(stages.map(s=>[s.key,s.key==='employee'?true:savedApply[s.key]!==false])))
   }catch(error){console.error(error);setRec(null);setLinks([])}
