@@ -53,7 +53,8 @@ export async function PATCH(req:NextRequest){
   const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1',auth)
   const rs=await rr.json();const current=rs?.[0]?.form_data||{};const clearance=current.clearance||{}
   const skipped={...(clearance.skipped||{}),[stage]:true}
-  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),auth,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,clearance:{...clearance,skipped}},updated_at:now})})
+  const applicability={...(clearance.applicability||{}),[stage]:false}
+  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),auth,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,clearance:{...clearance,skipped,applicability}},updated_at:now})})
   if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
   const lr2=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId),auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'skipped',last_submitted_at:now,updated_at:now})})
   const ld=await lr2.json();if(!lr2.ok)return NextResponse.json({error:ld?.message||JSON.stringify(ld)},{status:lr2.status})
