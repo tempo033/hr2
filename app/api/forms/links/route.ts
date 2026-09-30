@@ -155,10 +155,13 @@ export async function POST(req: NextRequest) {
     method: 'POST',
     headers,
     body: JSON.stringify({
+      token: body.token || crypto.randomUUID(),
       form_type: formType,
       employee_id: body.employee_id || null,
       record_id: body.record_id || null,
       created_by: auth.user.id,
+      link_scope: body.link_scope || null,
+      status: body.status || 'active',
       expires_at: body.expires_at || null,
     }),
   })
