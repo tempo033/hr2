@@ -56,7 +56,7 @@ export async function PATCH(req:NextRequest){
   const applicability={...(clearance.applicability||{}),[stage]:false}
   const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),auth,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,clearance:{...clearance,skipped,applicability}},updated_at:now})})
   if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
-  const lr2=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId),auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'skipped',last_submitted_at:now,updated_at:now})})
+  const lr2=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId),auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'disabled',last_submitted_at:now,updated_at:now})})
   const ld=await lr2.json();if(!lr2.ok)return NextResponse.json({error:ld?.message||JSON.stringify(ld)},{status:lr2.status})
   return NextResponse.json({ok:true,skipped:true,link:ld?.[0]||null})
  }
