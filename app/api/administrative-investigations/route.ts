@@ -235,7 +235,15 @@ export async function POST(req:NextRequest){
       db(`administrative_investigation_parties?select=*&investigation_id=eq.${id}`,{cache:'no-store'},auth),
       db(`administrative_investigation_reviews?select=*&investigation_id=eq.${id}`,{cache:'no-store'},auth)
     ])
-    return NextResponse.json({investigation:(await ir.json())[0],parties:pr.ok?await pr.json():[],reviews:rr.ok?await rr.json():[]})
+    const investigation=(await ir.json())[0]
+    const parties=pr.ok?await pr.json():[]
+    const reviews=rr.ok?await rr.json():[]
+    const origin=req.nextUrl.origin
+    return NextResponse.json({
+      investigation,
+      parties:parties.map((p:any)=>({...p,public_url:origin+'/forms/investigation/respond/'+p.employee_token})),
+      reviews:reviews.map((r:any)=>({...r,public_url:origin+'/forms/investigation/review/'+r.review_token}))
+    })
   }
   return NextResponse.json({error:'طلب غير معروف'},{status:400})
 }
