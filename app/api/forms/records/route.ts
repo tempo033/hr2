@@ -10,7 +10,46 @@ export async function GET(req:NextRequest){
  if(id) query.set('id','eq.'+id)
  if(type) query.set('form_type','eq.'+type)
  const r=await fetch(SUPABASE_URL+'/rest/v1/hr_form_records?'+query.toString(),{headers:supabaseHeaders(auth),cache:'no-store'})
- const d=await r.json(); return NextResponse.json({records:d||[]},{status:r.ok?200:r.status})
+ const d=await r.json()
+ if(!r.ok) return NextResponse.json({error:JSON.stringify(d)},{status:r.status})
+ const records=Array.isArray(d)?d:[]
+ const employeeIds=[...new Set(records.map((x:any)=>x.employee_id).filter(Boolean))]
+ let employees:any[]=[]
+ if(employeeIds.length){
+   const er=await fetch(SUPABASE_URL+'/rest/v1/employee_records?select=id,employee_number,full_name,department,job_title,company_id&id=in.('+employeeIds.join(',')+')',{headers:supabaseHeaders(auth),cache:'no-store'})
+   const ed=await er.json()
+   if(!er.ok) return NextResponse.json({error:JSON.stringify(ed)},{status:er.status})
+   employees=Array.isArray(ed)?ed:[]
+ }
+ const employeeMap=new Map(employees.map((e:any)=>[e.id,e]))
+ const linkQuery=new URLSearchParams({select:'*',order:'created_at.asc'})
+ if(type) linkQuery.set('form_type','eq.'+type)
+ if(id) linkQuery.set('record_id','eq.'+id)
+ const lr=await fetch(SUPABASE_URL+'/rest/v1/hr_form_links?'+linkQuery.toString(),{headers:supabaseHeaders(auth),cache:'no-store'})
+ const ld=await lr.json()
+ if(!lr.ok) return NextResponse.json({error:JSON.stringify(ld)},{status:lr.status})
+ const links=Array.isArray(ld)?ld:[]
+ const origin=req.nextUrl.origin
+ const linksByRecord=new Map<string,any[]>()
+ for(const link of links){
+   if(!link.record_id) continue
+   const arr=linksByRecord.get(link.record_id)||[]
+   arr.push({...link,public_url:origin+'/forms/public/'+link.token})
+   linksByRecord.set(link.record_id,arr)
+ }
+ const enriched=records.map((record:any)=>{
+   const employee=record.employee_id?employeeMap.get(record.employee_id):null
+   return {
+     ...record,
+     employee:employee||null,
+     employee_name:employee?.full_name??record.employee_name??null,
+     employee_number:employee?.employee_number??record.employee_number??null,
+     department:employee?.department??record.department??null,
+     job_title:employee?.job_title??record.job_title??null,
+     links:linksByRecord.get(record.id)||[],
+   }
+ })
+ return NextResponse.json({records:enriched},{status:200})
 }
 
 export async function PATCH(req:NextRequest){
