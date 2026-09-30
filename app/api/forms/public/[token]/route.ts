@@ -124,7 +124,7 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
   await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
   return NextResponse.json({ok:true,record_id:link.record_id})
  }
- const form=body.form||{};const base={form_type:link.form_type,employee_id:link.employee_id||null,employee_number:form.employee_number||null,employee_name:form.employee_name||null,department:form.department||null,job_title:form.job_title||null,form_data:form,status:'معبأ عبر رابط خارجي',last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua,submitted_via_link:true,updated_at:now}
+ const form=body.form||{};if(!form.employee_signature)return NextResponse.json({error:'لا يمكن إرسال النموذج بدون توقيع الموظف.'},{status:400});const base={form_type:link.form_type,employee_id:link.employee_id||null,employee_number:form.employee_number||null,employee_name:form.employee_name||null,department:form.department||null,job_title:form.job_title||null,form_data:form,status:'معبأ عبر رابط خارجي',last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua,submitted_via_link:true,updated_at:now}
  let recordId=link.record_id;let res:Response
  if(recordId)res=await db('hr_form_records?id=eq.'+encodeURIComponent(recordId),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(base)})
  else res=await db('hr_form_records',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...base,created_at:now})})
