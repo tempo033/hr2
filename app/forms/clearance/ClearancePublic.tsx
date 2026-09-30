@@ -4,9 +4,9 @@ import SignatureEditor from '@/app/components/signature/SignatureEditor'
 import {Save,Printer} from 'lucide-react'
 
 const labels:any={
-  employee:'الموظف',managers:'المدير المباشر / مدير المشروع',it:'إدارة الحاسب الآلي',
+  employee:'الموظف',managers:'المدير المباشر',it:'إدارة الحاسب الآلي',
   transport:'إدارة الحركة',warehouse:'إدارة المستودعات',admin:'إدارة الشؤون الإدارية',
-  finance:'الإدارة المالية',hr:'إدارة الموارد البشرية',senior:'الإدارة العليا — الاعتماد النهائي'
+  finance:'الإدارة المالية',hr:'إدارة الموارد البشرية',project_manager:'مدير المشروع / مدير المشاريع',senior:'الإدارة العليا — الاعتماد النهائي'
 }
 
 function SignatureField({nameValue,signatureValue,onNameChange,onSignatureChange,disabled=false,employeeId,publicToken}:{
@@ -118,7 +118,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
     if(locked)return
     const signatureMissing=
       stage==='employee'?!d.employee_signature:
-      stage==='managers'?(!d.line_manager_signature||!d.project_manager_signature):
+      stage==='managers'?!d.line_manager_signature:stage==='project_manager'?!d.project_manager_signature:
       stage==='senior'?!d.senior_signature:
       !d[stage+'_signature']
 
@@ -192,7 +192,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
             </>
           )}
 
-          {stage==='managers' && <Manager d={d} set={set}/>}
+          {stage==='managers' && <Manager d={d} set={set}/>}\n\n          {stage==='project_manager' && (\n            <div className="mt-5">\n              <h3 className="section">مدير المشروع / مدير المشاريع</h3>\n              <div className="border rounded-lg p-4 bg-slate-50 mb-5">\n                <div className="font-black mb-3">ملخص جميع الاعتمادات والملاحظات السابقة</div>\n                <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(d,null,2)}</pre>\n              </div>\n              <SignatureField nameValue={d.project_manager_name||''} signatureValue={d.project_manager_signature||''} onNameChange={v=>set('project_manager_name',v)} onSignatureChange={v=>set('project_manager_signature',v)} />\n              <input type="date" className="field" value={d.project_manager_date||''} onChange={e=>set('project_manager_date',e.target.value)}/>\n              <textarea className="field min-h-20 mt-3" placeholder="ملاحظات مدير المشروع / مدير المشاريع" value={d.project_manager_notes||''} onChange={e=>set('project_manager_notes',e.target.value)}/>\n            </div>\n          )}
 
           {['it','transport','warehouse','admin'].includes(stage) && <Dept d={d} set={set} stage={stage}/>}
 
