@@ -28,6 +28,7 @@ const sections = [
   { id:'attendance', label:'الحضور والإجازات', icon:CalendarDays, items:[
     ['/leaves','إدارة الإجازات',CalendarDays,['admin','hr','manager']],
     ['/payroll/attendance','الحضور والغياب',CalendarDays,['admin','hr','manager']],
+    ['/attendance','الحضور والانصراف - تطبيق الموظف',CalendarDays,['admin','hr','manager']],
     ['/payroll/overtime','العمل الإضافي',WalletCards,['admin','hr','manager']],
   ]},
   { id:'payroll', label:'الرواتب والتأمينات', icon:WalletCards, items:[
