@@ -21,7 +21,7 @@ const getRequirementOptions = (r: Requirement): Option[] => {
   const category = String(r.category || '').trim()
 
   // المؤهل فقط: الاختيارات المطلوبة حرفيًا.
-  if (name.includes('مؤهل') || name === 'qualification' || name === 'degree') {
+  if (category.includes('مؤهل') || name.includes('مؤهل') || name === 'qualification' || name === 'degree') {
     return [
       { label: 'بكالوريوس', score: 100 },
       { label: 'دبلوم', score: 50 },
