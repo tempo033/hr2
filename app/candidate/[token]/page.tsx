@@ -16,12 +16,27 @@ type Option = { label: string; score: number }
 
 const DEGREE_OPTIONS = ['بكالوريوس', 'دبلوم', 'ثانوي', 'بدون مؤهل']
 
-const getRequirementOptions = (_r: Requirement): Option[] => [
-  {label:'بدون مؤهل',score:0},
-  {label:'ثانوي',score:25},
-  {label:'دبلوم',score:50},
-  {label:'بكالوريوس',score:100},
-]
+const getRequirementOptions = (r: Requirement): Option[] => {
+  const name = String(r.name || '').toLowerCase()
+  const category = String(r.category || '')
+
+  // تغيير خاص بالمؤهل فقط: نفس اختيارات قسم "المؤهل العلمي".
+  if (/مؤهل|qualification|degree/.test(name)) {
+    return DEGREE_OPTIONS.map((label, index) => ({
+      label,
+      score: [100, 50, 25, 0][index],
+    }))
+  }
+
+  // باقي متطلبات الوظيفة والمهارات تبقى كما كانت.
+  if (category === 'اعتماد' || /اعتماد|شهادة|عضوية|رخصة|تصنيف/.test(name)) return [{label:'غير متوفر',score:0},{label:'متوفر',score:100}]
+  if (/autocad|revit|bim|excel|primavera|ms project|برنامج|software|sap|erp/.test(name)) return [{label:'لا يستخدم',score:0},{label:'أساسي',score:25},{label:'جيد',score:50},{label:'متقدم',score:75},{label:'متقن',score:100}]
+  if (/خبرة|experience|سنوات/.test(name)) return [{label:'لا توجد خبرة',score:0},{label:'أقل من سنة',score:25},{label:'1–3 سنوات',score:50},{label:'3–5 سنوات',score:75},{label:'أكثر من 5 سنوات',score:100}]
+  if (/قراءة|فهم|حصر|quantity|كميات|boq|مستخلص|shop|as-built|material|rfi|رسومات|مخططات/.test(name)) return [{label:'لا يجيد',score:0},{label:'أساسيات',score:25},{label:'جيد',score:50},{label:'متقدم',score:75},{label:'متمكن',score:100}]
+  if (/لغة|english|إنجليزي|عربي/.test(name)) return [{label:'لا يجيد',score:0},{label:'محدود',score:25},{label:'متوسط',score:50},{label:'جيد',score:75},{label:'ممتاز',score:100}]
+  if (/رخصة|قيادة|سيارة|نقل|إقامة|كفالة|مباشرة|متاح|جاهز/.test(name)) return [{label:'غير متوفر',score:0},{label:'غير واضح',score:25},{label:'متوفر بشروط',score:50},{label:'متوفر',score:75},{label:'متوفر دون عائق',score:100}]
+  return [{label:'لا توجد خبرة',score:0},{label:'محدودة',score:25},{label:'مناسبة',score:50},{label:'جيدة',score:75},{label:'متقدمة',score:100}]
+}
 
 const fieldClass = 'w-full min-h-12 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[15px] text-slate-800 outline-none transition focus:border-[#c99b24] focus:ring-4 focus:ring-[#c99b24]/10 placeholder:text-slate-400'
 const sectionClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden'
