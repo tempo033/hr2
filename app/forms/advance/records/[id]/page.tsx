@@ -2,7 +2,7 @@
 
 import {useEffect,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,FileCheck2} from 'lucide-react'
+import {ArrowLeft,FileCheck2,Printer} from 'lucide-react'
 import RequestForm from '@/app/forms/shared/RequestForm'
 
 export default function AdvanceOfficialRecord({params}:{params:Promise<{id:string}>}){
@@ -17,7 +17,11 @@ export default function AdvanceOfficialRecord({params}:{params:Promise<{id:strin
  return <main dir="rtl" className="min-h-screen bg-[#ececec] py-6">
   <div className="print-toolbar max-w-[900px] mx-auto mb-4 flex justify-between items-center gap-2">
    <Link href="/forms/advance/records" className="border bg-white rounded-xl px-4 py-2 font-bold inline-flex gap-2 items-center"><ArrowLeft size={17}/> طلبات السلف</Link>
-   <div className="flex gap-2"><span className={complete?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-700'}>{complete?'مكتمل الاعتماد':'قيد الاعتماد'}</span><button disabled={!complete} onClick={()=>window.print()} className="rounded-xl bg-[#b88618] text-white px-5 py-2 font-bold inline-flex gap-2 disabled:opacity-40"><FileCheck2 size={17}/>تصدير PDF</button></div>
+   <div className="flex gap-2"><span className={complete?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-700'}>{complete?'معتمد نهائياً':'قيد الاعتماد'}</span>
+   <div className="flex gap-2">
+    <button disabled={!complete} onClick={()=>window.print()} className="rounded-xl bg-[#b88618] text-white px-5 py-2 font-bold inline-flex gap-2 disabled:opacity-40"><FileCheck2 size={17}/>تصدير PDF</button>
+    <button disabled={!complete} onClick={()=>window.print()} className="rounded-xl bg-[#09233f] text-white px-5 py-2 font-bold inline-flex gap-2 disabled:opacity-40"><Printer size={17}/>طباعة الطلب</button>
+   </div></div>
   </div>
   <RequestForm kind="advance" initialData={f} readOnly approvalData={approvals}/>
  </main>
