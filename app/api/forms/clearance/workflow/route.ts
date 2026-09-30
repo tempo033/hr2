@@ -18,7 +18,7 @@ export async function POST(req:NextRequest){
  for(const s of stages){
   const lr=await db('hr_form_links',auth,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({token:crypto.randomUUID(),form_type:'clearance',record_id:recordId,employee_id:e.id,created_by:auth.user.id,link_scope:'clearance:'+s[0],status:'active',created_at:now,updated_at:now})})
   const data=await lr.json();if(!lr.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:500})
-  links.push({...data?.[0],stage:{key:s[0],label:s[1]}})
+  links.push({...data?.[0],stage:{key:s[0],label:s[1]},public_url:req.nextUrl.origin+'/forms/public/'+data?.[0]?.token})
  }
  return NextResponse.json({record_id:recordId,employee:e,links})
 }
@@ -33,5 +33,8 @@ export async function PATCH(req:NextRequest){
 export async function GET(req:NextRequest){
  const auth=await getServerAuth(req,roles);if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
  const r=await db('hr_form_links?select=*&form_type=eq.clearance&order=created_at.desc',auth);const data=await r.json()
- if(!r.ok)return NextResponse.json({error:JSON.stringify(data)},{status:r.status});return NextResponse.json({links:data||[]})
+ if(!r.ok)return NextResponse.json({error:JSON.stringify(data)},{status:r.status})
+ const origin=req.nextUrl.origin
+ const links=(Array.isArray(data)?data:[]).map((link:any)=>({...link,public_url:origin+'/forms/public/'+link.token}))
+ return NextResponse.json({links})
 }
