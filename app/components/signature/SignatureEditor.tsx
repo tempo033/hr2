@@ -1,7 +1,7 @@
 'use client'
 
-import {useEffect,useRef} from 'react'
-import {Eraser} from 'lucide-react'
+import {useEffect,useRef,useState} from 'react'
+import {Eraser,Upload} from 'lucide-react'
 
 type Props={
   employeeId?:string|null
@@ -16,6 +16,7 @@ type Props={
 export default function SignatureEditor({
   value='',onChange,disabled=false
 }:Props){
+  const [fileError,setFileError]=useState('')
   const canvas=useRef<HTMLCanvasElement>(null)
   const drawing=useRef(false)
   const last=useRef<{x:number;y:number}|null>(null)
@@ -73,6 +74,18 @@ export default function SignatureEditor({
     if(canvas.current)onChange?.(canvas.current.toDataURL('image/png'))
   }
 
+  const upload=(e:React.ChangeEvent<HTMLInputElement>)=>{
+    const file=e.target.files?.[0]
+    e.target.value=''
+    if(!file)return
+    if(!['image/png','image/jpeg','image/jpg','image/webp'].includes(file.type)){setFileError('يرجى تحميل صورة PNG أو JPG أو WEBP.');return}
+    if(file.size>5*1024*1024){setFileError('حجم صورة التوقيع يجب ألا يتجاوز 5 ميجابايت.');return}
+    setFileError('')
+    const reader=new FileReader()
+    reader.onload=()=>onChange?.(String(reader.result||''))
+    reader.readAsDataURL(file)
+  }
+
   const clear=()=>{
     canvas.current?.getContext('2d')?.clearRect(0,0,canvas.current.width,canvas.current.height)
     onChange?.('')
@@ -96,8 +109,15 @@ export default function SignatureEditor({
       style={{aspectRatio:'4 / 1',height:'auto'}}
     />
 
-    <button type="button" disabled={disabled} onClick={clear} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold inline-flex gap-1">
+    <div className="mt-3 flex flex-wrap gap-2">
+      <label className={`rounded-lg border px-3 py-2 text-xs font-bold inline-flex gap-1 items-center cursor-pointer ${disabled?'opacity-50 pointer-events-none':''}`}>
+        <Upload size={14}/>إضافة التوقيع من صورة
+        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={disabled} onChange={upload}/>
+      </label>
+      <button type="button" disabled={disabled} onClick={clear} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold inline-flex gap-1">
       <Eraser size={14}/>مسح وإعادة الرسم
-    </button>
+      </button>
+    </div>
+    {fileError&&<div className="mt-2 text-xs font-bold text-red-700">{fileError}</div>}
   </section>
 }
