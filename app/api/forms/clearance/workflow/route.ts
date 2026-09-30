@@ -60,7 +60,17 @@ export async function PATCH(req:NextRequest){
   const ld=await lr2.json();if(!lr2.ok)return NextResponse.json({error:ld?.message||JSON.stringify(ld)},{status:lr2.status})
   return NextResponse.json({ok:true,skipped:true,link:ld?.[0]||null})
  }
- if(auth.user.role!=='admin')return NextResponse.json({error:'إعادة فتح الرابط متاحة لمدير النظام فقط.'},{status:403})
+ const lr0=await db('hr_form_links?select=record_id,link_scope&id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance&limit=1',auth)
+ const l0=await lr0.json(); const target=l0?.[0]
+ if(!target)return NextResponse.json({error:'رابط إخلاء الطرف غير موجود.'},{status:404})
+ const stage0=String(target.link_scope||'').replace('clearance:','')
+ if(!stage0||stage0==='employee')return NextResponse.json({error:'لا يمكن تغيير حالة هذه المرحلة.'},{status:400})
+ if(!target.record_id)return NextResponse.json({error:'سجل إخلاء الطرف غير موجود.'},{status:404})
+ const rr0=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(target.record_id)+'&limit=1',auth)
+ const rs0=await rr0.json(); const current0=rs0?.[0]?.form_data||{}; const c0=current0.clearance||{}
+ const app0={...(c0.applicability||{}),[stage0]:true}; const sk0={...(c0.skipped||{})}; delete sk0[stage0]
+ const save0=await db('hr_form_records?id=eq.'+encodeURIComponent(target.record_id),auth,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current0,clearance:{...c0,applicability:app0,skipped:sk0}},updated_at:now})})
+ if(!save0.ok)return NextResponse.json({error:await save0.text()},{status:500})
  const reopened=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance',auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({last_submitted_at:null,status:'active',updated_at:now})})
  const data=await reopened.json();if(!reopened.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:reopened.status})
  return NextResponse.json({ok:true,link:data?.[0]||null})
