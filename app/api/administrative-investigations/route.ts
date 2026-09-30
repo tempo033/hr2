@@ -146,7 +146,18 @@ export async function GET(req:NextRequest){
     db('administrative_investigations?select=*&order=created_at.desc',{cache:'no-store'},auth),
     db('administrative_investigation_reviews?select=*&order=created_at.desc',{cache:'no-store'},auth)
   ])
-  return NextResponse.json({employees:er.ok?await er.json():[],investigations:ir.ok?await ir.json():[],reviews:rr.ok?await rr.json():[]},{headers:{'Cache-Control':'no-store'}})
+  const employees=er.ok?await er.json():[]
+  const investigations=ir.ok?await ir.json():[]
+  const reviews=rr.ok?await rr.json():[]
+  const origin=req.nextUrl.origin
+  const partiesByInvestigation=new Map<string,any[]>()
+  const pr=await db('administrative_investigation_parties?select=id,investigation_id,employee_id,employee_token,employee_submitted_at',{cache:'no-store'},auth)
+  const partyRows=pr.ok?await pr.json():[]
+  for(const p of partyRows){const arr=partiesByInvestigation.get(p.investigation_id)||[];arr.push({...p,public_url:origin+'/forms/investigation/respond/'+p.employee_token});partiesByInvestigation.set(p.investigation_id,arr)}
+  const reviewByInvestigation=new Map<string,any>()
+  for(const r of reviews) reviewByInvestigation.set(r.investigation_id,{...r,public_url:origin+'/forms/investigation/review/'+r.review_token})
+  const enrichedInvestigations=investigations.map((x:any)=>({...x,party_links:partiesByInvestigation.get(x.id)||[],management_link:reviewByInvestigation.get(x.id)||null}))
+  return NextResponse.json({employees,investigations:enrichedInvestigations,reviews},{headers:{'Cache-Control':'no-store'}})
 }
 
 export async function POST(req:NextRequest){
