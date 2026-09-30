@@ -66,6 +66,7 @@ export async function PATCH(req:NextRequest){
  const auth=await getServerAuth(req,allowed); if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
  const id=req.nextUrl.searchParams.get('id'); if(!id)return NextResponse.json({error:'معرف النموذج مطلوب.'},{status:400})
  const body=await req.json().catch(()=>({})); const form=body.form||{}
+ if(!form.employee_signature)return NextResponse.json({error:'لا يمكن حفظ النموذج بدون توقيع الموظف.'},{status:400})
  const payload={form_data:form,employee_number:form.employee_number||null,employee_name:form.employee_name||null,department:form.department||null,job_title:form.job_title||null,status:body.status||'مسودة',updated_at:new Date().toISOString()}
  const r=await fetch(SUPABASE_URL+'/rest/v1/hr_form_records?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...supabaseHeaders(auth),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(payload)})
  const d=await r.json(); return NextResponse.json({record:d?.[0]||null,error:r.ok?undefined:(d?.message||JSON.stringify(d))},{status:r.ok?200:r.status})
