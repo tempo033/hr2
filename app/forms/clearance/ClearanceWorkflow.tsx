@@ -22,7 +22,7 @@ export default function ClearanceWorkflow(){
   const [employeeId,setEmployeeId]=useState('')
   const [links,setLinks]=useState<any[]>([])
   const [busy,setBusy]=useState(false)
-  const [msg,setMsg]=useState('')
+  const [msg,setMsg]=useState('');const [copied,setCopied]=useState('')
 
   const load=async()=>{
     const {data}=await supabase
@@ -53,9 +53,7 @@ export default function ClearanceWorkflow(){
     setMsg('تم إنشاء روابط إخلاء الطرف التسعة وربطها بملف الموظف.')
   }
 
-  const copy=(token:string)=>{
-    void navigator.clipboard?.writeText(location.origin+'/forms/public/'+token)
-  }
+  const copy=async(url:string)=>{await navigator.clipboard.writeText(url);setCopied(url);setMsg('تم نسخ الرابط بنجاح');window.setTimeout(()=>setMsg(''),1800)}
 
   return (
     <main dir="rtl" className="min-h-screen bg-[#f5f7fa] p-5 md:p-8">
@@ -102,7 +100,7 @@ export default function ClearanceWorkflow(){
             <div className="p-4 border-b font-black">الروابط التسعة</div>
             <div className="divide-y">
               {links.map(link=>{
-                const url=location.origin+'/forms/public/'+link.token
+                const url=link.public_url||location.origin+'/forms/public/'+link.token
                 const stageKey=link.link_scope?.replace('clearance:','')
                 const label=link.stage?.label||stages[stageKey]
                 return (
@@ -113,13 +111,13 @@ export default function ClearanceWorkflow(){
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={()=>copy(link.token)}
+                        onClick={()=>copy(url)}
                         className="border rounded-lg px-3 py-2 font-bold inline-flex gap-1"
                       >
                         <Copy size={15}/> نسخ
                       </button>
                       <a
-                        href={url}
+                        href={url} title="فتح الرابط"
                         target="_blank"
                         rel="noreferrer"
                         className="bg-[#b88618] text-white rounded-lg px-3 py-2 font-bold inline-flex gap-1"
