@@ -7,10 +7,18 @@ const allowed = ['admin','hr','interviewer','manager']
 export async function GET(req: NextRequest) {
   const auth = await getServerAuth(req, allowed)
   if (!auth) return NextResponse.json({ error: 'غير مصرح.' }, { status: 403 })
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links?select=*&order=created_at.desc`, { headers: supabaseHeaders(auth), cache: 'no-store' })
+  const params = req.nextUrl.searchParams
+  const query = new URLSearchParams({ select: '*', order: 'created_at.asc' })
+  const formType = params.get('form_type')
+  const recordId = params.get('record_id')
+  if (formType) query.set('form_type', 'eq.' + formType)
+  if (recordId) query.set('record_id', 'eq.' + recordId)
+  const response = await fetch(SUPABASE_URL + '/rest/v1/hr_form_links?' + query.toString(), { headers: supabaseHeaders(auth), cache: 'no-store' })
   const data = await response.json()
   if (!response.ok) return NextResponse.json({ error: JSON.stringify(data) }, { status: response.status })
-  return NextResponse.json({ links: data || [] })
+  const origin = req.nextUrl.origin
+  const links = (data || []).map((link: any) => ({ ...link, public_url: origin + '/forms/public/' + link.token }))
+  return NextResponse.json({ links })
 }
 
 export async function POST(req: NextRequest) {
