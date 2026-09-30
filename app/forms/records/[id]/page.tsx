@@ -6,7 +6,8 @@ import {ArrowLeft,Edit3,Trash2,Printer,Save,FileDown,ExternalLink,Copy,CheckCirc
 import RequestForm,{config} from '@/app/forms/shared/RequestForm'
 
 type Kind='leave'|'clearance'|'advance'
-type LinkRow={id:string;token:string;record_id:string;form_type:string;link_scope:string|null;status:string;last_submitted_at?:string|null;public_url?:string}\ntype Row={id:string;form_type:Kind;employee_name:string|null;employee_number:string|null;department:string|null;job_title:string|null;status:string;form_data:Record<string,string>;last_ip_address:string|null;last_device_name:string|null;updated_at:string;links?:LinkRow[]}
+type LinkRow={id:string;token:string;record_id:string;form_type:string;link_scope:string|null;status:string;last_submitted_at?:string|null;public_url?:string}
+type Row={id:string;form_type:Kind;employee_name:string|null;employee_number:string|null;department:string|null;job_title:string|null;status:string;form_data:Record<string,string>;last_ip_address:string|null;last_device_name:string|null;updated_at:string;links?:LinkRow[]}
 
 export default function RecordDetail(){
  const {id}=useParams<{id:string}>();const router=useRouter();const [row,setRow]=useState<Row|null>(null);const [form,setForm]=useState<Record<string,string>>({});const [edit,setEdit]=useState(false);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [copied,setCopied]=useState('')
