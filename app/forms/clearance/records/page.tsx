@@ -15,6 +15,7 @@ type Row = {
   employee_id?:string|null
   company?:{name?:string|null;unified_number?:string|null}|null
   links?:LinkRow[]
+  form_data?:any
 }
 
 type LinkRow = {
@@ -40,6 +41,34 @@ const stageLabels:Record<string,string> = {
 }
 
 const stageOrder = ['employee','managers','it','transport','warehouse','admin','finance','hr','senior']
+
+const stageData=(row:Row,key:string)=>{
+  const clearance=row.form_data?.clearance||{}
+  return key==='employee'?(clearance.employee||{}):(clearance[key]||{})
+}
+const stageSignatures=(stage:string,data:any)=>{
+  if(stage==='employee') return data?.employee_signature?[data.employee_signature]:[]
+  if(stage==='managers') return [data?.line_manager_signature,data?.project_manager_signature].filter(Boolean)
+  if(stage==='senior') return data?.senior_signature?[data.senior_signature]:[]
+  return data?.[stage+'_signature']?[data[stage+'_signature']]:[]
+}
+const stageDecision=(stage:string,data:any)=>{
+  if(stage==='employee') return data?.employee_signature?'clear':'pending'
+  if(stage==='managers') return data?.clearance_decision||'pending'
+  if(stage==='senior') return data?.senior_decision||'pending'
+  return data?.[stage+'_decision']||'pending'
+}
+const isClearanceComplete=(row:Row)=>{
+  const clearance=row.form_data?.clearance||{}
+  const employee=clearance.employee||{}
+  const applicability=clearance.applicability||{}
+  if(!employee.employee_signature) return false
+  return stageOrder.slice(1).every(key=>{
+    if(applicability[key]===false) return true
+    const data=stageData(row,key)
+    return stageSignatures(key,data).length>0 && stageDecision(key,data)==='clear'
+  })
+}
 
 export default function Records(){
   const [rows,setRows] = useState<Row[]>([])
@@ -155,7 +184,7 @@ export default function Records(){
                         </td>
                         <td className="px-4 py-4 text-slate-700">{r.job_title||'—'}</td>
                         <td className="px-4 py-4 text-slate-700">{r.department||'—'}</td>
-                        <td className="px-4 py-4"><span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700">{r.status||'—'}</span></td>
+                        <td className="px-4 py-4"><span className={isClearanceComplete(r)?'inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700':'inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700'}>{isClearanceComplete(r)?'مكتمل':'قيد الإخلاء'}</span></td>
                         <td className="px-4 py-4 whitespace-nowrap text-xs text-slate-500">{r.updated_at?new Date(r.updated_at).toLocaleString('ar-SA'):'—'}</td>
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap items-center gap-2">
