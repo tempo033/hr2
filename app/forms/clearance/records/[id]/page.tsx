@@ -95,16 +95,52 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
   setSavingApply(true)
   try{
    const changed=Object.keys(next).find(k=>next[k]!==apply[k]&&k!=='employee')
+   const currentForm=rec?.form_data||{}
+   const currentClearance=currentForm.clearance||{}
+   const skipped={...(currentClearance.skipped||{})}
    if(changed){
-    const wr=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_id:links.find(x=>x.link_scope==='clearance:'+changed)?.id,skip:next[changed]===false})})
-    if(!wr.ok)throw new Error('تعذر تحديث حالة المرحلة')
+    if(next[changed]===false) skipped[changed]=true
+    else delete skipped[changed]
    }
-   const form={...(rec?.form_data||{}),clearance:{...(rec?.form_data?.clearance||{}),applicability:next}}
-   const r=await fetch('/api/forms/records?id='+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({form,status:'قيد الإخلاء'})})
-   if(!r.ok)throw new Error('تعذر حفظ حالة الإدارات')
+   const form={
+    ...currentForm,
+    clearance:{
+      ...currentClearance,
+      applicability:next,
+      skipped
+    }
+   }
+
+   // احفظ حالة "ينطبق / لا ينطبق" أولاً في السجل نفسه.
+   // تحديث رابط المرحلة خطوة إضافية فقط، حتى لا يمنع فشل الرابط حفظ الاختيار.
+   const r=await fetch('/api/forms/records?id='+encodeURIComponent(id),{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({form,status:'قيد الإخلاء'})
+   })
+   if(!r.ok){
+    const x=await r.json().catch(()=>({}))
+    throw new Error(x?.error||'تعذر حفظ حالة الإدارات')
+   }
+
+   if(changed){
+    const link=links.find(x=>x.link_scope==='clearance:'+changed)
+    if(link?.id){
+      const wr=await fetch('/api/forms/clearance/workflow',{
+       method:'PATCH',
+       headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({link_id:link.id,skip:next[changed]===false})
+      })
+      if(!wr.ok) console.warn('تعذر تحديث حالة رابط المرحلة، لكن تم حفظ الاختيار في السجل.')
+    }
+   }
+
    setApply(next)
    setRec(prev=>prev?{...prev,form_data:form,updated_at:new Date().toISOString()}:prev)
-  }catch(e){console.error(e)}finally{setSavingApply(false)}
+  }catch(e){
+   console.error(e)
+   alert(e instanceof Error?e.message:'تعذر حفظ الحالة')
+  }finally{setSavingApply(false)}
  }
 
 
