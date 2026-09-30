@@ -54,3 +54,17 @@ export function supabaseHeaders(auth: ServerAuth, extra: Record<string, string> 
   }
   return headers
 }
+
+export function supabaseAdminHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
+  const key = auth.serviceKey?.replace(/^Bearer\\s+/i, '').trim() || ''
+  if (!key) return supabaseHeaders(auth, extra)
+  const legacyServiceJwt = key.split('.').length === 3
+  const headers: Record<string, string> = {
+    apikey: key,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    ...(legacyServiceJwt ? { Authorization: \`Bearer \${key}\` } : {}),
+    ...extra,
+  }
+  return headers
+}
