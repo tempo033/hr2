@@ -89,10 +89,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const NavItems=({mobile=false}:{mobile?:boolean})=><div className={mobile?'flex flex-col gap-1':'flex flex-col gap-1'}>
     <Link href="/" className={`nav-item flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-extrabold transition ${pathname==='/'?'bg-[#b88618] text-white shadow-md':'text-slate-100 hover:bg-white/10'}`}><Home size={20}/><span>الرئيسية</span></Link>
     {visibleSections.map(({id,label,icon:SectionIcon,items})=>{const expanded=openSections.includes(id); return <div key={id} className="mt-1">
-      <button type="button" onClick={()=>toggleSection(id)} className="w-full flex items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-[15px] font-black text-slate-100 hover:bg-white/10">
+      <button type="button" onClick={()=>toggleSection(id)} className="sidebar-section-toggle w-full flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-black text-slate-100 hover:bg-white/10">
         <span className="flex items-center gap-3"><SectionIcon size={20}/><span>{label}</span></span><ChevronDown size={18} className={expanded?'rotate-180 transition':'transition'}/>
       </button>
-      {expanded&&<div className="mr-4 mt-1 border-r border-white/15 pr-2 flex flex-col gap-1">{items.map(([href,label,Icon])=><Link key={href} href={href} className={`nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-bold transition ${pathname===href||pathname.startsWith(href+'/')?'bg-[#b88618] text-white shadow-md':'text-slate-200 hover:bg-white/10'}`}><Icon size={17}/><span>{label}</span></Link>)}</div>}
+      {expanded&&<div className="sidebar-section-items mr-3 mt-1 border-r border-white/15 pr-2 flex flex-col gap-1">{items.map(([href,label,Icon])=><Link key={href} href={href} className={`nav-item sidebar-subitem flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold transition ${pathname===href||pathname.startsWith(href+'/')?'bg-[#b88618] text-white shadow-md':'text-slate-300 hover:bg-[#173a59]'}`}><Icon size={17}/><span>{label}</span></Link>)}</div>}
     </div>})}
   </div>
   return <div className={`min-h-screen app-shell ${collapsed?"sidebar-collapsed":""}`}>
