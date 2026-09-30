@@ -26,8 +26,16 @@ button{cursor:pointer}
 .brand-sub{color:#aebdcb;font-size:9px;margin-top:4px;white-space:nowrap}
 .sidebar-section-label{font-size:10px;letter-spacing:.08em;color:#8fa3b7;font-weight:800;padding:0 11px 7px}
 .hr-sidebar .nav-item{border-radius:9px!important}
-.hr-sidebar .nav-item:hover{transform:none!important;background:rgba(255,255,255,.075)!important}
-.hr-sidebar .nav-item.bg-\[\#b88618\]{background:var(--gold)!important}
+.hr-sidebar .nav-item:hover{transform:none!important}
+.hr-sidebar .sidebar-section-toggle{white-space:nowrap;line-height:1.15;min-height:42px;color:#f1f5f9;background:rgba(255,255,255,.025)}
+.hr-sidebar .sidebar-section-toggle>span{min-width:0;white-space:nowrap}
+.hr-sidebar .sidebar-section-toggle>span>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-sidebar .sidebar-section-items{border-color:rgba(255,255,255,.12)!important}
+.hr-sidebar .sidebar-subitem{background:#102f4a;color:#cbd5e1;border:1px solid rgba(255,255,255,.035)}
+.hr-sidebar .sidebar-subitem:hover{background:#173f61!important;color:#fff!important}
+.hr-sidebar .nav-item.bg-\[\#b88618\]{background:var(--gold)!important;color:#fff!important}
+.hr-sidebar .sidebar-section-toggle:hover{background:#123451!important}
+.hr-sidebar .sidebar-section-toggle svg{flex:none}
 .sidebar-collapsed .hr-sidebar .brand-lockup>div:last-child,.sidebar-collapsed .hr-sidebar .sidebar-section-label,.sidebar-collapsed .hr-sidebar .nav-item span,.sidebar-collapsed .hr-sidebar button span{display:none}
 .sidebar-collapsed .hr-sidebar .nav-item,.sidebar-collapsed .hr-sidebar button{justify-content:center}
 .sidebar-collapse{margin-top:13px!important;border:1px solid rgba(255,255,255,.12)!important;background:rgba(255,255,255,.04)!important;color:#dbe4ec!important;border-radius:9px!important;width:100%;padding:9px!important}
