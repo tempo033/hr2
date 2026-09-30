@@ -33,7 +33,7 @@ export default function RequestForm({kind,publicToken,initialData,readOnly=false
   <div className="mb-4 text-center text-xs font-black text-[#b88618]">سجل الاعتمادات والتوقيعات — مرتبط بطلب الإجازة نفسه</div>
   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
     {[
-      ['توقيع الموظف / Employee',approvalData.employee],
+      ['توقيع الموظف / Employee',{...(approvalData.employee||{}),signature:approvalData.employee?.signature||approvalData.employee?.approval_signature||form.employee_signature,name:approvalData.employee?.name||approvalData.employee?.approval_name||form.employee_name,date:approvalData.employee?.date||approvalData.employee?.approval_date||form.employee_date,title:approvalData.employee?.title||'الموظف'}],
       ['المدير المباشر / البديل',approvalData.replacement],
       ['الموارد البشرية / HR',approvalData.hr],
       ['المدير العام / General Manager',approvalData.general_manager]
