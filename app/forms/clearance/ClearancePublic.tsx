@@ -59,10 +59,9 @@ function Dept({d,set,stage}:{d:any;set:(k:string,v:any)=>void;stage:string}){
 function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){
   return (
     <>
-      <h3 className="section">المدير المباشر / مدير المشروع</h3>
+      <h3 className="section">المدير المباشر</h3>
       {[
-        ['line_manager_name','اسم المدير المباشر'],
-        ['project_manager_name','اسم مدير المشروع']
+        ['line_manager_name','اسم المدير المباشر']
       ].map(a=>(
         <div key={a[0]} className="mb-3 font-bold">
           {a[1]}
@@ -82,9 +81,9 @@ function Manager({d,set}:{d:any;set:(k:string,v:any)=>void}){
 export default function ClearancePublic({token,initialData}:{token:string;initialData?:any}){
   const [link,setLink]=useState<any>()
   const [d,setD]=useState<any>(()=>{ 
-    if(initialData?.link?.link_scope==='clearance:senior'&&initialData?.consolidated){
+    if((initialData?.link?.link_scope==='clearance:senior'||initialData?.link?.link_scope==='clearance:project_manager')&&initialData?.consolidated){
       const x=initialData.consolidated
-      return {...x.employee,...x.managers,...x.it,...x.transport,...x.warehouse,...x.admin,...x.finance,...x.hr,...x.senior}
+      return {...x.employee,...x.managers,...x.it,...x.transport,...x.warehouse,...x.admin,...x.finance,...x.hr,...x.project_manager,...x.senior}
     }
     return initialData?.data||{}
   })
@@ -95,7 +94,7 @@ export default function ClearancePublic({token,initialData}:{token:string;initia
 
   useEffect(()=>{
     if(initialData){
-      setLink(initialData.link);setD(initialData.link?.link_scope==='clearance:senior'&&initialData.consolidated?{...initialData.consolidated.employee,...initialData.consolidated.managers,...initialData.consolidated.it,...initialData.consolidated.transport,...initialData.consolidated.warehouse,...initialData.consolidated.admin,...initialData.consolidated.finance,...initialData.consolidated.hr,...initialData.consolidated.senior}:initialData.data||{});setLocked(!!initialData.locked);setLoading(false);return
+      setLink(initialData.link);setD((initialData.link?.link_scope==='clearance:senior'||initialData.link?.link_scope==='clearance:project_manager')&&initialData.consolidated?{...initialData.consolidated.employee,...initialData.consolidated.managers,...initialData.consolidated.it,...initialData.consolidated.transport,...initialData.consolidated.warehouse,...initialData.consolidated.admin,...initialData.consolidated.finance,...initialData.consolidated.hr,...initialData.consolidated.project_manager,...initialData.consolidated.senior}:initialData.data||{});setLocked(!!initialData.locked);setLoading(false);return
     }
     fetch('/api/forms/public/'+token,{cache:'no-store'})
       .then(async r=>{
