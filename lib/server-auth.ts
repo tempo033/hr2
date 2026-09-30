@@ -25,7 +25,9 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 
   const user = await authRes.json()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || null
-  // Always validate the signed-in user with the public key + user JWT. Never send a sb_secret key as Authorization.
+
+  // Always validate the signed-in user with the public key + user JWT.
+  // Never send a sb_secret key as Authorization.
   const profileRes = await fetch(
     `${SUPABASE_URL}/rest/v1/app_users?select=role,is_active&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,
     { headers: { apikey: PUBLIC_KEY, Authorization: `Bearer ${token}` }, cache: 'no-store' },
@@ -39,32 +41,32 @@ export async function getServerAuth(req: NextRequest, allowedRoles: string[]): P
 
 export function supabaseHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
   // Supabase API keys and user access tokens have different jobs:
-  // - apikey: project API key (secret/service_role or publishable/anon)
+  // - apikey: project API key
   // - Authorization: the authenticated user's JWT
-  // Never put an sb_* secret/publishable key in Authorization: Bearer.
-  const configuredKey = auth.serviceKey?.replace(/^Bearer\\s+/i, '').trim() || ''
+  // Never put an sb_* key in Authorization: Bearer.
+  const configuredKey = auth.serviceKey?.replace(/^Bearer\s+/i, '').trim() || ''
   const legacyServiceJwt = configuredKey.split('.').length === 3
   const apiKey = configuredKey || PUBLIC_KEY
-  const headers: Record<string, string> = {
+
+  return {
     apikey: apiKey,
     Authorization: `Bearer ${legacyServiceJwt ? configuredKey : auth.token}`,
     Accept: 'application/json',
     'Content-Type': 'application/json',
     ...extra,
-  }
-  return headers
+  } as Record<string, string>
 }
 
 export function supabaseAdminHeaders(auth: ServerAuth, extra: Record<string, string> = {}) {
-  const key = auth.serviceKey?.replace(/^Bearer\\s+/i, '').trim() || ''
+  const key = auth.serviceKey?.replace(/^Bearer\s+/i, '').trim() || ''
   if (!key) return supabaseHeaders(auth, extra)
+
   const legacyServiceJwt = key.split('.').length === 3
-  const headers: Record<string, string> = {
+  return {
     apikey: key,
     Accept: 'application/json',
     'Content-Type': 'application/json',
-    ...(legacyServiceJwt ? { Authorization: \`Bearer \${key}\` } : {}),
+    ...(legacyServiceJwt ? { Authorization: `Bearer ${key}` } : {}),
     ...extra,
-  }
-  return headers
+  } as Record<string, string>
 }
