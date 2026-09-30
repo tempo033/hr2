@@ -24,6 +24,7 @@ export default function Records() {
   const [employeeId, setEmployeeId] = useState('')
   const [selected, setSelected] = useState<Row | null>(null)
   const [links, setLinks] = useState<any[]>([])
+  const [copied, setCopied] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -63,6 +64,8 @@ export default function Records() {
       await load()
     }
   }
+
+  const copy=async(url:string)=>{await navigator.clipboard.writeText(url);setCopied(url);window.setTimeout(()=>setCopied(''),1800)}
 
   const linkLabel = (scope: string) => {
     if (scope === 'advance:employee') return 'الموظف'
