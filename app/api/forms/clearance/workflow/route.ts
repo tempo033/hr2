@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerAuth, supabaseHeaders, SUPABASE_URL } from '@/lib/server-auth'
 import crypto from 'crypto'
 const roles=['admin','hr','manager','interviewer']
-const stages=[['employee','الموظف'],['managers','المدير المباشر / مدير المشروع'],['it','إدارة الحاسب الآلي'],['transport','إدارة الحركة'],['warehouse','إدارة المستودعات'],['admin','إدارة الشؤون الإدارية'],['finance','الإدارة المالية'],['hr','إدارة الموارد البشرية'],['senior','الإدارة العليا — الاعتماد النهائي']]
+const stages=[['employee','الموظف'],['managers','المدير المباشر'],['it','إدارة الحاسب الآلي'],['transport','إدارة الحركة'],['warehouse','إدارة المستودعات'],['admin','إدارة الشؤون الإدارية'],['finance','الإدارة المالية'],['hr','إدارة الموارد البشرية'],['project_manager','مدير المشروع / مدير المشاريع'],['senior','المدير العام — الاعتماد النهائي']]
 async function db(path:string,auth:any,init?:RequestInit){return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:{...supabaseHeaders(auth),'Content-Type':'application/json',...(init?.headers||{})},cache:'no-store'})}
 export async function POST(req:NextRequest){
  const auth=await getServerAuth(req,roles);if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
@@ -26,8 +26,25 @@ export async function PATCH(req:NextRequest){
  const auth=await getServerAuth(req,['admin']);if(!auth)return NextResponse.json({error:'مدير النظام فقط يمكنه إعادة فتح الرابط.'},{status:403})
  const body=await req.json().catch(()=>({}));const linkId=body.link_id
  if(!linkId)return NextResponse.json({error:'معرف الرابط مطلوب.'},{status:400})
- const r=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance',auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({last_submitted_at:null,updated_at:new Date().toISOString()})})
- const data=await r.json();if(!r.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:r.status})
+ const now=new Date().toISOString()
+ if(body.skip===true){
+  const lr=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance&limit=1',auth)
+  const ls=await lr.json();const link=ls?.[0]
+  if(!link)return NextResponse.json({error:'رابط إخلاء الطرف غير موجود.'},{status:404})
+  const stage=String(link.link_scope||'').replace('clearance:','')
+  if(!stage||stage==='employee'||!stages.some(x=>x[0]===stage))return NextResponse.json({error:'لا يمكن تخطي هذه المرحلة.'},{status:400})
+  if(!link.record_id)return NextResponse.json({error:'سجل إخلاء الطرف غير موجود.'},{status:404})
+  const rr=await db('hr_form_records?select=form_data&id=eq.'+encodeURIComponent(link.record_id)+'&limit=1',auth)
+  const rs=await rr.json();const current=rs?.[0]?.form_data||{};const clearance=current.clearance||{}
+  const skipped={...(clearance.skipped||{}),[stage]:true}
+  const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),auth,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{...current,clearance:{...clearance,skipped}},updated_at:now})})
+  if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
+  const lr2=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId),auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'skipped',last_submitted_at:now,updated_at:now})})
+  const ld=await lr2.json();if(!lr2.ok)return NextResponse.json({error:ld?.message||JSON.stringify(ld)},{status:lr2.status})
+  return NextResponse.json({ok:true,skipped:true,link:ld?.[0]||null})
+ }
+ const reopened=await db('hr_form_links?id=eq.'+encodeURIComponent(linkId)+'&form_type=eq.clearance',auth,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({last_submitted_at:null,status:'active',updated_at:now})})
+ const data=await reopened.json();if(!reopened.ok)return NextResponse.json({error:data?.message||JSON.stringify(data)},{status:reopened.status})
  return NextResponse.json({ok:true,link:data?.[0]||null})
 }
 export async function GET(req:NextRequest){
