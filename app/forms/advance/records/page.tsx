@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Copy, ExternalLink, RefreshCw, CheckCircle2, Clock3 } from 'lucide-react'
+import { ArrowLeft, Copy, ExternalLink, RefreshCw, CheckCircle2, Clock3, Trash2, FileCheck2 } from 'lucide-react'
 
 type Row = {
   id: string
@@ -10,6 +10,7 @@ type Row = {
   employee_number: string | null
   department: string | null
   status: string
+  form_data?: any
   updated_at: string
   last_ip_address: string | null
   last_device_name: string | null
@@ -25,6 +26,28 @@ export default function Records() {
   const [selected, setSelected] = useState<Row | null>(null)
   const [links, setLinks] = useState<any[]>([])
   const [copied, setCopied] = useState('')
+
+  const isApproved = (r: Row) => {
+    const f = (r as any).form_data || {}
+    const ea = f.advance_employee_approval || {}
+    const a = f.advance_approvals || {}
+    const approvals = [
+      [ea.employee_name, ea.employee_date, ea.employee_signature],
+      [a.hr?.approval_name, a.hr?.approval_date, a.hr?.approval_signature],
+      [a.finance?.approval_name, a.finance?.approval_date, a.finance?.approval_signature],
+      [a.general_manager?.approval_name, a.general_manager?.approval_date, a.general_manager?.approval_signature],
+    ]
+    return approvals.every(x => x[0] && x[1] && x[2])
+  }
+
+  const remove = async (id: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف طلب السلفة؟ سيتم حذف الطلب وروابط الاعتماد الخاصة به.')) return
+    const r = await fetch('/api/forms/records?id=' + encodeURIComponent(id), { method: 'DELETE' })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok) { window.alert(d.error || 'تعذر حذف الطلب'); return }
+    if (selected?.id === id) setSelected(null)
+    await load()
+  }
 
   const load = async () => {
     setLoading(true)
@@ -185,6 +208,20 @@ export default function Records() {
                             className="min-h-[38px] bg-emerald-700 text-white rounded-lg px-3 py-2 font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none"
                           >
                             <ExternalLink size={15} /> روابط الاعتماد
+                          </button>
+                          {isApproved(r) && (
+                            <Link
+                              href={`/forms/advance/records/${r.id}`}
+                              className="min-h-[38px] bg-[#b88618] text-white rounded-lg px-3 py-2 font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none"
+                            >
+                              <FileCheck2 size={15} /> تصدير / طباعة
+                            </Link>
+                          )}
+                          <button
+                            onClick={() => remove(r.id)}
+                            className="min-h-[38px] bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none"
+                          >
+                            <Trash2 size={15} /> حذف الطلب
                           </button>
                           <Link
                             href={`/forms/advance/records/${r.id}`}
