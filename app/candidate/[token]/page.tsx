@@ -17,18 +17,20 @@ type Option = { label: string; score: number }
 const DEGREE_OPTIONS = ['بكالوريوس', 'دبلوم', 'ثانوي', 'بدون مؤهل']
 
 const getRequirementOptions = (r: Requirement): Option[] => {
-  const name = String(r.name || '').toLowerCase()
-  const category = String(r.category || '')
+  const name = String(r.name || '').trim().toLowerCase()
+  const category = String(r.category || '').trim()
 
-  // تغيير خاص بالمؤهل فقط: نفس اختيارات قسم "المؤهل العلمي".
-  if (/مؤهل|qualification|degree/.test(name)) {
-    return DEGREE_OPTIONS.map((label, index) => ({
-      label,
-      score: [100, 50, 25, 0][index],
-    }))
+  // المؤهل فقط: الاختيارات المطلوبة حرفيًا.
+  if (name === 'مؤهل' || name === 'qualification' || name === 'degree' || /(^|\s)مؤهل(\s|$)/.test(name)) {
+    return [
+      { label: 'بكالوريوس', score: 100 },
+      { label: 'دبلوم', score: 50 },
+      { label: 'ثانوي', score: 25 },
+      { label: 'بدون مؤهل', score: 0 },
+    ]
   }
 
-  // باقي متطلبات الوظيفة والمهارات تبقى كما كانت.
+  // جميع المتطلبات الأخرى تبقى بنفس اختياراتها الأصلية.
   if (category === 'اعتماد' || /اعتماد|شهادة|عضوية|رخصة|تصنيف/.test(name)) return [{label:'غير متوفر',score:0},{label:'متوفر',score:100}]
   if (/autocad|revit|bim|excel|primavera|ms project|برنامج|software|sap|erp/.test(name)) return [{label:'لا يستخدم',score:0},{label:'أساسي',score:25},{label:'جيد',score:50},{label:'متقدم',score:75},{label:'متقن',score:100}]
   if (/خبرة|experience|سنوات/.test(name)) return [{label:'لا توجد خبرة',score:0},{label:'أقل من سنة',score:25},{label:'1–3 سنوات',score:50},{label:'3–5 سنوات',score:75},{label:'أكثر من 5 سنوات',score:100}]
