@@ -10,7 +10,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  if(!rows?.[0])return NextResponse.json({error:'المخالصة غير موجودة.'},{status:404})
  const now=new Date().toISOString()
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'returned',current_stage:'finance',reopened_at:now,reopened_by:auth.user.id,reopened_reason:reason,updated_at:now})})
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+id+'&stage=eq.finance',{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',acted_at:null,updated_at:now})})
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+id+'&stage=gte.finance',{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,signature:null,notes:null,acted_at:null,updated_at:now})})
  await audit(auth,id,'reopened',{reason})
  return NextResponse.json({ok:true,status:'returned',current_stage:'finance'})
 }
