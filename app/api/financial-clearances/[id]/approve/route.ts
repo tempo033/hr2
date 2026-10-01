@@ -11,7 +11,8 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  const stage=row.current_stage
  const stageDef=STAGES.find(x=>x.key===stage)
  if(!stageDef)return NextResponse.json({error:'مرحلة الاعتماد غير صالحة.'},{status:409})
- if(stage==='employee')return NextResponse.json({error:'اعتماد الموظف يتم فقط من رابط الموظف.'},{status:403})\n if(stage!=='employee'&&!stageDef.roles.includes(auth.role))return NextResponse.json({error:'ليس لديك صلاحية اعتماد هذه المرحلة.'},{status:403})
+ if(stage==='employee')return NextResponse.json({error:'اعتماد الموظف يتم فقط من رابط الموظف.'},{status:403})
+ if(stage!=='employee'&&!stageDef.roles.includes(auth.role))return NextResponse.json({error:'ليس لديك صلاحية اعتماد هذه المرحلة.'},{status:403})
  if(action==='return'&&!String(body.notes||'').trim())return NextResponse.json({error:'يجب كتابة سبب الإرجاع.'},{status:400})
  const now=new Date().toISOString()
  const approval=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+id+'&stage=eq.'+stage,{headers:adminHeaders(auth),cache:'no-store'});const aRows=await approval.json().catch(()=>[])
