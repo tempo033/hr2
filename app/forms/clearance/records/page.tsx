@@ -72,6 +72,7 @@ const isClearanceComplete=(row:Row)=>{
 
 export default function Records(){
   const [rows,setRows] = useState<Row[]>([])
+  const [creatingFinancial,setCreatingFinancial] = useState('')
   const [loading,setLoading] = useState(true)
   const [selected,setSelected] = useState<Row|null>(null)
   const [copied,setCopied] = useState('')
@@ -104,7 +105,7 @@ export default function Records(){
 
   const linkUrl = (x:LinkRow) => x.public_url || (typeof window !== 'undefined' ? window.location.origin : '') + '/forms/public/' + x.token
 
-  const copy = async(url:string) => {
+  const createFinancial = async(row:Row) => {\n    setCreatingFinancial(row.id); setError('')\n    try {\n      const r=await fetch('/api/financial-clearances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clearance_record_id:row.id})})\n      const d=await r.json().catch(()=>({}))\n      if(!r.ok) throw new Error(d?.error||'تعذر إنشاء المخالصة المالية')\n      if(d?.clearance?.id) window.location.href='/financial-clearances/'+d.clearance.id\n    } catch(e:any){ setError(e?.message||'تعذر إنشاء المخالصة المالية') } finally { setCreatingFinancial('') }\n  }\n\n  const copy = async(url:string) => {
     try {
       await navigator.clipboard.writeText(url)
       setCopied(url)
