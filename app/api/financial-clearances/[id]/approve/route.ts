@@ -21,10 +21,11 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  const stageDef=STAGES.find(x=>x.key===stage)
  if(!stageDef)return NextResponse.json({error:'مرحلة الاعتماد غير صالحة.'},{status:409})
  if(stage==='employee')return NextResponse.json({error:'اعتماد الموظف يتم فقط من رابط الموظف.'},{status:403})
- if(!stageDef.roles.includes(auth.role as (typeof STAGES)[number]['roles'][number]))return NextResponse.json({error:'ليس لديك صلاحية اعتماد هذه المرحلة.'},{status:403})
+ if(!stageDef.roles.includes(auth.role as any))return NextResponse.json({error:'ليس لديك صلاحية اعتماد هذه المرحلة.'},{status:403})
  if((action==='return'||action==='reject')&&!String(body.notes||'').trim())return NextResponse.json({error:'يجب كتابة سبب الإجراء.'},{status:400})
 
  const now=new Date().toISOString()
+ if(stage==='project_manager'&&action==='approve'&&!['applies','not_applies'].includes(String(body.decision||'')))return NextResponse.json({error:'يجب تحديد: ينطبق أو لا ينطبق.'},{status:400})
  const approval=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(stage)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
  const aRows=await approval.json().catch(()=>[])
  const currentApproval=aRows?.[0]
@@ -32,7 +33,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
 
  const name=String(body.name||auth.user?.user_metadata?.full_name||auth.user?.email||'المعتمد')
  const title=String(body.title||stageDef.label)
- const approvalPatch={status:action==='approve'?'approved':'returned',approver_user_id:auth.user.id,approver_name:name,approver_title:title,signature:body.signature||null,notes:String(body.notes||''),acted_at:now,updated_at:now}
+ const approvalPatch={status:action==='approve'?'approved':'returned',approver_user_id:auth.user.id,approver_name:name,approver_title:title,signature:body.signature||null,decision:stage==='project_manager'?(body.decision||null):null,notes:String(body.notes||''),acted_at:now,updated_at:now}
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+currentApproval.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify(approvalPatch)})
 
  if(action==='reject'){
