@@ -5,7 +5,7 @@ import {SUPABASE_URL} from '@/lib/server-auth'
 async function serviceAuth(){return {user:{id:null},role:'public',serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY||''}}
 async function getLink(token:string){
  const auth=await serviceAuth()
- const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?select=*,clearance:financial_clearances(*,employee:employee_records(full_name,employee_number,national_id,nationality,job_title,department,hire_date,bank_name,iban,company:employee_companies(name,unified_number)),items:financial_clearance_items(*),approvals:financial_clearance_approvals(*),links:financial_clearance_links(*))&token=eq.'+encodeURIComponent(token)+'&status=eq.active&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
+ const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?select=*,clearance:financial_clearances(*,employee:employee_records(full_name,employee_number,national_id,nationality,job_title,department,hire_date,bank_name,iban,company:employee_companies(name,unified_number)),items:financial_clearance_items(*),approvals:financial_clearance_approvals(*),links:financial_clearance_links(*))&token=eq.'+encodeURIComponent(token)+'&status=in.(active,used)&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
  const d=await r.json().catch(()=>[])
  return {auth,link:d?.[0]||null}
 }
@@ -46,6 +46,12 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  const {token}=await params
  const {auth,link}=await getLink(token)
  if(!link)return NextResponse.json({error:'الرابط غير صالح.'},{status:404})
+ // Employee links are intentionally reusable while the clearance is waiting for the employee signature.
+ // Other stage links remain single-stage active links.
+ if(link.stage==='employee'){
+   const currentStage=link.clearance?.current_stage
+   if(currentStage!=='employee')return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
+ }
  const clearance=link.clearance
  if(['completed','rejected'].includes(clearance.status))return NextResponse.json({error:'المخالصة مغلقة نهائيًا.'},{status:409})
  if(clearance.current_stage!==link.stage)return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
