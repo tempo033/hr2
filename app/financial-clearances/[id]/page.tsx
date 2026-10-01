@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,CheckCircle2,Clock3,RotateCcw,Printer,Save} from 'lucide-react'
-import SignatureEditor from '@/app/forms/components/SignatureEditor'
+import SignatureEditor from '@/app/components/signature/SignatureEditor'
 
 const stages=[['employee','الموظف'],['finance','الإدارة المالية'],['hr','الموارد البشرية'],['project_manager','مدير المشاريع'],['general_manager','المدير العام']]
 const labels:any={pending_employee:'بانتظار اعتماد الموظف',pending_finance:'بانتظار اعتماد المالية',pending_hr:'بانتظار اعتماد الموارد البشرية',pending_project_manager:'بانتظار اعتماد مدير المشاريع',pending_general_manager:'بانتظار اعتماد المدير العام',completed:'مكتملة ومعتمدة',returned:'مرتجعة للمراجعة'}
