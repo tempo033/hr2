@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server'
-import {financialAuth,adminHeaders,audit,calculateLeaveValue} from '@/lib/financial-clearance'
+import {financialAuth,adminHeaders,audit,calculateLeaveValue,ensureStageLink} from '@/lib/financial-clearance'
 import {SUPABASE_URL} from '@/lib/server-auth'
 
 export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}){
@@ -55,6 +55,13 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items?id=eq.'+encodeURIComponent(existing[0].id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify(payload)})
  }else{
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({...payload,clearance_id:id,created_by:auth.user.id})})
+ }
+ const stage=row.current_stage
+ if(auth.role==='hr' && ['finance','hr'].includes(stage)){
+   const stageStatus:any={finance:'pending_finance',hr:'pending_hr'}
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(stage),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,signature:null,notes:null,acted_at:null,updated_at:new Date().toISOString()})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:stageStatus[stage],updated_at:new Date().toISOString()})})
+   await ensureStageLink(auth,id,stage)
  }
  await audit(auth,id,'hr_data_updated',{changed_keys:Object.keys(body.financial_data||{}),leave_days:nextData.days_counted,leave_value:leaveValue})
  return NextResponse.json({ok:true,clearance:d?.[0]||null,leave_value:leaveValue,daily_wage:daily})
