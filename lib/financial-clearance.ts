@@ -116,6 +116,8 @@ export function initialFinancialData(snapshot:any) {
     net_amount:entitlements.reduce((s,x)=>s+Number(x.amount||0),0)-obligations.reduce((s,x)=>s+Number(x.amount||0),0),
     salary_totals:{basic, housing, transport, other, total:basic+housing+transport+other},
     leave_balance_days:leaveDays,
+    entitlements,
+    obligations,
   }
 }
 
