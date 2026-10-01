@@ -28,7 +28,7 @@ export async function POST(req:NextRequest){
  const source=records[0]
  if(!clearanceComplete(source.form_data))return NextResponse.json({error:'لا يمكن إنشاء المخالصة قبل اكتمال واعتماد إخلاء الطرف بالكامل.'},{status:409})
 
- const existing=await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?select=id,clearance_number,status&id=eq.'+encodeURIComponent(clearanceRecordId)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
+ const existing=await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?select=id,clearance_number,status&clearance_record_id=eq.'+encodeURIComponent(clearanceRecordId)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
  const existingRows=await existing.json().catch(()=>[])
  if(existingRows?.[0])return NextResponse.json({ok:true,clearance:existingRows[0],existing:true})
 
@@ -49,8 +49,15 @@ export async function POST(req:NextRequest){
  const items=(financialData.obligations||[]).map((x:any,i:number)=>({clearance_id:id,item_type:'obligation',code:x.code,label:x.label,amount:0,editable:false,source:x.source||null,notes:x.notes||'',sort_order:i,created_by:auth.user.id,updated_by:auth.user.id}))
  if(items.length) await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify(items)})
 
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:id,stage:'employee',status:'pending'})})
- const link=await ensureStageLink(auth,id,'employee')
- await audit(auth,id,'created',{clearance_record_id:clearanceRecordId,clearance_number:clearanceNumber,employee_link:link?.token||null})
- return NextResponse.json({ok:true,clearance:{id,clearance_number:clearanceNumber,status:'pending_employee',employee_link_token:link?.token||null}})
+ const stages=['employee','finance','hr','project_manager','general_manager']
+ for(const stage of stages){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:id,stage,status:'pending'})})
+ }
+ const links:any={}
+ for(const stage of stages){
+   const stageLink=await ensureStageLink(auth,id,stage)
+   links[stage]=stageLink?.token||null
+ }
+ await audit(auth,id,'created',{clearance_record_id:clearanceRecordId,clearance_number:clearanceNumber,approval_links:links})
+ return NextResponse.json({ok:true,clearance:{id,clearance_number:clearanceNumber,status:'pending_employee',links}})
 }
