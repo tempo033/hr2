@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, Clock3, LogIn, LogOut, RefreshCw, Search, Users } from 'lucide-react'
+import { Activity, Clock3, LogIn, LogOut, RefreshCw, Search, Users, FileSpreadsheet } from 'lucide-react'
 
 type RecordRow = {
   id:string; employee_id:string; attendance_date:string; attendance_type:'check_in'|'check_out'
@@ -42,7 +42,7 @@ export default function AttendancePage(){
   return <main dir="rtl" className="p-5 md:p-8 space-y-6">
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div><div className="text-xs font-black tracking-widest text-[#b88618]">HR2 / ATTENDANCE</div><h2 className="mt-1 text-3xl font-black text-[#09233f]">الحضور والانصراف</h2><p className="mt-1 text-sm text-slate-500">بيانات الحضور الواردة من تطبيق HR2 Attendance Mobile.</p><a href="/attendance/users" className="mt-3 inline-flex items-center rounded-xl bg-[#10233f] px-4 py-2 text-sm font-black text-white">ربط حساب الموظف بتطبيق الحضور</a></div>
-      <button onClick={load} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-[#09233f]"><RefreshCw size={17}/> تحديث</button>
+      <div className="flex flex-wrap gap-2"><a href="/payroll/attendance" className="inline-flex items-center gap-2 rounded-xl bg-[#10233f] px-4 py-2.5 text-sm font-extrabold text-white"><FileSpreadsheet size={17}/> شيت البصمة الشهري ومسيرات الرواتب</a><button onClick={load} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-[#09233f]"><RefreshCw size={17}/> تحديث</button></div>
     </div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {[
