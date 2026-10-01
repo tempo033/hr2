@@ -88,7 +88,11 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  if(!next){
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'completed',current_stage:'general_manager',final_approved_at:now,updated_at:now})})
  }else{
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:clearance.id,stage:next,status:'pending'})})
+   const nextApproval=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?select=id&clearance_id=eq.'+encodeURIComponent(clearance.id)+'&stage=eq.'+encodeURIComponent(next)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
+   const nextApprovalRows=await nextApproval.json().catch(()=>[])
+   if(!nextApprovalRows?.[0]){
+     await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:clearance.id,stage:next,status:'pending'})})
+   }
    await ensureStageLink(auth,clearance.id,next)
    const nextStatus=({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:nextStatus,current_stage:next,updated_at:now})})
