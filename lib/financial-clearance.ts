@@ -4,11 +4,11 @@ import { getServerAuth, supabaseAdminHeaders, SUPABASE_URL } from '@/lib/server-
 export const FINANCIAL_ROLES = ['admin','hr','finance','project_manager','general_manager','manager'] as const
 
 export const STAGES = [
-  { key:'employee', label:'اعتماد الموظف', roles:[] as string[] },
-  { key:'finance', label:'اعتماد الإدارة المالية', roles:['admin','finance'] },
-  { key:'hr', label:'اعتماد الموارد البشرية', roles:['admin','hr'] },
-  { key:'project_manager', label:'اعتماد مدير المشاريع', roles:['admin','project_manager'] },
-  { key:'general_manager', label:'اعتماد المدير العام', roles:['admin','general_manager'] },
+  { key:'employee', label:'اعتماد الموظف', roles:[] as Array<(typeof FINANCIAL_ROLES)[number]> },
+  { key:'finance', label:'اعتماد الإدارة المالية', roles:['admin','finance'] as Array<(typeof FINANCIAL_ROLES)[number]> },
+  { key:'hr', label:'اعتماد الموارد البشرية', roles:['admin','hr'] as Array<(typeof FINANCIAL_ROLES)[number]> },
+  { key:'project_manager', label:'اعتماد مدير المشاريع', roles:['admin','project_manager'] as Array<(typeof FINANCIAL_ROLES)[number]> },
+  { key:'general_manager', label:'اعتماد المدير العام', roles:['admin','general_manager'] as Array<(typeof FINANCIAL_ROLES)[number]> },
 ] as const
 
 export function adminHeaders(auth:any, extra:Record<string,string>={}) {
