@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server'
-import {financialAuth,adminHeaders,audit} from '@/lib/financial-clearance'
+import {financialAuth,adminHeaders,audit,ensureStageLink} from '@/lib/financial-clearance'
 import {SUPABASE_URL} from '@/lib/server-auth'
 
 export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}>}){
@@ -42,6 +42,11 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
      if(!r.ok)return NextResponse.json({error:await r.text()},{status:500})
    }
  }
- await audit(auth,id,'items_updated',{count:items.length})
+ const now=new Date().toISOString()
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,approver_name:null,approver_title:null,signature:null,decision:null,notes:null,acted_at:null,updated_at:now})})
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?clearance_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',updated_at:now})})
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending_employee',current_stage:'employee',final_approved_at:null,updated_at:now})})
+ await ensureStageLink(auth,id,'employee')
+ await audit(auth,id,'items_updated',{count:items.length,reopened_for_employee_signature:true})
  return NextResponse.json({ok:true})
 }
