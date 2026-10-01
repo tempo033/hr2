@@ -92,8 +92,9 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  // All approval links are independent and can be completed in any order.
  // The clearance becomes completed only when employee + finance + HR + GM are approved,
  // and the optional project-manager stage is either approved or skipped.
+ const approvalsRes=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?select=stage,status&clearance_id=eq.'+encodeURIComponent(clearance.id),{headers:adminHeaders(auth),cache:'no-store'})
+ const approvals=await approvalsRes.json().catch(()=>[])
  const requiredStages=['employee','finance','hr','general_manager']
- const approvals=(clearance.approvals||[])
  const requiredDone=requiredStages.every((s:string)=>approvals.some((a:any)=>a.stage===s&&a.status==='approved'))
  const pmDone=approvals.some((a:any)=>a.stage==='project_manager'&&['approved','skipped'].includes(a.status))
  const complete=requiredDone && pmDone
