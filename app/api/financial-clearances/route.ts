@@ -6,7 +6,7 @@ export async function GET(req:NextRequest){
  const auth=await financialAuth(req); if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
  const q=req.nextUrl.searchParams
  const params=new URLSearchParams({select:'*,employee:employee_records(full_name,employee_number,national_id,department,job_title,company_id,employee_companies(name,unified_number)),approvals:financial_clearance_approvals(*),links:financial_clearance_links(*)',order:'created_at.desc'})
- for(const k of ['status','current_stage','employee_id']){const v=q.get(k);if(v)params.set(k,'eq.'+v)}
+ for(const k of ['status','current_stage','employee_id','clearance_record_id']){const v=q.get(k);if(v)params.set(k,'eq.'+v)}
  const search=q.get('search')?.trim()
  const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?'+params.toString(),{headers:adminHeaders(auth),cache:'no-store'})
  const d=await r.json().catch(()=>[])
