@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {CheckCircle2,RotateCcw,ShieldCheck} from 'lucide-react'
-import SignatureEditor from '@/app/forms/components/SignatureEditor'
+import SignatureEditor from '@/app/components/signature/SignatureEditor'
 export default function FinancialClearancePublic({params}:{params:Promise<{token:string}>}){
  const [token,setToken]=useState(''),[data,setData]=useState<any>(null),[signature,setSignature]=useState(''),[notes,setNotes]=useState(''),[loading,setLoading]=useState(true),[message,setMessage]=useState('')
  useEffect(()=>{void params.then(p=>setToken(p.token))},[params])
