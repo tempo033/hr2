@@ -49,7 +49,6 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  if(link.status!=='active')return NextResponse.json({error:'تم استخدام هذا الرابط ولا يمكن التوقيع أو التعديل من خلاله مرة أخرى.'},{status:410})
  const clearance=link.clearance
  if(['completed','rejected'].includes(clearance.status))return NextResponse.json({error:'المخالصة مغلقة نهائيًا.'},{status:409})
- if(clearance.current_stage!==link.stage)return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
 
  const body=await req.json().catch(()=>({}))
  const action=body.action==='return'?'return':body.action==='reject'?'reject':body.action==='save'?'save':'approve'
@@ -90,20 +89,18 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
    return NextResponse.json({ok:true,status:'needs_revision'})
  }
 
- const stages=['employee','finance','hr','project_manager','general_manager']
- const index=stages.indexOf(link.stage)
- const next=stages[index+1]
- if(!next){
+ // All approval links are independent and can be completed in any order.
+ // The clearance becomes completed only when employee + finance + HR + GM are approved,
+ // and the optional project-manager stage is either approved or skipped.
+ const requiredStages=['employee','finance','hr','general_manager']
+ const approvals=(clearance.approvals||[])
+ const requiredDone=requiredStages.every((s:string)=>approvals.some((a:any)=>a.stage===s&&a.status==='approved'))
+ const pmDone=approvals.some((a:any)=>a.stage==='project_manager'&&['approved','skipped'].includes(a.status))
+ const complete=requiredDone && pmDone
+ if(complete){
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'completed',current_stage:'general_manager',final_approved_at:now,updated_at:now})})
  }else{
-   const nextApproval=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?select=id&clearance_id=eq.'+encodeURIComponent(clearance.id)+'&stage=eq.'+encodeURIComponent(next)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
-   const nextApprovalRows=await nextApproval.json().catch(()=>[])
-   if(!nextApprovalRows?.[0]){
-     await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:clearance.id,stage:next,status:'pending'})})
-   }
-   await ensureStageLink(auth,clearance.id,next)
-   const nextStatus=({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:nextStatus,current_stage:next,updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending_approvals',updated_at:now})})
  }
  const linkClose=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=representation'}),body:JSON.stringify({status:'used',last_submitted_at:now,updated_at:now})})
  if(!linkClose.ok){
