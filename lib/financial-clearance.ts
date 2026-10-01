@@ -147,18 +147,42 @@ export function totalsFromItems(items:any[]) {
 }
 
 export async function ensureStageLink(auth:any, clearanceId:string, stage:string) {
+  // There is a unique (clearance_id, stage) constraint: one permanent signing URL per stage.
+  // Always reuse that row and reactivate it when the workflow returns to the stage.
   const existing=await getJson(
-    'financial_clearance_links?select=*&clearance_id=eq.'+encodeURIComponent(clearanceId)+'&stage=eq.'+encodeURIComponent(stage)+'&status=eq.active&order=created_at.desc&limit=1',
+    'financial_clearance_links?select=*&clearance_id=eq.'+encodeURIComponent(clearanceId)+'&stage=eq.'+encodeURIComponent(stage)+'&order=created_at.desc&limit=1',
     auth
   )
-  if(existing?.[0]) return existing[0]
+  if(existing?.[0]){
+    const link=existing[0]
+    if(link.status!=='active'){
+      const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+encodeURIComponent(link.id),{
+        method:'PATCH',
+        headers:adminHeaders(auth,{'Prefer':'return=representation'}),
+        body:JSON.stringify({status:'active',last_submitted_at:null,last_opened_at:null,updated_at:new Date().toISOString()})
+      })
+      const d=await r.json().catch(()=>[])
+      if(!r.ok) throw new Error(d?.message||JSON.stringify(d))
+      return d?.[0]||link
+    }
+    return link
+  }
+
   const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links',{
     method:'POST',
     headers:adminHeaders(auth,{'Prefer':'return=representation'}),
     body:JSON.stringify({clearance_id:clearanceId,stage,status:'active'})
   })
   const d=await r.json().catch(()=>[])
-  if(!r.ok) throw new Error(d?.message||JSON.stringify(d))
+  if(!r.ok){
+    // Handle a concurrent creator/race against the unique constraint by reading the row again.
+    const retry=await getJson(
+      'financial_clearance_links?select=*&clearance_id=eq.'+encodeURIComponent(clearanceId)+'&stage=eq.'+encodeURIComponent(stage)+'&limit=1',
+      auth
+    )
+    if(retry?.[0]) return retry[0]
+    throw new Error(d?.message||JSON.stringify(d))
+  }
   return d?.[0]||null
 }
 
