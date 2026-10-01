@@ -34,7 +34,9 @@ export async function POST(req:NextRequest){
   if(action==='recalculate_run'){
     const run=(await json('payroll_runs?id=eq.'+b.run_id+'&limit=1',auth))[0]; if(!run)return NextResponse.json({error:'المسير غير موجود'},{status:404});
     if(['gm_approved','ready_to_pay','paid','closed'].includes(run.status))return NextResponse.json({error:'لا يمكن إعادة الحساب بعد الاعتماد النهائي'},{status:409});
-    const sheet=run.attendance_sheet_id?(await json('payroll_attendance_sheets?select=*&id=eq.'+run.attendance_sheet_id+'&limit=1',auth))[0]:null;if(!sheet||sheet.status!=='approved')return NextResponse.json({error:'لا يمكن حساب المسير: شيت البصمة المعتمد لهذا الشهر غير مرتبط أو غير معتمد.'},{status:409});\n    const sheetRows=await json('payroll_attendance_sheet_rows?select=*&sheet_id=eq.'+sheet.id+'&match_status=eq.matched',auth);\n    const [items,settings,ots,bns,deds,advInst,advances]=await Promise.all([
+    const sheet=run.attendance_sheet_id?(await json('payroll_attendance_sheets?select=*&id=eq.'+run.attendance_sheet_id+'&limit=1',auth))[0]:null;if(!sheet||sheet.status!=='approved')return NextResponse.json({error:'لا يمكن حساب المسير: شيت البصمة المعتمد لهذا الشهر غير مرتبط أو غير معتمد.'},{status:409});
+    const sheetRows=await json('payroll_attendance_sheet_rows?select=*&sheet_id=eq.'+sheet.id+'&match_status=eq.matched',auth);
+    const [items,settings,ots,bns,deds,advInst,advances]=await Promise.all([
       json('payroll_items?select=*&run_id=eq.'+run.id,auth),
       json('payroll_settings?select=*&key=in.(general,gosi)',auth),
       json('payroll_overtime?select=*&status=eq.approved&work_date=gte.'+run.year+'-'+String(run.month).padStart(2,'0')+'-01&work_date=lt.'+new Date(Date.UTC(run.year,run.month,1)).toISOString().slice(0,10),auth),
