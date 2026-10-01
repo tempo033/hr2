@@ -49,36 +49,48 @@ export async function buildSourceSnapshot(auth:any, employeeId:string, clearance
   const employees=await getJson('employee_records?select=*&id=eq.'+encodeURIComponent(employeeId)+'&limit=1',auth)
   const employee=employees?.[0]
   if(!employee) throw new Error('بيانات الموظف غير موجودة.')
-  const companies=employee.company_id ? await getJson('employee_companies?select=id,name,unified_number,name_en& id=eq.'+encodeURIComponent(employee.company_id)+'&limit=1'.replace(' ','') ,auth) : []
+
+  const companies=employee.company_id
+    ? await getJson('employee_companies?select=id,name,unified_number,name_en&id=eq.'+encodeURIComponent(employee.company_id)+'&limit=1',auth)
+    : []
+
   const records=await getJson('hr_form_records?select=form_data,status,updated_at&id=eq.'+encodeURIComponent(clearanceRecordId)+'&limit=1',auth)
   const clearance=records?.[0]
   if(!clearance) throw new Error('سجل إخلاء الطرف غير موجود.')
+
   let payroll:any=null
   try {
     const rows=await getJson('payroll_settlements?select=*&employee_id=eq.'+encodeURIComponent(employeeId)+'&order=created_at.desc&limit=1',auth)
     payroll=rows?.[0]||null
   } catch {}
+
   const c=clearance.form_data?.clearance||{}
   const finance=c.finance||{}
+  const financeNotes=String(
+    finance.clearance_notes ??
+    finance.finance_notes ??
+    finance.notes ??
+    finance.comment ??
+    ''
+  ).trim()
+
   return {
     employee:{
       id:employee.id, employee_number:employee.employee_number, full_name:employee.full_name,
       national_id:employee.national_id, nationality:employee.nationality, job_title:employee.job_title,
       department:employee.department, project_name:employee.project_name, work_location:employee.work_location,
       manager_name:employee.manager_name, hire_date:employee.hire_date, contract_type:employee.contract_type,
-      salary:employee.salary, basic_salary:employee.basic_salary, housing_allowance:employee.housing_allowance,
-      transportation_allowance:employee.transportation_allowance, other_allowances:employee.other_allowances,
-      total_salary_with_allowances:employee.total_salary_with_allowances, bank_name:employee.bank_name,
-      bank_account_number:employee.bank_account_number, iban:employee.iban
+      bank_name:employee.bank_name, bank_account_number:employee.bank_account_number, iban:employee.iban
     },
     company:companies?.[0]||null,
     clearance:{
       id:clearanceRecordId, status:clearance.status, form_data:c,
-      last_work_date:c.employee?.last_work_date||null,
+      last_work_date:c.employee?.last_work_date||finance.last_work_date||null,
       termination_type:c.employee?.reason||c.employee?.termination_type||null,
       leave_start:c.employee?.leave_start||null,
       leave_end:c.employee?.leave_end||null,
       financial:finance,
+      finance_notes:financeNotes,
     },
     payroll,
     captured_at:new Date().toISOString()
@@ -86,39 +98,68 @@ export async function buildSourceSnapshot(auth:any, employeeId:string, clearance
 }
 
 export function initialFinancialData(snapshot:any) {
-  const e=snapshot.employee||{}, c=snapshot.clearance||{}, p=snapshot.payroll||{}
-  const leaveDays=Number(p.leave_days ?? c.financial?.leave_days ?? 0) || 0
-  const basic=Number(e.basic_salary||p.basic_salary||0)||0
-  const housing=Number(e.housing_allowance||p.housing_allowance||0)||0
-  const transport=Number(e.transportation_allowance||p.transportation_allowance||0)||0
-  const other=Number(e.other_allowances||p.other_allowances||0)||0
-  const dailyLeaveValue=Number(p.leave_pay||0)>0 && leaveDays>0 ? Number(p.leave_pay)/leaveDays : basic/30
-  const entitlements=[
-    {code:'leave_balance',label:'رصيد الإجازات بالقيمة',amount:leaveDays*dailyLeaveValue,source:'payroll/employee',editable:true,notes:''},
-    {code:'unpaid_salary',label:'راتب مستحق',amount:Number(p.unpaid_salary||0),source:'payroll',editable:true,notes:''},
-    {code:'end_of_service',label:'مكافأة نهاية الخدمة',amount:Number(p.end_of_service_award||0),source:'payroll',editable:true,notes:''},
-    {code:'other_dues',label:'مستحقات مالية أخرى',amount:Number(p.other_dues||0),source:'payroll',editable:true,notes:''},
-  ]
-  const obligations=[
-    {code:'advances',label:'سلف',amount:Number(p.advances_deduction||c.financial?.loan_amount||0),source:'payroll/clearance',editable:true,notes:''},
-    {code:'deductions',label:'خصومات',amount:Number(p.deductions||0),source:'payroll',editable:true,notes:''},
-    {code:'other_obligations',label:'التزامات مالية أخرى',amount:Number(c.financial?.other_financial_obligation_amount||0),source:'clearance',editable:true,notes:''},
-  ]
+  const e=snapshot.employee||{}, c=snapshot.clearance||{}
+  const financeNotes=String(c.finance_notes||'').trim()
+  const obligations=financeNotes ? [{
+    code:'finance_clearance_note',
+    label:'ملاحظات الإدارة المالية الواردة من إخلاء الطرف',
+    amount:0,
+    source:'clearance:finance',
+    editable:false,
+    notes:financeNotes,
+  }] : []
+
   return {
-    contract_start_date:e.hire_date||null, leave_start:c.leave_start||null, leave_end:c.leave_end||null,
-    days_counted:Number(p.leave_days||0)||0, basic_salary:basic, housing_allowance:housing,
-    transportation_allowance:transport, other_allowances:other,
-    payment_method:null, cheque_number:'', payment_date:null,
-    bank_name:e.bank_name||'', iban:e.iban||'',
+    contract_start_date:e.hire_date||null,
+    leave_start:null,
+    leave_end:null,
+    days_counted:0,
+    basic_salary:null,
+    housing_allowance:null,
+    transportation_allowance:null,
+    other_allowances:null,
+    daily_wage:null,
+    payment_method:null,
+    cheque_number:'',
+    payment_date:null,
+    bank_name:'',
+    iban:'',
     confidentiality_acknowledged:false,
-    entitlements_total:entitlements.reduce((s,x)=>s+Number(x.amount||0),0),
-    obligations_total:obligations.reduce((s,x)=>s+Number(x.amount||0),0),
-    net_amount:entitlements.reduce((s,x)=>s+Number(x.amount||0),0)-obligations.reduce((s,x)=>s+Number(x.amount||0),0),
-    salary_totals:{basic, housing, transport, other, total:basic+housing+transport+other},
-    leave_balance_days:leaveDays,
-    entitlements,
+    leave_balance_days:0,
+    entitlements:[],
     obligations,
   }
+}
+
+export function calculateLeaveValue(days:any,basicSalary:any) {
+  const d=Number(days||0)
+  const salary=Number(basicSalary||0)
+  if(!Number.isFinite(d)||d<=0||!Number.isFinite(salary)||salary<=0) return 0
+  return d*(salary/30)
+}
+
+export function totalsFromItems(items:any[]) {
+  const entitlements=(items||[]).filter(x=>x.item_type==='entitlement')
+  const obligations=(items||[]).filter(x=>x.item_type==='obligation')
+  const entitlementsTotal=entitlements.reduce((s,x)=>s+Number(x.amount||0),0)
+  const obligationsTotal=obligations.reduce((s,x)=>s+Number(x.amount||0),0)
+  return {entitlementsTotal,obligationsTotal,netAmount:entitlementsTotal-obligationsTotal}
+}
+
+export async function ensureStageLink(auth:any, clearanceId:string, stage:string) {
+  const existing=await getJson(
+    'financial_clearance_links?select=*&clearance_id=eq.'+encodeURIComponent(clearanceId)+'&stage=eq.'+encodeURIComponent(stage)+'&status=eq.active&order=created_at.desc&limit=1',
+    auth
+  )
+  if(existing?.[0]) return existing[0]
+  const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links',{
+    method:'POST',
+    headers:adminHeaders(auth,{'Prefer':'return=representation'}),
+    body:JSON.stringify({clearance_id:clearanceId,stage,status:'active'})
+  })
+  const d=await r.json().catch(()=>[])
+  if(!r.ok) throw new Error(d?.message||JSON.stringify(d))
+  return d?.[0]||null
 }
 
 export async function audit(auth:any, clearanceId:string, action:string, details:any={}, stage?:string) {
