@@ -66,7 +66,14 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  }
 
  const nextStatus=statusForStage[next.key]
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:id,stage:next.key,status:'pending'})})
+ // Reuse the existing approval row if one exists; never create a second row for the same stage.
+ const nextApprovalRes=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?select=id&clearance_id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(next.key)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
+ const nextApprovalRows=await nextApprovalRes.json().catch(()=>[])
+ if(nextApprovalRows?.[0]){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+encodeURIComponent(nextApprovalRows[0].id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,approver_name:null,approver_title:null,signature:null,decision:null,notes:null,acted_at:null,updated_at:now})})
+ }else{
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:id,stage:next.key,status:'pending'})})
+ }
  await ensureStageLink(auth,id,next.key)
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:nextStatus,current_stage:next.key,updated_at:now})})
  await audit(auth,id,'approved',{next_stage:next.key},stage)
