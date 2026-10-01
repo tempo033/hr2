@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password || !displayName) return NextResponse.json({ error: 'الاسم والبريد وكلمة المرور مطلوبة.' }, { status: 400 })
     if (password.length < 8) return NextResponse.json({ error: 'كلمة المرور يجب ألا تقل عن 8 أحرف.' }, { status: 400 })
-    if (!['admin', 'hr', 'interviewer', 'manager'].includes(role)) return NextResponse.json({ error: 'الصلاحية غير صحيحة.' }, { status: 400 })
+    if (!['admin', 'hr', 'interviewer', 'manager', 'finance', 'project_manager', 'general_manager'].includes(role)) return NextResponse.json({ error: 'الصلاحية غير صحيحة.' }, { status: 400 })
 
     const createResponse = await adminRequest('/auth/v1/admin/users', {
       method: 'POST',
