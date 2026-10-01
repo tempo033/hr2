@@ -1,37 +1,98 @@
 import {NextRequest,NextResponse} from 'next/server'
-import {adminHeaders} from '@/lib/financial-clearance'
+import {adminHeaders,ensureStageLink,calculateLeaveValue} from '@/lib/financial-clearance'
 import {SUPABASE_URL} from '@/lib/server-auth'
 
-async function serviceAuth(){
- const key=process.env.SUPABASE_SERVICE_ROLE_KEY||''
- if(!key) throw new Error('الخدمة غير مهيأة.')
- return {user:{id:null},role:'public',serviceKey:key}
-}
-export async function GET(req:NextRequest,{params}:{params:Promise<{token:string}>}){
- const {token}=await params; const auth=await serviceAuth()
- const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?select=*,clearance:financial_clearances(*,employee:employee_records(full_name,employee_number,national_id,nationality,job_title,department,hire_date,bank_name,iban,basic_salary,housing_allowance,transportation_allowance,other_allowances,company:employee_companies(name,unified_number)),items:financial_clearance_items(*),approvals:financial_clearance_approvals(*))&token=eq.'+encodeURIComponent(token)+'&stage=eq.employee&status=eq.active&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
+async function serviceAuth(){return {user:{id:null},role:'public',serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY||''}}
+async function getLink(token:string){
+ const auth=await serviceAuth()
+ const r=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?select=*,clearance:financial_clearances(*,employee:employee_records(full_name,employee_number,national_id,nationality,job_title,department,hire_date,bank_name,iban,company:employee_companies(name,unified_number)),items:financial_clearance_items(*),approvals:financial_clearance_approvals(*),links:financial_clearance_links(*))&token=eq.'+encodeURIComponent(token)+'&status=eq.active&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
  const d=await r.json().catch(()=>[])
- if(!r.ok||!d?.[0])return NextResponse.json({error:'الرابط غير صالح أو منتهي.'},{status:404})
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+d[0].id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({last_opened_at:new Date().toISOString()})})
- return NextResponse.json({link:d[0]})
+ return {auth,link:d?.[0]||null}
 }
-export async function POST(req:NextRequest,{params}:{params:Promise<{token:string}>}){
- const {token}=await params; const body=await req.json().catch(()=>({})); const auth=await serviceAuth()
- const lr=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?select=*,clearance:financial_clearances(*,employee:employee_records(full_name,employee_number,national_id,nationality,job_title,department,hire_date,bank_name,iban,basic_salary,housing_allowance,transportation_allowance,other_allowances,company:employee_companies(name,unified_number)),items:financial_clearance_items(*),approvals:financial_clearance_approvals(*))&token=eq.'+encodeURIComponent(token)+'&stage=eq.employee&status=eq.active&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
- const rows=await lr.json().catch(()=>[]); const link=rows?.[0]; if(!link)return NextResponse.json({error:'الرابط غير صالح.'},{status:404})
- const clearance=link.clearance; if(clearance.status!=='pending_employee')return NextResponse.json({error:'لا توجد خطوة اعتماد للموظف حاليًا.'},{status:409})
- const action=body.action==='return'?'return':'approve'; const now=new Date().toISOString()
- if(action==='approve'&&!body.signature)return NextResponse.json({error:'يجب إدخال توقيع الموظف قبل الاعتماد.'},{status:400})
- if(action==='return'&&!String(body.notes||'').trim())return NextResponse.json({error:'اكتب ملاحظة توضح سبب إرجاع المخالصة.'},{status:400})
- const approval=clearance.approvals?.find((x:any)=>x.stage==='employee')
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+approval.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:action==='approve'?'approved':'returned',approver_name:clearance.employee?.full_name,approver_title:'الموظف',signature:body.signature||null,notes:String(body.notes||''),acted_at:now,updated_at:now})})
- if(action==='return'){
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'returned',updated_at:now})})
- } else {
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending_finance',current_stage:'finance',updated_at:now})})
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+clearance.id+'&stage=eq.finance',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:clearance.id,stage:'finance',status:'pending'})})
+
+async function saveFinanceItems(auth:any,clearance:any,items:any[]){
+ const current=clearance.items||[]
+ const submittedIds=new Set(items.filter((x:any)=>x.id).map((x:any)=>String(x.id)))
+ for(const existing of current){
+   if(existing.editable!==false&&!submittedIds.has(String(existing.id))){
+     await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items?id=eq.'+encodeURIComponent(existing.id)+'&clearance_id=eq.'+encodeURIComponent(clearance.id),{method:'DELETE',headers:adminHeaders(auth)})
+   }
  }
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:action==='approve'?'used':'active',last_submitted_at:now,updated_at:now})})
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_audit_logs',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:clearance.id,action:action==='approve'?'employee_approved':'employee_returned',stage:'employee',actor_user_id:null,actor_name:clearance.employee?.full_name||'الموظف',actor_role:'employee',details:{notes:String(body.notes||''),submitted_at:now},created_at:now})})
- return NextResponse.json({ok:true,status:action==='approve'?'pending_finance':'returned'})
+ let order=0
+ for(const item of items){
+   const label=String(item.label||'').trim(); if(!label)continue
+   const amount=Number(item.amount)
+   if(!Number.isFinite(amount)||amount<0)throw new Error('يوجد مبلغ غير صحيح.')
+   const payload={item_type:item.item_type==='obligation'?'obligation':'entitlement',code:String(item.code||'manual'),label,amount,editable:item.editable!==false,source:'finance:link',notes:String(item.notes||''),sort_order:order++,updated_at:new Date().toISOString()}
+   if(item.id){
+     const existing=current.find((x:any)=>String(x.id)===String(item.id))
+     if(!existing||existing.editable===false)continue
+     await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items?id=eq.'+encodeURIComponent(item.id)+'&clearance_id=eq.'+encodeURIComponent(clearance.id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify(payload)})
+   }else{
+     await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({...payload,clearance_id:clearance.id})})
+   }
+ }
+}
+
+export async function GET(req:NextRequest,{params}:{params:Promise<{token:string}>}){
+ const {token}=await params
+ const {auth,link}=await getLink(token)
+ if(!link)return NextResponse.json({error:'الرابط غير صالح أو تم تعطيله.'},{status:404})
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({last_opened_at:new Date().toISOString()})})
+ return NextResponse.json({link})
+}
+
+export async function POST(req:NextRequest,{params}:{params:Promise<{token:string}>}){
+ const {token}=await params
+ const {auth,link}=await getLink(token)
+ if(!link)return NextResponse.json({error:'الرابط غير صالح.'},{status:404})
+ const clearance=link.clearance
+ if(['completed','rejected'].includes(clearance.status))return NextResponse.json({error:'المخالصة مغلقة نهائيًا.'},{status:409})
+ if(clearance.current_stage!==link.stage)return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
+
+ const body=await req.json().catch(()=>({}))
+ const action=body.action==='return'?'return':body.action==='reject'?'reject':body.action==='save'?'save':'approve'
+ const now=new Date().toISOString()
+
+ if(action==='save'){
+   if(link.stage!=='finance')return NextResponse.json({error:'الحفظ من الرابط متاح للإدارة المالية فقط.'},{status:403})
+   try{await saveFinanceItems(auth,clearance,Array.isArray(body.items)?body.items:[])}catch(e:any){return NextResponse.json({error:e?.message||'تعذر حفظ البنود'},{status:400})}
+   return NextResponse.json({ok:true,saved:true})
+ }
+
+ if((action==='approve'||action==='return'||action==='reject')&&!String(body.notes||'').trim()&&action!=='approve')
+   return NextResponse.json({error:'يجب كتابة سبب الإجراء.'},{status:400})
+ if(action==='approve'&&!body.signature)return NextResponse.json({error:'يجب إدخال التوقيع قبل الاعتماد.'},{status:400})
+
+ const approval=(clearance.approvals||[]).find((x:any)=>x.stage===link.stage)
+ if(!approval)return NextResponse.json({error:'سجل الاعتماد غير موجود.'},{status:409})
+ const name=String(body.name||clearance.employee?.full_name||'المعتمد')
+ const title=String(body.title||({employee:'الموظف',finance:'الإدارة المالية',hr:'الموارد البشرية',project_manager:'مدير المشاريع',general_manager:'المدير العام'} as any)[link.stage]||link.stage)
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+approval.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:action==='approve'?'approved':'returned',approver_user_id:null,approver_name:name,approver_title:title,signature:body.signature||null,notes:String(body.notes||''),acted_at:now,updated_at:now})})
+
+ if(action==='reject'){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'rejected',updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',last_submitted_at:now,updated_at:now})})
+   return NextResponse.json({ok:true,status:'rejected'})
+ }
+
+ if(action==='return'){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'needs_revision',updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'active',last_submitted_at:now,updated_at:now})})
+   return NextResponse.json({ok:true,status:'needs_revision'})
+ }
+
+ const stages=['employee','finance','hr','project_manager','general_manager']
+ const index=stages.indexOf(link.stage)
+ const next=stages[index+1]
+ if(!next){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'completed',current_stage:'general_manager',final_approved_at:now,updated_at:now})})
+ }else{
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({clearance_id:clearance.id,stage:next,status:'pending'})})
+   await ensureStageLink(auth,clearance.id,next)
+   const nextStatus=({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:nextStatus,current_stage:next,updated_at:now})})
+ }
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',last_submitted_at:now,updated_at:now})})
+ return NextResponse.json({ok:true,status:next?({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]:'completed',current_stage:next||'general_manager'})
 }
