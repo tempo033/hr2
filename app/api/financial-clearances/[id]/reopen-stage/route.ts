@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server'
-import {financialAuth,adminHeaders,audit,ensureStageLink} from '@/lib/financial-clearance'
+import {financialAuth,adminHeaders,audit} from '@/lib/financial-clearance'
 import {SUPABASE_URL} from '@/lib/server-auth'
 
 const stages=['employee','finance','hr','project_manager','general_manager']
@@ -22,8 +22,14 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  // إعادة فتح مرحلة تعني إعادة اعتماد هذه المرحلة وكل ما بعدها حتى لا تبقى موافقات لاحقة على نسخة قديمة من المخالصة.
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+encodeURIComponent(id)+'&stage=in.('+affectedStages.join(',')+')',{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,approver_name:null,approver_title:null,signature:null,decision:null,notes:null,acted_at:null,updated_at:now})})
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?clearance_id=eq.'+encodeURIComponent(id)+'&stage=in.('+affectedStages.join(',')+')',{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',last_submitted_at:null,updated_at:now})})
- await ensureStageLink(auth,id,stage)
+ const linkRes=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?select=id,token,created_at&clearance_id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(stage)+'&order=created_at.desc&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
+ const links=await linkRes.json().catch(()=>[])
+ const reopenLink=links?.[0]
+ if(!reopenLink)return NextResponse.json({error:'لم يتم العثور على رابط هذه المرحلة لإعادة فتحه.'},{status:404})
+ const reopenResult=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+encodeURIComponent(reopenLink.id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=representation'}),body:JSON.stringify({status:'active',last_submitted_at:null,last_opened_at:null,updated_at:now})})
+ if(!reopenResult.ok)return NextResponse.json({error:'تعذر إعادة تفعيل رابط التوقيع.'},{status:500})
+ await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?clearance_id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(stage)+'&id=neq.'+encodeURIComponent(reopenLink.id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',updated_at:now})})
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:statuses[stage],current_stage:stage,updated_at:now})})
  await audit(auth,id,'reopened_stage',{stage,reason})
- return NextResponse.json({ok:true,status:statuses[stage],current_stage:stage})
+ return NextResponse.json({ok:true,status:statuses[stage],current_stage:stage,token:reopenLink.token})
 }
