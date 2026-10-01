@@ -3,8 +3,8 @@ import {useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
 import {FileCheck2,Search,RefreshCw,ChevronLeft} from 'lucide-react'
 
-const labels:any={pending_employee:'بانتظار اعتماد الموظف',pending_finance:'بانتظار اعتماد المالية',pending_hr:'بانتظار اعتماد الموارد البشرية',pending_project_manager:'بانتظار اعتماد مدير المشاريع',pending_general_manager:'بانتظار اعتماد المدير العام',completed:'مكتملة ومعتمدة',returned:'مرتجعة للمراجعة',draft:'مسودة',cancelled:'ملغاة',not_started:'لم تبدأ'}
-const badge=(s:string)=>s==='completed'?'bg-emerald-50 text-emerald-700':s==='returned'?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-700'
+const labels:any={pending_employee:'بانتظار اعتماد الموظف',pending_finance:'بانتظار اعتماد المالية',pending_hr:'بانتظار اعتماد الموارد البشرية',pending_project_manager:'بانتظار اعتماد مدير المشاريع',pending_general_manager:'بانتظار اعتماد المدير العام',completed:'مكتملة ومعتمدة',returned:'تحتاج إلى تعديل',needs_revision:'تحتاج إلى تعديل',rejected:'مرفوضة',draft:'مسودة',cancelled:'ملغاة',not_started:'لم تبدأ'}
+const badge=(s:string)=>s==='completed'?'bg-emerald-50 text-emerald-700':s==='rejected'?'bg-red-50 text-red-700':s==='returned'||s==='needs_revision'?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-700'
 export default function FinancialClearances(){
  const [rows,setRows]=useState<any[]>([]),[search,setSearch]=useState(''),[status,setStatus]=useState(''),[company,setCompany]=useState(''),[department,setDepartment]=useState(''),[createdDate,setCreatedDate]=useState(''),[finalDate,setFinalDate]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('')
  const load=async()=>{setLoading(true);const q=new URLSearchParams();if(search)q.set('search',search);if(status)q.set('status',status);const r=await fetch('/api/financial-clearances?'+q,{cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok)setError(d?.error||'تعذر تحميل المخالصات');else setRows(d.clearances||[]);setLoading(false)}
