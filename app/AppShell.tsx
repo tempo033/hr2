@@ -41,6 +41,7 @@ const sections = [
     ['/payroll/wps','حماية الأجور WPS',WalletCards,['admin','hr','finance']],
     ['/payroll/projects','تكلفة المشاريع',WalletCards,['admin','hr','finance','general_manager']],
     ['/payroll/reports','تقارير الرواتب',BarChart3,['admin','hr','finance','general_manager','manager']],
+    ['/financial-clearances','المخالصات المالية',FileText,['admin','hr','finance','project_manager','general_manager','manager']],
     ['/payroll/settings','إعدادات الرواتب',UserCog,['admin']],
   ]},
   { id:'nitaqat', label:'نطاقات والتوطين', icon:Calculator, items:[
@@ -67,7 +68,7 @@ const sections = [
   ]},
 ] as const
 
-const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/forms\/investigation\/(respond|review)\/[^/]+\/?$/.test(pathname)
+const isExternalTokenPage = (pathname: string) => /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/financial-clearances\/public\/[^/]+\/?$/.test(pathname) || /^\/forms\/investigation\/(respond|review)\/[^/]+\/?$/.test(pathname)
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname=usePathname(); const router=useRouter(); const [role,setRole]=useState<string>(''); const [open,setOpen]=useState(false)
