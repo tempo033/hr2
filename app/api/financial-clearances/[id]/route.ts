@@ -57,11 +57,12 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({...payload,clearance_id:id,created_by:auth.user.id})})
  }
  const stage=row.current_stage
- if(auth.role==='hr' && ['finance','hr'].includes(stage)){
-   const stageStatus:any={finance:'pending_finance',hr:'pending_hr'}
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(stage),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,signature:null,notes:null,acted_at:null,updated_at:new Date().toISOString()})})
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:stageStatus[stage],updated_at:new Date().toISOString()})})
-   await ensureStageLink(auth,id,stage)
+ if(auth.role==='hr' || auth.role==='admin'){
+   const now=new Date().toISOString()
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?clearance_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending',approver_user_id:null,approver_name:null,approver_title:null,signature:null,decision:null,notes:null,acted_at:null,updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?clearance_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending_employee',current_stage:'employee',final_approved_at:null,updated_at:now})})
+   await ensureStageLink(auth,id,'employee')
  }
  await audit(auth,id,'hr_data_updated',{changed_keys:Object.keys(body.financial_data||{}),leave_days:nextData.days_counted,leave_value:leaveValue})
  return NextResponse.json({ok:true,clearance:d?.[0]||null,leave_value:leaveValue,daily_wage:daily})
@@ -71,7 +72,7 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
 export async function DELETE(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  const auth=await financialAuth(req,['admin','hr']); if(!auth)return NextResponse.json({error:'غير مصرح.'},{status:403})
  const {id}=await params
- const current=await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?select=id,status,clearance_number& id=eq.'+encodeURIComponent(id)+'&limit=1'.replace(' ','') ,{headers:adminHeaders(auth),cache:'no-store'})
+ const current=await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?select=id,status,clearance_number&id=eq.'+encodeURIComponent(id)+'&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
  const rows=await current.json().catch(()=>[]); const row=rows?.[0]
  if(!row)return NextResponse.json({error:'المخالصة غير موجودة.'},{status:404})
  if(row.status==='completed')return NextResponse.json({error:'لا يمكن حذف مخالصة مكتملة ومعتمدة نهائيًا.'},{status:409})
