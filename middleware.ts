@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server'
 const COOKIE = 'hr2_access_token'
 
 function isPublicExternalLink(pathname: string) {
-  return /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname)
+  return /^\/(candidate|evaluation|offer)\/[^/]+\/?$/.test(pathname) || /^\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/financial-clearances\/public\/[^/]+\/?$/.test(pathname)
 }
 
 function isPublicExternalApi(pathname: string) {
-  return /^\/api\/(evaluation|candidate|offer)\/[^/]+\/?$/.test(pathname) || /^\/api\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/api\/hr\/employee-documents-dashboard\/share\/[0-9a-f-]{36}\/?$/i.test(pathname)
+  return /^\/api\/(evaluation|candidate|offer)\/[^/]+\/?$/.test(pathname) || /^\/api\/forms\/public\/[^/]+\/?$/.test(pathname) || /^\/api\/financial-clearances\/public\/[^/]+\/?$/.test(pathname) || /^\/api\/hr\/employee-documents-dashboard\/share\/[0-9a-f-]{36}\/?$/i.test(pathname)
 }
 
 function isPublicDashboardShare(request: NextRequest) {
