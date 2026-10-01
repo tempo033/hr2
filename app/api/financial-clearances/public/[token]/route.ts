@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server'
 import {adminHeaders,ensureStageLink,calculateLeaveValue} from '@/lib/financial-clearance'
 import {SUPABASE_URL} from '@/lib/server-auth'
+// Financial clearance public approvals only: independent stage signing.
 
 async function serviceAuth(){return {user:{id:null},role:'public',serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY||''}}
 async function getLink(token:string){
