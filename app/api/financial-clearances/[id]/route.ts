@@ -46,15 +46,17 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
 
  const patch=await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=representation'}),body:JSON.stringify({financial_data:nextData,payment_method:nextData.payment_method||null,cheque_number:nextData.cheque_number||null,payment_date:nextData.payment_date||null,updated_at:new Date().toISOString()})})
  const d=await patch.json().catch(()=>[])
- if(!patch.ok)return NextResponse.json({error:d?.message||JSON.stringify(d)},{status:500})
+ if(!patch.ok)return NextResponse.json({error:d?.message||d?.details||d?.hint||JSON.stringify(d)||'تعذر حفظ بيانات المخالصة في قاعدة البيانات.'},{status:500})
 
  const existingRes=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items?select=*&clearance_id=eq.'+encodeURIComponent(id)+'&code=eq.leave_balance&limit=1',{headers:adminHeaders(auth),cache:'no-store'})
  const existing=await existingRes.json().catch(()=>[])
  const payload={item_type:'entitlement',code:'leave_balance',label:'قيمة رصيد الإجازات المستحق',amount:leaveValue,editable:false,source:'system:days_x_daily_wage',notes:nextData.days_counted+' يوم × '+daily.toFixed(2)+' ر.س أجر يومي',sort_order:0,updated_by:auth.user.id,updated_at:new Date().toISOString()}
  if(existing?.[0]){
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items?id=eq.'+encodeURIComponent(existing[0].id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify(payload)})
+   const itemPatch=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items?id=eq.'+encodeURIComponent(existing[0].id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify(payload)})
+   if(!itemPatch.ok){const e=await itemPatch.text();return NextResponse.json({error:e||'تعذر تحديث بند رصيد الإجازات.'},{status:500})}
  }else{
-   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({...payload,clearance_id:id,created_by:auth.user.id})})
+   const itemInsert=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_items',{method:'POST',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({...payload,clearance_id:id,created_by:auth.user.id})})
+   if(!itemInsert.ok){const e=await itemInsert.text();return NextResponse.json({error:e||'تعذر إنشاء بند رصيد الإجازات.'},{status:500})}
  }
  const stage=row.current_stage
  if(auth.role==='hr' || auth.role==='admin'){
