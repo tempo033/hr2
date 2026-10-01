@@ -107,5 +107,5 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  if(!linkClose.ok){
    return NextResponse.json({error:'تم حفظ الاعتماد لكن تعذر إغلاق رابط التوقيع. يمكنك فتح الرابط مرة أخرى دون فقدان الاعتماد.'},{status:500})
  }
- return NextResponse.json({ok:true,status:next?({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]:'completed',current_stage:next||'general_manager'})
+ return NextResponse.json({ok:true,status:complete?'completed':'pending_approvals',current_stage:clearance.current_stage||'employee'})
 }
