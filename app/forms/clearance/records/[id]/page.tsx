@@ -47,7 +47,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
  const [rec,setRec]=useState<RecordRow|null>(null)
  const [links,setLinks]=useState<LinkRow[]>([])
  const [loading,setLoading]=useState(true)
- const [savingApply,setSavingApply]=useState(false)
+ const [savingApply,setSavingApply]=useState(false)\n const [financialClearance,setFinancialClearance]=useState<any>(null)
  const [role,setRole]=useState('')
  const [apply,setApply]=useState<Record<string,boolean>>({})
 
@@ -61,7 +61,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    ])
    const rd=await rr.json(); const ld=await lr.json()
    if(!rr.ok) throw new Error(rd?.error||'تعذر تحميل ملف الإخلاء')
-   setRec(rd.records?.[0]||null)
+   setRec(rd.records?.[0]||null)\n   const fr=await fetch('/api/financial-clearances?clearance_record_id='+encodeURIComponent(id),{cache:'no-store'}); const fd=await fr.json().catch(()=>({})); setFinancialClearance(fd?.clearances?.[0]||null)
    const recordLinks=(rd.records?.[0]?.links||[]).filter((x:LinkRow)=>x.record_id===id)
    if(!recordLinks.some((x:LinkRow)=>x.link_scope==='clearance:project_manager')){
     const er=await fetch('/api/forms/clearance/workflow',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({record_id:id,ensure_project_manager_link:true})})
@@ -146,7 +146,7 @@ export default function ClearanceRecord({params}:{params:Promise<{id:string}>}){
    </div>
   </section>
 
-  <section className="no-print max-w-6xl mx-auto bg-white rounded-2xl border p-5 mb-5">
+  <section className="no-print max-w-6xl mx-auto bg-white rounded-2xl border p-5 mb-5"><div className="flex items-center justify-between gap-3"><div><h2 className="text-xl font-black text-[#09233f]">المخالصة المالية</h2><p className="text-sm text-slate-500">تظهر كمعاملة مستقلة بعد اكتمال واعتماد إخلاء الطرف.</p></div>{allApproved ? (financialClearance ? <Link href={"/financial-clearances/"+financialClearance.id} className="inline-flex items-center gap-2 rounded-xl bg-[#09233f] px-4 py-2 font-black text-white">فتح المخالصة</Link> : <button onClick={async()=>{const r=await fetch("/api/financial-clearances",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clearance_record_id:id})});const d=await r.json().catch(()=>({}));if(r.ok&&d?.clearance?.id)window.location.href="/financial-clearances/"+d.clearance.id;else alert(d?.error||"تعذر إنشاء المخالصة")}} className="rounded-xl bg-[#b88618] px-4 py-2 font-black text-white">إتمام المخالصة المالية</button>) : <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-800">تظهر بعد اكتمال إخلاء الطرف</span>}</div>{financialClearance&&<div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4"><div className="rounded-xl bg-slate-50 p-3"><div className="text-xs text-slate-500">رقم المخالصة</div><b>{financialClearance.clearance_number}</b></div><div className="rounded-xl bg-slate-50 p-3"><div className="text-xs text-slate-500">الحالة</div><b>{financialClearance.status}</b></div><div className="rounded-xl bg-slate-50 p-3"><div className="text-xs text-slate-500">المرحلة الحالية</div><b>{financialClearance.current_stage}</b></div><div className="rounded-xl bg-slate-50 p-3"><div className="text-xs text-slate-500">تاريخ الإنشاء</div><b>{financialClearance.created_at?new Date(financialClearance.created_at).toLocaleString("ar-SA"):"—"}</b></div></div>}</section>\n  <section className="no-print max-w-6xl mx-auto bg-white rounded-2xl border p-5 mb-5">
    <div className="flex items-center justify-between mb-4">
     <div><h2 className="text-xl font-black text-[#09233f]">روابط إخلاء الطرف</h2><p className="text-sm text-slate-500">رابط مستقل لكل إدارة — اضغط على الأيقونة لفتح رابط الإدارة.</p></div>
     <span className={allApproved?'badge ok':'badge pending'}>{allApproved?<><CheckCircle2 size={15}/> مكتمل ومعتمد</>:<><Clock3 size={15}/> قيد الاستكمال</>}</span>
