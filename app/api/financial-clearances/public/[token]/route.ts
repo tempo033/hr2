@@ -46,12 +46,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  const {token}=await params
  const {auth,link}=await getLink(token)
  if(!link)return NextResponse.json({error:'الرابط غير صالح.'},{status:404})
- // Employee links are intentionally reusable while the clearance is waiting for the employee signature.
- // Other stage links remain single-stage active links.
- if(link.stage==='employee'){
-   const currentStage=link.clearance?.current_stage
-   if(currentStage!=='employee')return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
- }
+ if(link.status!=='active')return NextResponse.json({error:'تم استخدام هذا الرابط ولا يمكن التوقيع أو التعديل من خلاله مرة أخرى.'},{status:410})
  const clearance=link.clearance
  if(['completed','rejected'].includes(clearance.status))return NextResponse.json({error:'المخالصة مغلقة نهائيًا.'},{status:409})
  if(clearance.current_stage!==link.stage)return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
