@@ -52,10 +52,11 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  if(clearance.current_stage!==link.stage)return NextResponse.json({error:'هذا الرابط يخص مرحلة سابقة ولا يمكن استخدامه الآن.'},{status:409})
 
  const body=await req.json().catch(()=>({}))
- const action=body.action==='approve'?'approve':String(body.action||'')
+ const action=body.action==='return'?'return':body.action==='reject'?'reject':body.action==='save'?'save':'approve'
  const now=new Date().toISOString()
- if(action!=='approve')return NextResponse.json({error:'هذا الرابط مخصص للاطلاع والتوقيع والاعتماد فقط.'},{status:403})
  if(link.stage==='project_manager'&&action==='approve'&&!['applies','not_applies'].includes(String(body.decision||'')))return NextResponse.json({error:'يجب تحديد: ينطبق أو لا ينطبق.'},{status:400})
+
+ if(action==='save')return NextResponse.json({error:'لا يمكن تعديل المخالصة من روابط الاعتماد. الاطلاع والتوقيع والاعتماد فقط.'},{status:403})
 
  if((action==='approve'||action==='return'||action==='reject')&&!String(body.notes||'').trim()&&action!=='approve')
    return NextResponse.json({error:'يجب كتابة سبب الإجراء.'},{status:400})
@@ -67,6 +68,18 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  const name=String(body.name||'').trim()
  const title=String(body.title||({employee:'الموظف',finance:'الإدارة المالية',hr:'الموارد البشرية',project_manager:'مدير المشاريع',general_manager:'المدير العام'} as any)[link.stage]||link.stage)
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+approval.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:action==='approve'?'approved':'returned',approver_user_id:null,approver_name:name,approver_title:title,signature:body.signature||null,decision:link.stage==='project_manager'?(body.decision||null):null,notes:String(body.notes||''),acted_at:now,updated_at:now})})
+
+ if(action==='reject'){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'rejected',updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',last_submitted_at:now,updated_at:now})})
+   return NextResponse.json({ok:true,status:'rejected'})
+ }
+
+ if(action==='return'){
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'needs_revision',updated_at:now})})
+   await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'active',last_submitted_at:now,updated_at:now})})
+   return NextResponse.json({ok:true,status:'needs_revision'})
+ }
 
  const stages=['employee','finance','hr','project_manager','general_manager']
  const index=stages.indexOf(link.stage)
