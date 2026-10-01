@@ -1,6 +1,6 @@
 'use client'
 import {useEffect,useMemo,useState} from 'react'
-import {CheckCircle2,ShieldCheck} from 'lucide-react'
+import {CheckCircle2,ShieldCheck,Trash2} from 'lucide-react'
 import SignatureEditor from '@/app/components/signature/SignatureEditor'
 
 const stageLabels:any={employee:'الموظف',finance:'الإدارة المالية',hr:'الموارد البشرية',project_manager:'مدير المشاريع',general_manager:'المدير العام'}
