@@ -67,7 +67,16 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
  if(!approval)return NextResponse.json({error:'سجل الاعتماد غير موجود.'},{status:409})
  const name=String(body.name||'').trim()
  const title=String(body.title||({employee:'الموظف',finance:'الإدارة المالية',hr:'الموارد البشرية',project_manager:'مدير المشاريع',general_manager:'المدير العام'} as any)[link.stage]||link.stage)
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+approval.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:action==='approve'?'approved':'returned',approver_user_id:null,approver_name:name,approver_title:title,signature:body.signature||null,decision:link.stage==='project_manager'?(body.decision||null):null,notes:String(body.notes||''),acted_at:now,updated_at:now})})
+ const approvalUpdate=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_approvals?id=eq.'+approval.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=representation'}),body:JSON.stringify({status:action==='approve'?'approved':'returned',approver_user_id:null,approver_name:name,approver_title:title,signature:body.signature||null,decision:link.stage==='project_manager'?(body.decision||null):null,notes:String(body.notes||''),acted_at:now,updated_at:now})})
+ if(!approvalUpdate.ok){
+   const errorText=await approvalUpdate.text().catch(()=> '')
+   return NextResponse.json({error:'تعذر حفظ التوقيع والاعتماد. لم يتم إغلاق الرابط. حاول مرة أخرى.',details:errorText.slice(0,500)},{status:500})
+ }
+ const savedApprovalRows=await approvalUpdate.json().catch(()=>[])
+ const savedApproval=savedApprovalRows?.[0]
+ if(action==='approve' && (!savedApproval || savedApproval.status!=='approved' || savedApproval.approver_name!==name || savedApproval.signature!==String(body.signature||''))){
+   return NextResponse.json({error:'لم يتم التحقق من حفظ التوقيع والاعتماد في قاعدة البيانات. لم يتم إغلاق الرابط.',details:'approval verification failed'},{status:500})
+ }
 
  if(action==='reject'){
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'rejected',updated_at:now})})
@@ -96,6 +105,9 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{token:strin
    const nextStatus=({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]
    await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+clearance.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:nextStatus,current_stage:next,updated_at:now})})
  }
- await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'used',last_submitted_at:now,updated_at:now})})
+ const linkClose=await fetch(SUPABASE_URL+'/rest/v1/financial_clearance_links?id=eq.'+link.id,{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=representation'}),body:JSON.stringify({status:'used',last_submitted_at:now,updated_at:now})})
+ if(!linkClose.ok){
+   return NextResponse.json({error:'تم حفظ الاعتماد لكن تعذر إغلاق رابط التوقيع. يمكنك فتح الرابط مرة أخرى دون فقدان الاعتماد.'},{status:500})
+ }
  return NextResponse.json({ok:true,status:next?({finance:'pending_finance',hr:'pending_hr',project_manager:'pending_project_manager',general_manager:'pending_general_manager'} as any)[next]:'completed',current_stage:next||'general_manager'})
 }
