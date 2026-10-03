@@ -1,4 +1,4 @@
-import {SUPABASE_URL, supabaseAdminHeaders} from '@/lib/server-auth'
+import {SUPABASE_URL, supabaseHeaders} from '@/lib/server-auth'
 
 export const EMPLOYEE_STATUSES=['فعال','إجازة','غير فعال','تم إنهاء خدماته'] as const
 export type EmployeeStatus=(typeof EMPLOYEE_STATUSES)[number]
@@ -29,7 +29,7 @@ export async function setEmployeeStatus(
     changedByName?:string|null
   }
 ){
-  const headers=supabaseAdminHeaders(auth,{'Prefer':'return=representation'})
+  const headers=supabaseHeaders(auth,{'Prefer':'return=representation'})
   const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/set_employee_status',{
     method:'POST',
     headers,
