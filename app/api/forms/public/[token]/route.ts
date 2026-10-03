@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SUPABASE_URL, PUBLIC_KEY } from '@/lib/server-auth'
 import crypto from 'crypto'
+import {clearanceStatusIfComplete,setEmployeeStatusWithKey} from '@/lib/employee-status'
 const DB_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||PUBLIC_KEY
 function meta(req:NextRequest){const ip=(req.headers.get('x-forwarded-for')||req.headers.get('x-real-ip')||'').split(',')[0]?.trim()||null;const ua=req.headers.get('user-agent')||null;return{ip,ua,device:ua||'غير معروف'}}
 async function db(path:string,init?:RequestInit){return fetch(SUPABASE_URL+'/rest/v1/'+path,{...init,headers:{apikey:DB_KEY,Authorization:'Bearer '+DB_KEY,'Content-Type':'application/json',...(init?.headers||{})},cache:'no-store'})}
@@ -50,6 +51,12 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{token:string}>})
   if(stage==='employee')next.employee={...employee,...form}
   const save=await db('hr_form_records?id=eq.'+encodeURIComponent(link.record_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({form_data:{clearance:next},status:'قيد الإخلاء',updated_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua,submitted_via_link:true})})
   if(!save.ok)return NextResponse.json({error:await save.text()},{status:500})
+  const completedStatus=await clearanceStatusIfComplete({clearance:next})
+  if(completedStatus){
+   try{
+    await setEmployeeStatusWithKey({apiKey:DB_KEY,employeeId:link.employee_id,newStatus:completedStatus,reason:'إخلاء طرف: '+String(next.employee?.reason||''),source:'تلقائي',sourceReferenceId:link.record_id,changedByName:'النظام'})
+   }catch(err){return NextResponse.json({error:err instanceof Error?err.message:'تم حفظ الإخلاء لكن تعذر تحديث حالة الموظف. يرجى مراجعة سجل حالة الموظف.'},{status:500})}
+  }
   await db('hr_form_links?id=eq.'+encodeURIComponent(link.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_submitted_at:now,last_ip_address:m.ip,last_device_name:body.device_name||m.device,last_user_agent:m.ua})})
   await db('hr_form_link_access',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({link_id:link.id,event_type:'submit',ip_address:m.ip,device_name:body.device_name||m.device,user_agent:m.ua})})
   return NextResponse.json({ok:true,record_id:link.record_id})
