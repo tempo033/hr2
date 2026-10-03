@@ -225,7 +225,7 @@ export async function POST(req:NextRequest){
       if(!r.ok)return NextResponse.json({error:await r.text()},{status:500})
       return NextResponse.json({investigation:(await r.json())[0]})
     }
-    const r=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)},auth)
+    const r=await db(`administrative_investigations?id=eq.${id}&status=eq.draft`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)},auth)
     if(!r.ok)return NextResponse.json({error:await r.text()},{status:500})
     return NextResponse.json({investigation:(await r.json())[0]})
   }
