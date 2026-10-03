@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerAuth, supabaseHeaders } from '@/lib/server-auth'
+import { getServerAuth, supabaseHeaders, supabaseAdminHeaders } from '@/lib/server-auth'
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pdkdvaisggntdrvpxuur.supabase.co'
 const ALLOWED = ['admin','hr','manager']
@@ -108,7 +108,7 @@ function analyze(subject:string, parties:any[], managementOpinion:string){
 async function db(path:string, init:any, auth?:any){
   const serviceKey=auth?.serviceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   const headers:any={apikey:serviceKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',...(serviceKey?{Authorization:`Bearer ${serviceKey}`}:{})}
-  if(auth) Object.assign(headers,supabaseHeaders(auth))
+  if(auth) Object.assign(headers,supabaseAdminHeaders(auth))
   return fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...headers,...(init.headers||{})}})
 }
 
