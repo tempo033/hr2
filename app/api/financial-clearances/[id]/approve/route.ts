@@ -70,6 +70,6 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
    return NextResponse.json({ok:true,status:'completed'})
  }
  await fetch(SUPABASE_URL+'/rest/v1/financial_clearances?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:adminHeaders(auth,{'Prefer':'return=minimal'}),body:JSON.stringify({status:'pending_approvals',updated_at:now})})
- await audit(auth,id,'approved',{next_stage:next.key},stage)
- return NextResponse.json({ok:true,status:nextStatus,current_stage:next.key})
+ await audit(auth,id,'approved',{stage,independent:true},stage)
+ return NextResponse.json({ok:true,status:'pending_approvals',current_stage:row.current_stage||'general_manager'})
 }
