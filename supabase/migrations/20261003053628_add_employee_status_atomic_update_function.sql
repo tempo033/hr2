@@ -18,6 +18,7 @@ declare
   v_changed_by_name text;
   v_role text := current_setting('request.jwt.claim.role', true);
   v_row public.employee_records%rowtype;
+  v_employment_status text;
 begin
   if p_new_status not in ('فعال','إجازة','غير فعال','تم إنهاء خدماته') then
     raise exception 'حالة الموظف غير صالحة';
@@ -47,8 +48,10 @@ begin
     return jsonb_build_object('changed',false,'employee',to_jsonb(v_row));
   end if;
 
+  v_employment_status := case p_new_status when 'فعال' then 'على رأس العمل' when 'إجازة' then 'إجازة' when 'غير فعال' then 'غير فعال' when 'تم إنهاء خدماته' then 'تم إنهاء خدماته' end;
+
   update public.employee_records
-  set employee_status=p_new_status, updated_at=now()
+  set employee_status=p_new_status, employment_status=v_employment_status, updated_at=now()
   where id=p_employee_id
   returning * into v_row;
 
