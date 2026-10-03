@@ -11,15 +11,16 @@ const normalize = (s:string) => String(s||'').trim().replace(/\s+/g,' ')
 function buildQuestions(subject:string, employee?:Employee){
   const s=normalize(subject)
   const q:string[]=[]
-  const add=(x:string)=>{if(q.length<8&&!q.includes(x))q.push(x)}
+  const add=(x:string)=>{if(q.length<6&&!q.includes(x))q.push(x)}
   const role=employee?.job_title?` بوصفك ${employee.job_title}`:''
-  add(`بخصوص الواقعة محل التحقيق، اشرح ما حدث من بدايته إلى نهايته، وما الذي قمت به أنت تحديداً${role}؟`)
+  const humanLead=`في ضوء الواقعة المذكورة، ومن واقع ما حدث فعلياً${role}، `
+  add(`بخصوص الواقعة محل التحقيق، اشرح لنا ما حدث من بدايته إلى نهايته، وما الذي قمت به أنت تحديداً${role}؟`)
   if(/غياب|تأخير|دوام|حضور|انقطاع/.test(s)){
     add('ما كان موعد أو تعليمات الحضور التي كان يفترض الالتزام بها في اليوم محل التحقيق؟')
     add('متى علمت أنك ستتأخر أو لن تحضر، ومتى أبلغت المسؤول المباشر؟')
-    add('هل حصلت على إذن أو موافقة مسبقة؟ وإذا لم تحصل، فما السبب؟')
-    add('هل قدمت عذراً أو مستنداً يثبت سبب الغياب أو التأخر؟')
-    add('ما الذي ترتب على عدم حضورك أو تأخرك من ناحية العمل، ومن قام بمهامك خلال تلك الفترة؟')
+    add('إذا كانت هناك تعليمات أو موافقة أو إجراء محدد كان يفترض اتباعه، كيف تعاملت معه وقت الواقعة؟ وإذا لم يتم بالشكل المطلوب، وضح لنا ماذا حدث؟')
+    add('هل كانت هناك ظروف أو معوقات أثرت على ما حدث؟ وإذا كانت موجودة، متى وكيف تم توضيحها للمسؤول المباشر؟')
+    add('ما الذي تم بعد الواقعة من جانبك لمعالجة أثرها أو منع تكرارها؟')
   } else if(/اعتداء|ضرب|جسدي|مشاجرة|إساءة|تهديد|سب|شتم|لفظ/.test(s)){
     add('من كان موجوداً وقت الواقعة، وما الذي قيل أو حدث أمامهم؟')
     add('ما التصرف الذي صدر منك تجاه الطرف الآخر، وما الذي صدر منه تجاهك قبل ذلك؟')
@@ -28,7 +29,7 @@ function buildQuestions(subject:string, employee?:Employee){
     add('هل توجد كاميرات أو رسائل أو شهود يمكن الرجوع إليهم للتحقق من أقوالك؟')
   } else if(/مركب|سيار|سائق|حرك|نقل|مرور/.test(s)){
     add('من سلّمك المركبة أو طلب منك استخدامها، ومتى تم ذلك؟')
-    add('هل كان لديك تفويض أو تعليمات واضحة باستخدام المركبة؟ وما الذي التزمت به منها؟')
+    add('ما التعليمات أو التفويض الذي كان لديك بخصوص استخدام المركبة، وكيف تعاملت معه وقت الواقعة؟')
     add('متى وقعت الواقعة أو المخالفة، وماذا حدث للمركبة بالتحديد؟')
     add('هل نتجت غرامة أو ضرر أو تعطيل للعمل، وما المستند الذي يثبت ذلك؟')
     add('من كان موجوداً أو يعلم باستخدام المركبة وقت الواقعة؟')
@@ -60,10 +61,10 @@ function buildQuestions(subject:string, employee?:Employee){
     add(`ما التعليمات أو التكليف المرتبط بموضوع التحقيق: «${subject.replace(/`/g,'').slice(0,180)}»، ومن قام بتوجيهه إليك؟`)
     add('ما الذي قمت به بعد استلام التكليف، وما الذي لم يتم تنفيذه إن وجد؟')
     add('متى علمت بوجود المشكلة، ومتى أبلغت المسؤول المباشر؟')
-    add('ما السبب المباشر الذي أدى إلى الواقعة من وجهة نظرك؟')
+    add('من وجهة نظرك، ما السبب الذي أدى إلى حدوث الواقعة؟')
     add('ما المستند أو السجل أو الرسالة أو الشخص الذي يمكن الرجوع إليه للتحقق من أقوالك؟')
   }
-  return q.slice(0,8)
+  return q.slice(0,6)
 }
 function analyze(subject:string, parties:any[], managementOpinion:string){
   const allAnswers=parties.flatMap(p=>p.answers||[]).map((a:any)=>normalize(a.answer)).filter(Boolean)
@@ -169,7 +170,7 @@ export async function POST(req:NextRequest){
       if(!existing.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
       const existingRows=await existing.json(); if(!existingRows[0])return NextResponse.json({error:'الرابط غير صالح'},{status:404})
       if(existingRows[0].employee_submitted_at)return NextResponse.json({error:'تم إرسال أقوالك مسبقاً، ولا يمكن تعديل الإجابات مرة أخرى.'},{status:409})
-      const r=await db(`administrative_investigation_parties?id=eq.${existingRows[0].id}&employee_submitted_at=is.null`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({answers:body.answers||[],employee_submitted_at:new Date().toISOString()})})
+      const r=await db(`administrative_investigation_parties?id=eq.${existingRows[0].id}&employee_submitted_at=is.null`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({answers:body.answers||[],employee_submitted_at:new Date().toISOString(),locked_at:new Date().toISOString(),saved_at:new Date().toISOString()})})
       if(!r.ok)return NextResponse.json({error:'تعذر حفظ الأقوال'},{status:500})
       const saved=await r.json(); if(!saved[0])return NextResponse.json({error:'تم إرسال الأقوال مسبقاً، ولا يمكن تعديلها.'},{status:409})
       return NextResponse.json({ok:true})
@@ -193,25 +194,38 @@ export async function POST(req:NextRequest){
   if(action==='create'){
     const employeeIds=[...new Set((body.employee_ids||[]).filter(Boolean))]
     if(!employeeIds.length||!normalize(body.subject))return NextResponse.json({error:'اختر موظفاً واحداً على الأقل واكتب موضوع التحقيق'},{status:400})
-    const invR=await db('administrative_investigations',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({employee_id:employeeIds[0],subject:normalize(body.subject),questions:[],answers:[],status:'in_progress'})},auth)
+    const employee_id=employeeIds[0]
+    const er=await db(`employee_records?select=id,full_name,employee_number,job_title,department,company_id&id=eq.${employee_id}&limit=1`,{cache:'no-store'},auth)
+    const employee=(await er.json())[0]
+    if(!employee)return NextResponse.json({error:'الموظف غير موجود في بيانات النظام'},{status:404})
+    const qs=Array.isArray(body.questions)&&body.questions.length?body.questions.slice(0,6):buildQuestions(body.subject,employee)
+    const now=new Date().toISOString()
+    const snapshot={employee:{id:employee.id,full_name:employee.full_name,employee_number:employee.employee_number,job_title:employee.job_title,department:employee.department,company_id:employee.company_id},subject:normalize(body.subject),incident_description:body.incident_description||'',alleged_notes:body.alleged_notes||'',branch_project:body.branch_project||'',investigation_date:body.investigation_date||now.slice(0,10),investigator_name:body.investigator_name||'',questions:qs}
+    const invR=await db('administrative_investigations',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({employee_id,employee_number:employee.employee_number||null,job_title:employee.job_title||null,department:employee.department||null,branch_project:body.branch_project||null,investigation_date:body.investigation_date||now.slice(0,10),subject:normalize(body.subject),incident_description:body.incident_description||null,alleged_notes:body.alleged_notes||null,investigator_name:body.investigator_name||null,questions:qs,answers:[],status:'draft',submitted_snapshot:null,updated_at:now})},auth)
     if(!invR.ok)return NextResponse.json({error:await invR.text()},{status:500})
     const inv=(await invR.json())[0]
     const parties=[]
     for(const employee_id of employeeIds){
-      const er=await db(`employee_records?select=id,full_name,job_title,department&id=eq.${employee_id}&limit=1`,{cache:'no-store'},auth)
-      const employee=(await er.json())[0]||{}
-      const qs=buildQuestions(body.subject,employee)
-      const pr=await db('administrative_investigation_parties',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({investigation_id:inv.id,employee_id,questions:qs,answers:[]})},auth)
+      const er2=await db(`employee_records?select=id,full_name,employee_number,job_title,department&id=eq.${employee_id}&limit=1`,{cache:'no-store'},auth)
+      const e=(await er2.json())[0]||employee
+      const partyQ=employee_id===employee.id?qs:buildQuestions(body.subject,e)
+      const pr=await db('administrative_investigation_parties',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({investigation_id:inv.id,employee_id,questions:partyQ,answers:[]})},auth)
       if(!pr.ok)return NextResponse.json({error:await pr.text()},{status:500})
       parties.push((await pr.json())[0])
     }
-    const review=await db('administrative_investigation_reviews',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({investigation_id:inv.id})},auth)
-    const reviewRow=review.ok?(await review.json())[0]:null
-    return NextResponse.json({investigation:inv,parties,reviews:reviewRow?[reviewRow]:[]})
+    return NextResponse.json({investigation:inv,parties,reviews:[]})
   }
   if(action==='update'){
     const id=body.id
-    const r=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({subject:normalize(body.subject),status:body.status,updated_at:new Date().toISOString()})},auth)
+    const allowedFields={subject:normalize(body.subject),incident_description:body.incident_description||null,alleged_notes:body.alleged_notes||null,branch_project:body.branch_project||null,investigation_date:body.investigation_date||null,investigator_name:body.investigator_name||null,questions:Array.isArray(body.questions)?body.questions.slice(0,6):undefined,status:body.status||'draft',updated_at:new Date().toISOString()}
+    const payload:any=Object.fromEntries(Object.entries(allowedFields).filter(([,v])=>v!==undefined))
+    if(body.send===true){
+      const base={...payload,status:'sent',sent_at:new Date().toISOString(),submitted_snapshot:{...body.snapshot,questions:payload.questions||body.questions||[]}}
+      const r=await db(`administrative_investigations?id=eq.${id}&status=eq.draft`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(base)},auth)
+      if(!r.ok)return NextResponse.json({error:await r.text()},{status:500})
+      return NextResponse.json({investigation:(await r.json())[0]})
+    }
+    const r=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)},auth)
     if(!r.ok)return NextResponse.json({error:await r.text()},{status:500})
     return NextResponse.json({investigation:(await r.json())[0]})
   }
@@ -227,6 +241,14 @@ export async function POST(req:NextRequest){
     const up=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({management_opinion:managementOpinion,final_analysis:analysis,analysis,status:'completed',completed_at:new Date().toISOString(),updated_at:new Date().toISOString()})},auth)
     if(!up.ok)return NextResponse.json({error:await up.text()},{status:500})
     return NextResponse.json({analysis,parties,reviews})
+  }
+  if(action==='employee-save'){
+    const existing=await db(`administrative_investigation_parties?select=id,employee_submitted_at&employee_token=eq.${publicToken||body.token}&limit=1`,{cache:'no-store'})
+    if(!existing.ok)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+    const row=(await existing.json())[0];if(!row)return NextResponse.json({error:'الرابط غير صالح'},{status:404})
+    if(row.employee_submitted_at)return NextResponse.json({error:'تم إرسال التحقيق ولا يمكن تعديل الإجابات.'},{status:409})
+    const r=await db(`administrative_investigation_parties?id=eq.${row.id}&employee_submitted_at=is.null`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({answers:body.answers||[],saved_at:new Date().toISOString()})})
+    if(!r.ok)return NextResponse.json({error:'تعذر حفظ الإجابات'},{status:500});return NextResponse.json({ok:true,saved:true})
   }
   if(action==='detail'){
     const id=body.id
