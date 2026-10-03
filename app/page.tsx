@@ -1,4 +1,5 @@
 'use client'
+import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import { Activity, ArrowLeft, BriefcaseBusiness, Building2, Calculator, ClipboardCheck, FileText, UserPlus, Users, WalletCards, ShieldAlert, Search } from 'lucide-react';
 
@@ -19,6 +20,8 @@ const actions=[
 ];
 
 export default function Home(){
+ const[statusCounts,setStatusCounts]=useState({فعال:0,'إجازة':0,'غير فعال':0,'تم إنهاء خدماته':0});
+ useEffect(()=>{fetch('/api/employees/data',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(b=>{const rows=b?.employees||[];setStatusCounts({فعال:rows.filter((e:any)=>e.employee_status==='فعال').length,'إجازة':rows.filter((e:any)=>e.employee_status==='إجازة').length,'غير فعال':rows.filter((e:any)=>e.employee_status==='غير فعال').length,'تم إنهاء خدماته':rows.filter((e:any)=>e.employee_status==='تم إنهاء خدماته').length})}).catch(()=>{})},[])
  return <main dir="rtl" className="hr-home">
   <div className="home-grid">
    <header className="home-intro">
@@ -34,6 +37,16 @@ export default function Home(){
    <section className="workspace-panel">
     <div className="panel-head"><div><span className="eyebrow">WORKSPACES</span><h2>مساحات HR2</h2></div><span className="panel-meta"><Activity size={14}/> منظومة واحدة</span></div>
     <div className="workspace-list">{workspaces.map(({title,desc,href,icon:Icon},i)=><Link key={title} href={href} className="workspace-row"><span className="workspace-index">{String(i+1).padStart(2,'0')}</span><span className="workspace-icon"><Icon size={19}/></span><span className="workspace-copy"><b>{title}</b><small>{desc}</small></span><ArrowLeft className="workspace-arrow" size={17}/></Link>)}</div>
+   </section>
+
+   <section className="workspace-panel">
+    <div className="panel-head"><div><span className="eyebrow">EMPLOYEE STATUS</span><h2>حالات الموظفين</h2></div><Link href="/employees" className="text-sm font-bold text-[#b88618]">فتح ملفات الموظفين</Link></div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+     <div className="rounded-xl border bg-emerald-50 p-4"><small className="block text-slate-500">فعال</small><strong className="text-2xl text-emerald-700">{statusCounts['فعال']}</strong></div>
+     <div className="rounded-xl border bg-amber-50 p-4"><small className="block text-slate-500">إجازة</small><strong className="text-2xl text-amber-700">{statusCounts['إجازة']}</strong></div>
+     <div className="rounded-xl border bg-slate-100 p-4"><small className="block text-slate-500">غير فعال</small><strong className="text-2xl text-slate-700">{statusCounts['غير فعال']}</strong></div>
+     <div className="rounded-xl border bg-red-50 p-4"><small className="block text-slate-500">تم إنهاء خدماته</small><strong className="text-2xl text-red-700">{statusCounts['تم إنهاء خدماته']}</strong></div>
+    </div>
    </section>
 
    <aside className="attention-panel">
