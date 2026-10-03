@@ -83,7 +83,7 @@ export async function POST(req:NextRequest){
    employeeNumber='EMP-'+String(max+1).padStart(4,'0')
   }
 
-  const payload:any={employee_number:employeeNumber,full_name,nationality,national_id,hire_date,job_title,department,employment_status}
+  const payload:any={employee_number:employeeNumber,full_name,nationality,national_id,hire_date,job_title,department,employment_status,employee_status:'فعال'}
   for(const f of employeeFields){
    if(['employee_number','full_name','nationality','national_id','hire_date','job_title','department','employment_status','company_id'].includes(f))continue
    if(Object.prototype.hasOwnProperty.call(body,f)){
