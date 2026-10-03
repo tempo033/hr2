@@ -96,3 +96,17 @@ export async function clearanceStatusIfComplete(formData:any){
   }
   return statusFromClearanceReason(c.employee?.reason)
 }
+
+
+export const EMPLOYMENT_STATUS_MAP: Record<EmployeeStatus,string> = {
+  'فعال':'على رأس العمل',
+  'إجازة':'إجازة',
+  'غير فعال':'غير فعال',
+  'تم إنهاء خدماته':'تم إنهاء خدماته',
+}
+
+export type EmploymentStatus=(typeof EMPLOYMENT_STATUS_MAP)[EmployeeStatus]
+
+export function employmentStatusFromEmployeeStatus(status:EmployeeStatus){
+  return EMPLOYMENT_STATUS_MAP[status]
+}
