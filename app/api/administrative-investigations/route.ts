@@ -9,62 +9,18 @@ type Employee = { id:string; full_name:string; job_title?:string; department?:st
 const normalize = (s:string) => String(s||'').trim().replace(/\s+/g,' ')
 
 function buildQuestions(subject:string, employee?:Employee){
-  const s=normalize(subject)
-  const q:string[]=[]
-  const add=(x:string)=>{if(q.length<6&&!q.includes(x))q.push(x)}
-  const role=employee?.job_title?` بوصفك ${employee.job_title}`:''
-  const humanLead=`في ضوء الواقعة المذكورة، ومن واقع ما حدث فعلياً${role}، `
-  add(`بخصوص الواقعة محل التحقيق، اشرح لنا ما حدث من بدايته إلى نهايته، وما الذي قمت به أنت تحديداً${role}؟`)
-  if(/غياب|تأخير|دوام|حضور|انقطاع/.test(s)){
-    add('ما كان موعد أو تعليمات الحضور التي كان يفترض الالتزام بها في اليوم محل التحقيق؟')
-    add('متى علمت أنك ستتأخر أو لن تحضر، ومتى أبلغت المسؤول المباشر؟')
-    add('إذا كانت هناك تعليمات أو موافقة أو إجراء محدد كان يفترض اتباعه، كيف تعاملت معه وقت الواقعة؟ وإذا لم يتم بالشكل المطلوب، وضح لنا ماذا حدث؟')
-    add('هل كانت هناك ظروف أو معوقات أثرت على ما حدث؟ وإذا كانت موجودة، متى وكيف تم توضيحها للمسؤول المباشر؟')
-    add('ما الذي تم بعد الواقعة من جانبك لمعالجة أثرها أو منع تكرارها؟')
-  } else if(/اعتداء|ضرب|جسدي|مشاجرة|إساءة|تهديد|سب|شتم|لفظ/.test(s)){
-    add('من كان موجوداً وقت الواقعة، وما الذي قيل أو حدث أمامهم؟')
-    add('ما التصرف الذي صدر منك تجاه الطرف الآخر، وما الذي صدر منه تجاهك قبل ذلك؟')
-    add('هل وقع أي احتكاك أو تعدٍ فعلي، ومن بدأه بحسب ما شاهدته؟')
-    add('متى أبلغت المسؤول أو الإدارة بالواقعة، وما الإجراء الذي اتخذته بعدها؟')
-    add('هل توجد كاميرات أو رسائل أو شهود يمكن الرجوع إليهم للتحقق من أقوالك؟')
-  } else if(/مركب|سيار|سائق|حرك|نقل|مرور/.test(s)){
-    add('من سلّمك المركبة أو طلب منك استخدامها، ومتى تم ذلك؟')
-    add('ما التعليمات أو التفويض الذي كان لديك بخصوص استخدام المركبة، وكيف تعاملت معه وقت الواقعة؟')
-    add('متى وقعت الواقعة أو المخالفة، وماذا حدث للمركبة بالتحديد؟')
-    add('هل نتجت غرامة أو ضرر أو تعطيل للعمل، وما المستند الذي يثبت ذلك؟')
-    add('من كان موجوداً أو يعلم باستخدام المركبة وقت الواقعة؟')
-  } else if(/سلامة|حادث|اصاب|مخاطر|وقاية/.test(s)){
-    add('ما تعليمات السلامة التي كانت مطبقة على العمل وقت الواقعة، وماذا طُلب منك؟')
-    add('ماذا فعلت قبل وقوع الحادث أو ظهور الخطر، ومتى لاحظت المشكلة؟')
-    add('ماذا فعلت فور وقوع الحادث أو اكتشاف الخطر، ومن أبلغت؟')
-    add('هل نتجت إصابة أو تلف أو توقف للعمل، وما التقرير أو المحضر الذي يثبت ذلك؟')
-    add('من كان موجوداً في الموقع ويمكن الرجوع إليه كشاهد على الواقعة؟')
-  } else if(/مشتريات|شراء|توريد|مورد|عقد|مقاول|فاتورة|عهد|مبلغ|مالي|صرف/.test(s)){
-    add('ما الإجراء الذي كنت مسؤولاً عنه في هذه المعاملة، وما الصلاحية التي كانت لديك؟')
-    add('ما الخطوات التي قمت بها فعلياً، ومن قام بالاعتماد أو الاستلام أو الصرف؟')
-    add('هل تم تنفيذ الإجراء وفق التعليمات والمستندات المعتمدة؟ وإذا لا، فما الذي حدث؟')
-    add('ما المستندات المرتبطة بالمعاملة التي يمكن الرجوع إليها للتحقق من أقوالك؟')
-    add('هل ترتب على الواقعة مبلغ أو خسارة أو التزام على الشركة، وما أساس تحديده؟')
-  } else if(/رسالة|واتساب|بلاغ|إبلاغ|مراسلة|جروب/.test(s)){
-    add('متى علمت بالموضوع، ومتى كان مطلوباً منك إبلاغ المسؤول عنه؟')
-    add('هل أرسلت أو استلمت رسالة بخصوص الواقعة؟ اذكر وقتها والجهة التي أرسلت إليها أو استلمت منها.')
-    add('إذا لم يتم الإبلاغ في الوقت المطلوب، فما السبب؟')
-    add('هل توجد الرسالة أو المحادثة في المجموعة أو البريد الرسمي ويمكن الرجوع إليها؟')
-  } else if(/تأخير|تعطيل|إهمال|تقصير|جودة|استلام|مشروع|تنفيذ|موقع/.test(s)){
-    add('ما التكليف أو العمل الذي كان مطلوباً منك، ومتى تم توجيهك به؟')
-    add('ماذا أنجزت فعلياً، ومتى تم التنفيذ أو التوقف عن التنفيذ؟')
-    add('إذا لم يتم العمل كما هو مطلوب، ما السبب الفعلي لذلك؟')
-    add('متى أبلغت المسؤول بالمشكلة، وما وسيلة الإبلاغ التي استخدمتها؟')
-    add('ما الأثر الذي ترتب على الواقعة، وهل يوجد محضر أو صورة أو سجل يثبته؟')
-    add('من كان موجوداً في الموقع أو شارك في استلام العمل ويمكن الرجوع إليه؟')
-  } else {
-    add(`ما التعليمات أو التكليف المرتبط بموضوع التحقيق: «${subject.replace(/`/g,'').slice(0,180)}»، ومن قام بتوجيهه إليك؟`)
-    add('ما الذي قمت به بعد استلام التكليف، وما الذي لم يتم تنفيذه إن وجد؟')
-    add('متى علمت بوجود المشكلة، ومتى أبلغت المسؤول المباشر؟')
-    add('من وجهة نظرك، ما السبب الذي أدى إلى حدوث الواقعة؟')
-    add('ما المستند أو السجل أو الرسالة أو الشخص الذي يمكن الرجوع إليه للتحقق من أقوالك؟')
-  }
-  return q.slice(0,6)
+  const topic=normalize(subject)
+  const role=employee?.job_title ? `، وبحكم عملك كـ${employee.job_title}` : ''
+  const topicText=topic ? ` بخصوص «${topic.slice(0,180)}»` : ''
+  // أسئلة ثابتة بصياغة بشرية مباشرة؛ لا يوجد توليد حر أو تحليل آلي للأسئلة.
+  return [
+    `بخصوص الواقعة محل التحقيق${topicText}، اشرح لنا من البداية ماذا حدث، وما الذي قمت به أنت تحديداً${role}؟`,
+    `ما التعليمات أو التكليف الذي كان مطلوباً منك في هذه الواقعة، ومتى تم توجيهه لك؟`,
+    `بعد استلامك للتكليف أو التعليمات، ماذا قمت به فعلياً؟ وإذا لم يتم تنفيذ أي جزء بالشكل المطلوب، وضح لنا ما الذي حدث والسبب في ذلك.`,
+    `هل كانت هناك ظروف أو معوقات أو توجيهات من شخص آخر أثرت على ما حدث؟ إذا كانت موجودة، وضح لنا ما هي وكيف أثرت على التنفيذ.`,
+    `متى علمت بوجود المشكلة أو الملاحظة، ومتى أبلغت المسؤول المباشر، وماذا قمت به بعد ذلك؟`,
+    `من وجهة نظرك، ما الذي كان يجب عمله لتجنب حدوث الواقعة أو عدم تكرارها؟`
+  ].slice(0,6)
 }
 function analyze(subject:string, parties:any[], managementOpinion:string){
   const allAnswers=parties.flatMap(p=>p.answers||[]).map((a:any)=>normalize(a.answer)).filter(Boolean)
@@ -231,16 +187,11 @@ export async function POST(req:NextRequest){
   }
   if(action==='finalize'){
     const id=body.id
-    const [pr,rr]=await Promise.all([
-      db(`administrative_investigation_parties?select=*&investigation_id=eq.${id}`,{cache:'no-store'},auth),
-      db(`administrative_investigation_reviews?select=*&investigation_id=eq.${id}`,{cache:'no-store'},auth)
-    ])
-    const parties=pr.ok?await pr.json():[], reviews=rr.ok?await rr.json():[]
-    const managementOpinion=reviews.map((x:any)=>x.opinion).filter(Boolean).join('\n')
-    const analysis=analyze(body.subject||'',parties,managementOpinion)
-    const up=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({management_opinion:managementOpinion,final_analysis:analysis,analysis,status:'completed',completed_at:new Date().toISOString(),updated_at:new Date().toISOString()})},auth)
+    // الإنهاء هنا إداري فقط؛ نتيجة التحقيق والتوصية والملاحظات يتم إدخالها يدوياً
+    // من صفحة السجل عبر update-final. لا يتم إنشاء حكم أو تحليل تلقائي جديد.
+    const up=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({status:'completed',completed_at:new Date().toISOString(),updated_at:new Date().toISOString()})},auth)
     if(!up.ok)return NextResponse.json({error:await up.text()},{status:500})
-    return NextResponse.json({analysis,parties,reviews})
+    return NextResponse.json({investigation:(await up.json())[0]})
   }
   if(action==='employee-save'){
     const existing=await db(`administrative_investigation_parties?select=id,employee_submitted_at&employee_token=eq.${publicToken||body.token}&limit=1`,{cache:'no-store'})
