@@ -19,6 +19,14 @@ export async function PATCH(req:NextRequest){
     if(body.user_id===auth.user.id&&body.role&&body.role!=='admin')return NextResponse.json({error:'لا يمكن إزالة صلاحية مدير النظام من حسابك الحالي.'},{status:400})
 
     const headers=supabaseAdminHeaders(auth)
+    if(body.is_active===false&&auth.serviceKey){
+      const target=await fetch(SUPABASE_URL+'/auth/v1/admin/users/'+encodeURIComponent(body.user_id),{
+        headers:{apikey:auth.serviceKey,Authorization:'Bearer '+auth.serviceKey},cache:'no-store'
+      })
+      if(!target.ok)return NextResponse.json({error:'تعذر العثور على المستخدم.'},{status:404})
+      const t=await target.json()
+      if(t.email?.toLowerCase()===BOOTSTRAP_EMAIL)return NextResponse.json({error:'حساب الإدارة الأساسي لا يمكن إيقافه.'},{status:400})
+    }
     const payload:any={}
     if(body.role!==undefined)payload.role=body.role
     if(body.is_active!==undefined)payload.is_active=body.is_active
@@ -43,15 +51,6 @@ export async function PATCH(req:NextRequest){
     })
     if(!tenantUpdate.ok){
       return NextResponse.json({error:'تم تحديث المستخدم الأساسي لكن تعذر مزامنة صلاحية العميل.'},{status:500})
-    }
-
-    if(body.is_active===false&&auth.serviceKey){
-      const target=await fetch(SUPABASE_URL+'/auth/v1/admin/users/'+encodeURIComponent(body.user_id),{
-        headers:{apikey:auth.serviceKey,Authorization:'Bearer '+auth.serviceKey},cache:'no-store'
-      })
-      if(!target.ok)return NextResponse.json({error:'تعذر العثور على المستخدم.'},{status:404})
-      const t=await target.json()
-      if(t.email?.toLowerCase()===BOOTSTRAP_EMAIL)return NextResponse.json({error:'حساب الإدارة الأساسي لا يمكن إيقافه.'},{status:400})
     }
 
     return NextResponse.json({user:rows[0]})
