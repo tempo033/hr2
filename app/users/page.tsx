@@ -30,10 +30,13 @@ export default function UsersPage() {
       const usersData=await usersRes.json(), accessData=await accessRes.json()
       if(!usersRes.ok) throw new Error(usersData.error||'تعذر تحميل المستخدمين.')
       if(!accessRes.ok) throw new Error(accessData.error||'تعذر تحميل صلاحيات الفروع.')
+      const baseUsers=(usersData.users||[]) as Profile[]
       const accessUsers=(accessData.users||[]) as Profile[]
-      setProfiles(accessUsers)
+      const accessById=new Map(accessUsers.map(u=>[u.user_id,u]))
+      const mergedUsers=baseUsers.map(u=>({...u,...(accessById.get(u.user_id)||{})}))
+      setProfiles(mergedUsers)
       setBranches((accessData.branches||[]).filter((b:Branch)=>b.is_active))
-      setAccessDraft(Object.fromEntries(accessUsers.map(u=>[u.user_id,u.branch_ids||[]])))
+      setAccessDraft(Object.fromEntries(mergedUsers.map(u=>[u.user_id,u.branch_ids||[]])))
     } catch(e){setError(e instanceof Error?e.message:'تعذر تحميل المستخدمين.')}
     finally{setPageLoading(false)}
   }
