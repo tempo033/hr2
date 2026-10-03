@@ -116,6 +116,8 @@ export default function CandidatePage({ params }: CandidatePageProps) {
       window.scrollTo({top:0,behavior:'smooth'})
       return
     }
+    if(files.some(f=>f.size>1024*1024)){setError('حجم كل ملف يجب ألا يتجاوز 1 ميجابايت.');return}
+    if(files.length>5){setError('يمكن رفع 5 ملفات كحد أقصى.');return}
     setSending(true)
     try{
       const {data,error:e1}=await supabase.rpc('save_candidate_public_form',{
@@ -238,7 +240,7 @@ export default function CandidatePage({ params }: CandidatePageProps) {
             <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 text-center transition hover:border-[#c99b24] hover:bg-[#fffaf0]">
               <UploadCloud size={30} className="text-[#c99b24]"/>
               <span className="mt-3 text-sm font-black text-[#09233f]">اضغط لاختيار الملفات</span>
-              <span className="mt-1 text-xs leading-5 text-slate-500">PDF أو Word أو JPG أو PNG — حتى 10 ميجابايت للملف، وبحد أقصى 5 ملفات</span>
+              <span className="mt-1 text-xs leading-5 text-slate-500">PDF أو Word أو JPG أو PNG — حتى 1 ميجابايت للملف، وبحد أقصى 5 ملفات</span>
               <input className="hidden" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png" onChange={e=>setFiles(Array.from(e.target.files||[]).slice(0,5))}/>
             </label>
             {files.length>0 && <div className="mt-4 space-y-2">{files.map((file,i)=><div key={`${file.name}-${i}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5"><div className="flex min-w-0 items-center gap-3"><FileText size={19} className="shrink-0 text-[#c99b24]"/><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-700">{file.name}</p><p className="text-xs text-slate-400">{(file.size/1024/1024).toFixed(2)} MB</p></div></div><button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" onClick={()=>setFiles(files.filter((_,idx)=>idx!==i))} aria-label="حذف الملف"><X size={18}/></button></div>)}</div>}
