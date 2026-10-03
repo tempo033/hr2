@@ -250,6 +250,11 @@ export async function POST(req:NextRequest){
     const r=await db(`administrative_investigation_parties?id=eq.${row.id}&employee_submitted_at=is.null`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({answers:body.answers||[],saved_at:new Date().toISOString()})})
     if(!r.ok)return NextResponse.json({error:'تعذر حفظ الإجابات'},{status:500});return NextResponse.json({ok:true,saved:true})
   }
+  if(action==='update-final'){
+    const id=body.id
+    const r=await db(`administrative_investigations?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({investigator_notes:body.investigator_notes||null,result_text:body.result_text||null,recommendation:body.recommendation||null,employee_signature:body.employee_signature||null,investigator_signature:body.investigator_signature||null,hr_approval:body.hr_approval||null,status:body.status||'closed',closed_at:body.status==='closed'?new Date().toISOString():null,updated_at:new Date().toISOString()})},auth)
+    if(!r.ok)return NextResponse.json({error:await r.text()},{status:500});return NextResponse.json({investigation:(await r.json())[0]})
+  }
   if(action==='detail'){
     const id=body.id
     const [ir,pr,rr]=await Promise.all([
