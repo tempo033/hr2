@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,RefreshCw,ExternalLink,Copy,CheckCircle2,Scale} from 'lucide-react'
+import {ArrowLeft,RefreshCw,ExternalLink,Copy,CheckCircle2,Scale,Printer} from 'lucide-react'
 
 export default function Records(){
  const [data,setData]=useState<any>({investigations:[],employees:[]})
@@ -41,7 +41,7 @@ export default function Records(){
      <section className="bg-white border rounded-2xl p-6 mt-6">
       <div className="flex justify-between items-start gap-4">
        <div className="flex-1"><div className="text-[#b88618] font-bold">تفاصيل التحقيق</div><input value={selected.investigation.subject||''} onChange={e=>setSelected({...selected,investigation:{...selected.investigation,subject:e.target.value}})} className="w-full border rounded-xl p-3 text-xl font-black mt-2"/><button onClick={saveSubject} className="mt-2 border rounded-lg px-4 py-2 font-bold">حفظ التعديل</button></div>
-       <button onClick={()=>saveFinal('closed')} disabled={busy} className="bg-[#b88618] text-white rounded-xl px-5 py-3 font-black inline-flex gap-2"><Scale size={18}/>{busy?'جاري الحفظ...':'حفظ وإغلاق التحقيق'}</button>
+       <div className="flex gap-2"><button onClick={()=>window.print()} className="border rounded-xl px-4 py-3 font-bold inline-flex gap-2"><Printer size={18}/> طباعة / PDF</button><button onClick={()=>saveFinal('closed')} disabled={busy} className="bg-[#b88618] text-white rounded-xl px-5 py-3 font-black inline-flex gap-2"><Scale size={18}/>{busy?'جاري الحفظ...':'حفظ وإغلاق التحقيق'}</button></div>
       </div>
       <div className="mt-5">
        {(selected.parties||[]).map((p:any)=><div key={p.id} className="border rounded-xl p-4 mb-3"><div className="font-black">الموظف: {(data.employees||[]).find((e:any)=>e.id===p.employee_id)?.full_name||p.employee_id}</div><div className="text-sm mt-2">حالة الأقوال: {p.employee_submitted_at?'تم الإرسال':'لم يتم الإرسال'}</div><div className="flex gap-2 mt-2"><a className="text-[#b88618] inline-flex gap-1" href={p.public_url} target="_blank" rel="noreferrer" title="فتح الرابط"><ExternalLink size={15}/> فتح الرابط</a><button className="text-[#b88618] inline-flex gap-1" onClick={()=>copy(location.origin+'/forms/investigation/respond/'+p.employee_token)} title="نسخ الرابط">{copied===location.origin+'/forms/investigation/respond/'+p.employee_token?<CheckCircle2 size={15}/>:<Copy size={15}/>} نسخ</button></div></div>)}
