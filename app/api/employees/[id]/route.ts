@@ -18,7 +18,7 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
  if(requestedStatus && !(EMPLOYEE_STATUSES as readonly string[]).includes(requestedStatus))return NextResponse.json({error:'حالة الموظف غير صالحة.'},{status:400})
  const numericFields=['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances']
  const dateFields=['hire_date']
- const editableWithoutStatus=editable.filter(k=>k!=='employment_status')
+ const editableWithoutStatus=editable
  const payload=Object.fromEntries(editableWithoutStatus.filter(k=>Object.prototype.hasOwnProperty.call(body,k)).map(k=>{
    const value=body[k]
    if(numericFields.includes(k))return [k,value===''||value===null?null:Number(value)]
