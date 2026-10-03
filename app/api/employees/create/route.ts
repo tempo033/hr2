@@ -55,7 +55,7 @@ export async function POST(req:NextRequest){
   const hire_date=dateValue(body.hire_date)
   const job_title=clean(body.job_title)
   const department=clean(body.department)
-  const employment_status=clean(body.employment_status)||'على رأس العمل'
+  const employment_status='على رأس العمل'
   const date_of_birth=dateValue(body.date_of_birth)
   const residency_expiry_date=dateValue(body.residency_expiry_date)
 
