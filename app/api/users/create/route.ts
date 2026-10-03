@@ -79,7 +79,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: detail || 'تعذر حفظ صلاحيات المستخدم.' }, { status: 400 })
     }
 
-    return NextResponse.json({ ok: true, id: created.id, email, display_name: displayName, role })
+    // New users belong to the existing customer tenant, but receive NO branch access automatically.
+    // An administrator must explicitly assign branches from /users.
+    const tenantResponse = await adminRequest('/rest/v1/tenants?select=id&slug=eq.al-bunya-al-asasiya&limit=1')
+    const tenants = tenantResponse.ok ? await tenantResponse.json() : []
+    const tenantId = tenants?.[0]?.id
+    if (!tenantId) {
+      await adminRequest(`/rest/v1/app_users?user_id=eq.${created.id}`, { method: 'DELETE' })
+      await adminRequest(`/auth/v1/admin/users/${created.id}`, { method: 'DELETE' })
+      return NextResponse.json({ error: 'تعذر ربط المستخدم بالعميل الحالي.' }, { status: 500 })
+    }
+
+    const tenantUserInsert = await adminRequest('/rest/v1/tenant_users', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ tenant_id: tenantId, user_id: created.id, role, is_active: true }),
+    })
+    if (!tenantUserInsert.ok) {
+      await adminRequest(`/rest/v1/app_users?user_id=eq.${created.id}`, { method: 'DELETE' })
+      await adminRequest(`/auth/v1/admin/users/${created.id}`, { method: 'DELETE' })
+      const detail = await tenantUserInsert.text()
+      return NextResponse.json({ error: detail || 'تعذر ربط المستخدم بالعميل الحالي.' }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true, id: created.id, email, display_name: displayName, role, branch_ids: [] })
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع.' }, { status: 500 })
   }
