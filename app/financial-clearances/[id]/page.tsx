@@ -120,8 +120,8 @@ export default function FinancialClearancePage({params}:{params:Promise<{id:stri
   body{print-color-adjust:exact;-webkit-print-color-adjust:exact}
   .no-print,.print-area> :not(.final-one-page),.hr-sidebar,.hr-topbar{display:none!important}
   .print-area{display:block!important;width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important}
-  .final-one-page{display:block!important;width:210mm!important;height:297mm!important;box-sizing:border-box!important;padding:9mm 10mm 7mm!important;overflow:hidden!important;page-break-after:avoid!important;break-after:avoid-page!important;font-family:Arial,Tahoma,sans-serif;color:#172033;font-size:9.5pt;line-height:1.35}
-  .final-letterhead{text-align:center;border-bottom:2px solid #b88618;padding-bottom:4mm}
+  .final-one-page{display:block!important;width:210mm!important;height:297mm!important;box-sizing:border-box!important;margin:0 auto!important;padding:9mm 12mm 7mm!important;overflow:hidden!important;page-break-after:avoid!important;break-after:avoid-page!important;position:relative!important;left:auto!important;right:auto!important;float:none!important;direction:rtl!important;text-align:right!important;font-family:Arial,Tahoma,sans-serif;color:#172033;font-size:9.5pt;line-height:1.35}
+  .final-letterhead{text-align:center;border-bottom:2px solid #b88618;padding-bottom:4mm;width:100%!important;margin:0 auto!important}
   .company-ar{font-size:15pt;font-weight:900;color:#09233f}.company-en{font-size:7.5pt;font-weight:700;color:#64748b;margin-top:1mm}.gold-line{height:1px;background:#b88618;margin-top:2mm}
   .final-title{text-align:center;font-size:16pt;font-weight:900;color:#09233f;margin-top:3mm}.final-subtitle{text-align:center;font-size:7.5pt;font-weight:700;color:#64748b}
   .final-meta{display:flex;justify-content:space-between;margin-top:2.5mm;font-size:8.5pt;font-weight:700}
