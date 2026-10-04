@@ -7,6 +7,33 @@ const SERVICE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||''
 const MAX_SIZE=1024*1024
 const allowed=new Set(['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','image/jpeg','image/png'])
 const headers=(extra:Record<string,string>={})=>({apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`,Accept:'application/json',...extra})
+export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}){
+ const auth=await getServerAuth(req,ROLES);if(!auth)return NextResponse.json({error:'غير مصرح'},{status:401})
+ const {id}=await params;const url=new URL(req.url);const documentId=url.searchParams.get('document_id')||''
+ if(!documentId)return NextResponse.json({error:'معرف المستند مطلوب.'},{status:400})
+ const q=await fetch(SUPABASE_URL+'/rest/v1/employee_documents?select=*&id=eq.'+encodeURIComponent(documentId)+'&employee_id=eq.'+encodeURIComponent(id)+'&limit=1',{headers:headers(),cache:'no-store'})
+ const qt=await q.text().catch(()=> '');let row:any=null;try{row=qt?JSON.parse(qt)?.[0]||null:null}catch{}
+ if(!q.ok)return NextResponse.json({error:qt||'تعذر تحميل المستند.'},{status:500})
+ if(!row?.document_url)return NextResponse.json({error:'المستند غير موجود.'},{status:404})
+ const fileRes=await fetch(SUPABASE_URL+'/storage/v1/object/employee-documents/'+encodeURIComponent(row.document_url),{headers:headers(),cache:'no-store'})
+ if(!fileRes.ok)return NextResponse.json({error:'تعذر فتح المستند من التخزين.'},{status:404})
+ const body=await fileRes.arrayBuffer();const safeName=String(row.document_name||'document').replace(/[\\\\/"<>:*?|]/g,'_')
+ return new Response(body,{status:200,headers:{'Content-Type':row.mime_type||fileRes.headers.get('content-type')||'application/octet-stream','Content-Disposition':'inline; filename="'+encodeURIComponent(safeName)+'"','Cache-Control':'private, no-store'}})
+}
+
+export async function DELETE(req:NextRequest,{params}:{params:Promise<{id:string}>}){
+ const auth=await getServerAuth(req,ROLES);if(!auth)return NextResponse.json({error:'غير مصرح'},{status:401})
+ const {id}=await params;const url=new URL(req.url);const documentId=url.searchParams.get('document_id')||''
+ if(!documentId)return NextResponse.json({error:'معرف المستند مطلوب.'},{status:400})
+ const lookup=await fetch(SUPABASE_URL+'/rest/v1/employee_documents?select=id,document_url&id=eq.'+encodeURIComponent(documentId)+'&employee_id=eq.'+encodeURIComponent(id)+'&limit=1',{headers:headers(),cache:'no-store'})
+ const lt=await lookup.text().catch(()=> '');let row:any=null;try{row=lt?JSON.parse(lt)?.[0]||null:null}catch{}
+ if(!lookup.ok)return NextResponse.json({error:lt||'تعذر العثور على المستند.'},{status:500})
+ if(!row)return NextResponse.json({error:'المستند غير موجود.'},{status:404})
+ if(row.document_url){const delFile=await fetch(SUPABASE_URL+'/storage/v1/object/employee-documents/'+encodeURIComponent(row.document_url),{method:'DELETE',headers:headers()});if(!delFile.ok)return NextResponse.json({error:(await delFile.text().catch(()=>''))||'تعذر حذف ملف المستند من التخزين.'},{status:500})}
+ const delRow=await fetch(SUPABASE_URL+'/rest/v1/employee_documents?id=eq.'+encodeURIComponent(documentId)+'&employee_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:headers()})
+ if(!delRow.ok)return NextResponse.json({error:(await delRow.text().catch(()=>''))||'تم حذف الملف ولكن تعذر حذف بيانات المستند.'},{status:500})
+ return NextResponse.json({success:true})
+}
 export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  const auth=await getServerAuth(req,ROLES);if(!auth)return NextResponse.json({error:'غير مصرح'},{status:401})
  if(!SERVICE_KEY)return NextResponse.json({error:'خدمة المستندات غير مهيأة.'},{status:500})
