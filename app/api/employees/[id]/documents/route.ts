@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getServerAuth } from '@/lib/server-auth'
 const ROLES=['admin','hr','interviewer','manager']
-const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||''
+const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
 const SERVICE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||''
 const MAX_SIZE=1024*1024
 const allowed=new Set(['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','image/jpeg','image/png'])
