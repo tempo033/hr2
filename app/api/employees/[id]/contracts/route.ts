@@ -5,7 +5,7 @@ import {getServerAuth} from '@/lib/server-auth'
 const ROLES=['admin','hr'] as const
 const SUPABASE_URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'https://pdkdvaisggntdrvpxuur.supabase.co'
 const SERVICE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||''
-const MAX_SIZE=10*1024*1024
+const MAX_SIZE=1024*1024
 const headers=(extra:Record<string,string>={})=>({apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`,Accept:'application/json',...extra})
 
 async function audit(contractId:string,employeeId:string,action:string,user:any,details:any={}) {
@@ -31,7 +31,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  const form=await req.formData();const file=form.get('file')
  if(!(file instanceof File)||!file.size)return NextResponse.json({error:'اختر عقد PDF.'},{status:400})
  if(file.type!=='application/pdf')return NextResponse.json({error:'عقد قوى يجب أن يكون بصيغة PDF.'},{status:400})
- if(file.size>MAX_SIZE)return NextResponse.json({error:'حجم عقد PDF يجب ألا يتجاوز 10 ميجابايت.'},{status:400})
+ if(file.size>MAX_SIZE)return NextResponse.json({error:'حجم عقد PDF يجب ألا يتجاوز 1 ميجابايت.'},{status:400})
  const path=id+'/contracts/'+crypto.randomUUID()+'-'+file.name.replace(/[^a-zA-Z0-9._-\u0600-\u06FF]/g,'_').slice(0,120)
  const up=await fetch(SUPABASE_URL+'/storage/v1/object/employee-documents/'+encodeURIComponent(path),{method:'POST',headers:headers({'Content-Type':'application/pdf','x-upsert':'false'}),body:new Uint8Array(await file.arrayBuffer())})
  if(!up.ok)return NextResponse.json({error:(await up.text().catch(()=>''))||'تعذر رفع عقد قوى.'},{status:400})
