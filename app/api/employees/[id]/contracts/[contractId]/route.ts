@@ -35,6 +35,10 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{id:string;co
   const st=await s.text().catch(()=> '');let sd:any=null;try{sd=st?JSON.parse(st):null}catch{}
   const signed=sd?.signedURL||sd?.signedUrl
   if(!s.ok||!signed)return NextResponse.json({error:'تعذر إنشاء رابط العقد.'},{status:500})
+  if(new URL(req.url).searchParams.get('download')==='1'){
+   const raw=await fetch(signed);if(!raw.ok)return NextResponse.json({error:'تعذر تنزيل العقد.'},{status:500})
+   return new Response(await raw.arrayBuffer(),{headers:{'Content-Type':'application/pdf','Content-Disposition:'attachment; filename="contract.pdf"','Cache-Control':'private, no-store'}})
+  }
   return NextResponse.redirect(new URL(signed))
  }
  return NextResponse.json({contract:row})
