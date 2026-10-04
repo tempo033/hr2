@@ -42,7 +42,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{id:string;co
 
 export async function POST(req:NextRequest,{params}:{params:Promise<{id:string;contractId:string}>}){
  const auth=await getServerAuth(req,['admin','hr']);if(!auth)return NextResponse.json({error:'غير مصرح'},{status:403})
- const {id,contractId}=await params;const action=(await req.json().catch(()=>({}))).action
+ const {id,contractId}=await params;const body=await req.json().catch(()=>({}));const action=body.action
  const {r,row,text}=await getContract(contractId,id);if(!r.ok)return NextResponse.json({error:text||'تعذر تحميل العقد.'},{status:500});if(!row)return NextResponse.json({error:'العقد غير موجود.'},{status:404})
  if(action==='analyze'){
   if(!process.env.GEMINI_API_KEY&&!process.env.GOOGLE_API_KEY){await fetch(SUPABASE_URL+'/rest/v1/employee_contracts?id=eq.'+encodeURIComponent(contractId),{method:'PATCH',headers:headers({'Content-Type':'application/json'}),body:JSON.stringify({status:'error',error_message:'لم يتم إعداد GEMINI_API_KEY أو GOOGLE_API_KEY في بيئة الخادم.'})});return NextResponse.json({error:'تحليل العقد يحتاج مفتاح Gemini في بيئة الخادم.'},{status:503})}
@@ -71,9 +71,10 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string;c
   return NextResponse.json({contract:{...row,...patch}})
  }
  if(action==='approve'){
-  const body=await req.json().catch(()=>({}));const decisions=body.decisions||{}
+  const decisions=body.decisions||{}
   if(row.status!=='review'&&row.status!=='reviewed')return NextResponse.json({error:'العقد ليس في حالة مراجعة.'},{status:400})
   if(row.employee_match?.status==='mismatch')return NextResponse.json({error:'لا يمكن اعتماد العقد لأن بياناته لا تتطابق مع الموظف الحالي.'},{status:409})
+  const er0=await fetch(SUPABASE_URL+'/rest/v1/employee_records?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1',{headers:headers(),cache:'no-store'});const e0t=await er0.text().catch(()=> '');let employee:any=null;try{employee=e0t?JSON.parse(e0t)?.[0]||null:null}catch{};if(!employee)return NextResponse.json({error:'لم يتم العثور على الموظف.'},{status:404})
   const ex=row.extracted_data||{};const updates:any={};const reviewed:any={}
   for(const k of employeeFields){const d=decisions[k];const item=ex[k];if(d==='extracted'&&item&&item.value&&item.value!=='غير مستخرج'&&item.confidence!=='none'){let v=item.value;if(['basic_salary','housing_allowance','transportation_allowance','other_allowances','total_salary_with_allowances'].includes(k))v=num(v);else if(k==='date_of_birth'||k==='hire_date')v=safeDate(v);if(v!==null&&v!=='')updates[k]=v;reviewed[k]={decision:'extracted',value:v}}else{reviewed[k]={decision:'current',value:employeeValue(employee,k)}}}
   const er=await fetch(SUPABASE_URL+'/rest/v1/employee_records?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:headers({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify(updates)})
