@@ -74,6 +74,10 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string;c
   await audit(contractId,id,'تحليل العقد',auth.user,{status:'review',employee_match:match})
   return NextResponse.json({contract:{...row,...patch}})
  }
+ if(action==='review'){
+  const decisions=body.decisions||{};const ex=row.extracted_data||{};const reviewed:any={};for(const k of employeeFields){const d=decisions[k]==='extracted'?'extracted':'current';reviewed[k]={decision:d,value:d==='extracted'&&ex[k]?.value&&ex[k].value!=='غير مستخرج'?ex[k].value:undefined}}
+  const patch={status:'reviewed',reviewed_data:reviewed,reviewed_at:new Date().toISOString(),error_message:null};const rr=await fetch(SUPABASE_URL+'/rest/v1/employee_contracts?id=eq.'+encodeURIComponent(contractId),{method:'PATCH',headers:headers({'Content-Type':'application/json'}),body:JSON.stringify(patch)});if(!rr.ok)return NextResponse.json({error:await rr.text().catch(()=> 'تعذر حفظ المراجعة.')},{status:500});await audit(contractId,id,'مراجعة بيانات العقد',auth.user,{decisions});return NextResponse.json({success:true,contract:{...row,...patch}})
+ }
  if(action==='approve'){
   const decisions=body.decisions||{}
   if(row.status!=='review'&&row.status!=='reviewed')return NextResponse.json({error:'العقد ليس في حالة مراجعة.'},{status:400})
