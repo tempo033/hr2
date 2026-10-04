@@ -20,6 +20,11 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  if(!up.ok)return NextResponse.json({error:(await up.text().catch(()=>''))||'تعذر رفع الملف.'},{status:400})
  const row={employee_id:id,document_type:type,document_name:name,document_url:path,document_number:String(form.get('document_number')||'')||null,issue_date:String(form.get('issue_date')||'')||null,expiry_date:String(form.get('expiry_date')||'')||null,status:String(form.get('status')||'ساري'),notes:String(form.get('notes')||'')||null}
  const ins=await fetch(`${SUPABASE_URL}/rest/v1/employee_documents`,{method:'POST',headers:headers({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify(row)})
- if(!ins.ok){await fetch(`${SUPABASE_URL}/storage/v1/object/employee-documents/${encodeURIComponent(path)}`,{method:'DELETE',headers:headers()}).catch(()=>null);return NextResponse.json({error:await ins.text()},{status:500})}
- return NextResponse.json({document:(await ins.json())[0]})
+ const insText=await ins.text().catch(()=> '')
+ if(!ins.ok){await fetch(`${SUPABASE_URL}/storage/v1/object/employee-documents/${encodeURIComponent(path)}`,{method:'DELETE',headers:headers()}).catch(()=>null);let error='تعذر حفظ بيانات المستند.';try{const parsed=insText?JSON.parse(insText):null;error=parsed?.message||parsed?.error_description||parsed?.hint||insText||error}catch{if(insText)error=insText}return NextResponse.json({error},{status:500})}
+ let document:any=null
+ try{document=insText?JSON.parse(insText)?.[0]||null:null}catch{document=null}
+ if(!document){const verify=await fetch(`${SUPABASE_URL}/rest/v1/employee_documents?select=*&employee_id=eq.${encodeURIComponent(id)}&document_url=eq.${encodeURIComponent(path)}&limit=1`,{headers:headers()});const verifyText=await verify.text().catch(()=> '');try{document=verifyText?JSON.parse(verifyText)?.[0]||null:null}catch{document=null}}
+ if(!document){await fetch(`${SUPABASE_URL}/storage/v1/object/employee-documents/${encodeURIComponent(path)}`,{method:'DELETE',headers:headers()}).catch(()=>null);return NextResponse.json({error:'تم رفع الملف لكن تعذر حفظ بياناته.'},{status:500})}
+ return NextResponse.json({document})
 }
