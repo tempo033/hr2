@@ -51,17 +51,91 @@ export default function FinancialClearancePage({params}:{params:Promise<{id:stri
 
    {data.status==='completed'&&<div className="final-one-page">
     <div className="final-letterhead"><div className="company-ar">شركة البنية الأساسية للمقاولات ذ.م.م</div><div className="company-en">AL-BENYAH AL-ASASEYAH CONTRACTING CO. L.L.C</div><div className="gold-line"/></div>
-    <div className="final-title">مخالصة مالية وإدارية نهائية وإبراء ذمة</div><div className="final-subtitle">FINAL FINANCIAL & ADMINISTRATIVE SETTLEMENT AND RELEASE</div>
+    <div className="final-title">مخالصة مالية وإدارية نهائية وإبراء ذمة</div>
+    <div className="final-subtitle">FINAL FINANCIAL & ADMINISTRATIVE SETTLEMENT AND RELEASE</div>
     <div className="final-meta"><span>رقم المخالصة: <b>{data.clearance_number}</b></span><span>تاريخ الاعتماد النهائي: <b>{data.final_approved_at?new Date(data.final_approved_at).toLocaleDateString('ar-SA'):'—'}</b></span></div>
-    <div className="final-info"><div><b>اسم الموظف</b><span>{data.employee?.full_name||'—'}</span></div><div><b>الرقم الوظيفي</b><span>{data.employee?.employee_number||'—'}</span></div><div><b>الهوية/الإقامة</b><span>{data.employee?.national_id||'—'}</span></div><div><b>المسمى الوظيفي</b><span>{data.employee?.job_title||'—'}</span></div><div><b>القسم</b><span>{data.employee?.department||'—'}</span></div><div><b>الشركة</b><span>{data.employee?.company?.name||'—'}</span></div><div><b>آخر يوم عمل</b><span>{data.source_snapshot?.clearance?.last_work_date||'—'}</span></div><div><b>صافي المستحق</b><span>{net.toFixed(2)} ر.س</span></div></div>
-    <div className="final-finance"><div><b>إجمالي المستحقات</b><strong>{entTotal.toFixed(2)} ر.س</strong></div><div><b>إجمالي الالتزامات</b><strong>{oblTotal.toFixed(2)} ر.س</strong></div><div><b>صافي التسوية</b><strong>{net.toFixed(2)} ر.س</strong></div></div>
-    <p className="final-declaration">يقر الموظف باستكمال إجراءات إخلاء الطرف وتسوية المستحقات والالتزامات الموضحة أعلاه، وبعد استكمال الاعتمادات والتوقيعات تعتبر هذه المخالصة نهائية وفق البيانات المثبتة بها.</p>
-    <div className="final-signatures">{stages.map(([k,l])=>{const a=data.approvals?.find((x:any)=>x.stage===k);return <div className="final-sign" key={k}><b>{l}</b>{k==='project_manager'&&a?.decision&&<span className="decision">{a.decision==='applies'?'ينطبق':'لا ينطبق'}</span>}<div className="sig-name">{a?.approver_name||'—'}</div><div className="sig-img">{a?.signature?<img src={a.signature} alt="signature"/>:<span>خانة التوقيع</span>}</div><div className="sig-date">التاريخ: {a?.acted_at?new Date(a.acted_at).toLocaleDateString('ar-SA'):'—'}</div></div>})}</div>
-    <div className="final-footer">هذه الوثيقة صادرة إلكترونيًا من نظام الموارد البشرية وتتضمن جميع الاعتمادات والتوقيعات المسجلة على المخالصة.</div>
-   </div>}
+
+    <div className="final-section-title">بيانات الموظف</div>
+    <div className="final-info">
+      <div><b>اسم الموظف</b><span>{data.employee?.full_name||'—'}</span></div>
+      <div><b>الرقم الوظيفي</b><span>{data.employee?.employee_number||'—'}</span></div>
+      <div><b>الهوية / الإقامة</b><span>{data.employee?.national_id||'—'}</span></div>
+      <div><b>المسمى الوظيفي</b><span>{data.employee?.job_title||'—'}</span></div>
+      <div><b>القسم</b><span>{data.employee?.department||'—'}</span></div>
+      <div><b>الشركة</b><span>{data.employee?.company?.name||'—'}</span></div>
+      <div><b>آخر يوم عمل</b><span>{data.source_snapshot?.clearance?.last_work_date||financial.last_work_date||'—'}</span></div>
+      <div><b>نوع إنهاء العلاقة</b><span>{data.source_snapshot?.clearance?.termination_type||'—'}</span></div>
+    </div>
+
+    <div className="final-section-title">المستحقات والالتزامات</div>
+    <div className="final-tables">
+      <div className="final-table-wrap">
+        <div className="final-table-title">بيان المستحقات</div>
+        <table><tbody>
+          {ent.map((x:any)=><tr key={x.id}><td>{x.label}</td><td>{Number(x.amount||0).toFixed(2)} ر.س</td></tr>)}
+          <tr className="total"><td>إجمالي المستحقات</td><td>{entTotal.toFixed(2)} ر.س</td></tr>
+        </tbody></table>
+      </div>
+      <div className="final-table-wrap">
+        <div className="final-table-title">بيان الالتزامات</div>
+        <table><tbody>
+          {obl.map((x:any)=><tr key={x.id}><td>{x.label}</td><td>{Number(x.amount||0).toFixed(2)} ر.س</td></tr>)}
+          <tr className="total"><td>إجمالي الالتزامات</td><td>{oblTotal.toFixed(2)} ر.س</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <div className="final-net"><span>صافي المستحق للموظف</span><strong>{net.toFixed(2)} ر.س</strong></div>
+
+    <div className="final-employee-sign">
+      <div className="final-sign-title">إقرار وتوقيع الموظف</div>
+      <div className="employee-sign-content">
+        <div><b>اسم الموظف:</b> {data.employee?.full_name||'—'}<br/><span>أقر بمراجعة المستحقات والالتزامات الموضحة أعلاه.</span></div>
+        <div className="employee-sign-box">{data.approvals?.find((x:any)=>x.stage==='employee')?.signature?<img src={data.approvals.find((x:any)=>x.stage==='employee').signature} alt="توقيع الموظف"/>:<span>التوقيع</span>}</div>
+        <div className="employee-sign-date">التاريخ: {(()=>{const a=data.approvals?.find((x:any)=>x.stage==='employee');return a?.acted_at?new Date(a.acted_at).toLocaleDateString('ar-SA'):'—'})()}</div>
+      </div>
+    </div>
+
+    <div className="final-section-title">اعتمادات الإدارة</div>
+    <div className="final-admin-signatures">
+      {stages.filter(([k])=>k!=='employee').map(([k,l])=>{const a=data.approvals?.find((x:any)=>x.stage===k);return <div className="final-admin-sign" key={k}>
+        <b>{l}</b>
+        {k==='project_manager'&&a?.decision&&<span className="decision">{a.decision==='applies'?'ينطبق':'لا ينطبق'}</span>}
+        <div className="admin-name">{a?.approver_name||'—'}</div>
+        <div className="admin-title">{a?.approver_title||'—'}</div>
+        <div className="admin-sign-box">{a?.signature?<img src={a.signature} alt={"توقيع "+l}/>:<span>التوقيع</span>}</div>
+        <div className="admin-date">التاريخ: {a?.acted_at?new Date(a.acted_at).toLocaleDateString('ar-SA'):'—'}</div>
+      </div>})}
+    </div>
+    <div className="final-footer">هذه الوثيقة صادرة إلكترونيًا من نظام الموارد البشرية وتتضمن البيانات والاعتمادات والتوقيعات المسجلة على المخالصة.</div>
+   </div>   </div>}
   </section>
   {canAct&&data.status!=='completed'&&data.current_stage!=='employee'&&<section className="no-print mt-5 rounded-2xl border bg-white p-5 shadow-sm"><h2 className="font-black text-[#09233f]">إجراء الاعتماد — {stages.find(x=>x[0]===data.current_stage)?.[1]}</h2><div className="mt-3 grid gap-3 md:grid-cols-2"><div><label className="mb-1 block text-sm font-bold">اسم المعتمد</label><input value={approverName} onChange={e=>setApproverName(e.target.value)} className="mb-3 w-full rounded-xl border p-3 font-bold" placeholder="اكتب اسم المعتمد"/><label className="mb-1 block text-sm font-bold">التوقيع</label><SignatureEditor value={signature} onChange={setSignature}/></div><div><label className="mb-1 block text-sm font-bold">ملاحظات</label><textarea value={notes} onChange={e=>setNotes(e.target.value)} className="h-40 w-full rounded-xl border p-3" placeholder="ملاحظات الاعتماد أو الإرجاع"/></div></div><div className="mt-4 flex flex-wrap gap-2">{data.current_stage==='project_manager'&&<><button disabled={saving} onClick={()=>setDecision('applies')} className={"rounded-xl border px-4 py-2 font-black "+(decision==='applies'?'bg-emerald-100 border-emerald-400':'bg-white')}>ينطبق</button><button disabled={saving} onClick={()=>setDecision('not_applies')} className={"rounded-xl border px-4 py-2 font-black "+(decision==='not_applies'?'bg-slate-200 border-slate-400':'bg-white')}>لا ينطبق</button></>}<button disabled={saving||(data.current_stage==='project_manager'&&!decision)} onClick={()=>void approve('approve')} className="inline-flex items-center gap-2 rounded-xl bg-[#09233f] px-5 py-3 font-black text-white"><CheckCircle2 size={17}/> اعتماد والانتقال للمرحلة التالية</button>{data.current_stage==='project_manager'&&role==='admin'&&<button disabled={saving} onClick={()=>void approve('skip_project_manager')} className="inline-flex items-center gap-2 rounded-xl border border-amber-400 bg-amber-50 px-5 py-3 font-black text-amber-900">تخطي مدير المشاريع والانتقال للمدير العام</button>}<button disabled={saving} onClick={()=>void approve('return')} className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 font-black text-amber-800"><RotateCcw size={17}/> إرجاع للمراجعة</button></div></section>}
   {data.status!=='completed'&&data.current_stage==='employee'&&<section className="no-print mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">المخالصة بانتظار اعتماد الموظف. رابط الاعتماد موجود في بيانات المخالصة ويمكن إرساله للموظف.</section>}
   <section className="no-print mt-5 rounded-2xl border bg-white p-5"><h2 className="font-black text-[#09233f]">روابط الاعتماد المستقلة</h2><div className="mt-3 space-y-2">{(data.links||[]).sort((a:any,b:any)=>String(a.stage).localeCompare(String(b.stage))).map((l:any)=><div key={l.id} className="flex flex-col gap-2 rounded-xl border bg-slate-50 p-3 md:flex-row md:items-center"><div className="flex-1"><b>{stages.find(x=>x[0]===l.stage)?.[1]||l.stage}</b><div className="text-xs text-slate-500">{l.status==='active'?'نشط':'مستخدم'}</div></div><code className="break-all text-xs">{typeof window!=='undefined'?window.location.origin:''}/financial-clearances/public/{l.token}</code><button onClick={()=>navigator.clipboard?.writeText((typeof window!=='undefined'?window.location.origin:'')+'/financial-clearances/public/'+l.token)} className="rounded-lg border bg-white px-3 py-2 text-xs font-black">نسخ الرابط</button>{role==='admin'&&<button onClick={()=>void reopenStage(l.stage)} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800">إعادة فتح الرابط</button>}</div>)}</div></section><section className="no-print mt-5 rounded-2xl border bg-white p-5"><h2 className="font-black text-[#09233f]">سجل الإجراءات</h2><div className="mt-3 space-y-2">{(data.audit_logs||[]).sort((a:any,b:any)=>String(b.created_at).localeCompare(String(a.created_at))).map((a:any)=><div key={a.id} className="flex gap-3 rounded-xl bg-slate-50 p-3 text-sm"><Clock3 size={16} className="mt-0.5 text-[#b88618]"/><div><b>{a.action}</b><div className="text-xs text-slate-500">{a.actor_name||'النظام'} · {a.actor_role||'—'} · {new Date(a.created_at).toLocaleString('ar-SA')}</div></div></div>)}</div></section>
- </div><style>{'@media print{.no-print{display:none!important}.print-area{box-shadow:none!important;border:0!important;padding:0!important}.hr-sidebar,.hr-topbar{display:none!important}.hr-main{margin:0!important}@page{size:A4;margin:10mm}body{background:#fff!important}}'}</style></main>
+ </div><style>{`
+.final-one-page{display:none}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;background:#fff!important}
+  body{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .no-print,.print-area> :not(.final-one-page),.hr-sidebar,.hr-topbar{display:none!important}
+  .print-area{display:block!important;width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important}
+  .final-one-page{display:block!important;width:210mm!important;height:297mm!important;box-sizing:border-box!important;padding:9mm 10mm 7mm!important;overflow:hidden!important;page-break-after:avoid!important;break-after:avoid-page!important;font-family:Arial,Tahoma,sans-serif;color:#172033;font-size:9.5pt;line-height:1.35}
+  .final-letterhead{text-align:center;border-bottom:2px solid #b88618;padding-bottom:4mm}
+  .company-ar{font-size:15pt;font-weight:900;color:#09233f}.company-en{font-size:7.5pt;font-weight:700;color:#64748b;margin-top:1mm}.gold-line{height:1px;background:#b88618;margin-top:2mm}
+  .final-title{text-align:center;font-size:16pt;font-weight:900;color:#09233f;margin-top:3mm}.final-subtitle{text-align:center;font-size:7.5pt;font-weight:700;color:#64748b}
+  .final-meta{display:flex;justify-content:space-between;margin-top:2.5mm;font-size:8.5pt;font-weight:700}
+  .final-section-title{margin-top:3mm;margin-bottom:1.5mm;padding:1.2mm 2mm;border-top:1px solid #b88618;border-bottom:1px solid #b88618;color:#09233f;font-weight:900;font-size:9.5pt}
+  .final-info{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5mm}
+  .final-info>div{border:1px solid #d7dde6;padding:1.5mm 2mm;min-height:9mm;box-sizing:border-box}
+  .final-info b{display:block;font-size:7pt;color:#64748b}.final-info span{display:block;margin-top:.5mm;font-weight:800;font-size:8.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .final-tables{display:grid;grid-template-columns:1fr 1fr;gap:3mm}.final-table-title{font-weight:900;color:#09233f;margin-bottom:1mm}
+  .final-tables table{width:100%;border-collapse:collapse;font-size:8pt}.final-tables td{border:1px solid #cfd6df;padding:1.2mm 1.5mm}.final-tables td:last-child{text-align:left;font-weight:800;white-space:nowrap}.final-tables .total{background:#f3f5f7;font-weight:900}
+  .final-net{display:flex;justify-content:center;align-items:center;gap:8mm;border:1.5px solid #09233f;margin-top:2.5mm;padding:2mm;font-weight:900}.final-net strong{font-size:12pt;color:#09233f}
+  .final-employee-sign{margin-top:3mm;border:1px solid #cfd6df;padding:2mm 3mm}.final-sign-title{text-align:center;font-weight:900;color:#09233f;margin-bottom:1.5mm}
+  .employee-sign-content{display:grid;grid-template-columns:1.7fr 1fr .6fr;gap:3mm;align-items:center;font-size:8.5pt}.employee-sign-box{height:14mm;border-bottom:1px solid #09233f;display:flex;align-items:center;justify-content:center}.employee-sign-box img{max-height:13mm;max-width:100%;object-fit:contain}.employee-sign-date{text-align:center;font-size:7.5pt}
+  .final-admin-signatures{display:grid;grid-template-columns:repeat(4,1fr);gap:2.5mm}.final-admin-sign{border:1px solid #cfd6df;padding:1.7mm;text-align:center;min-height:31mm;box-sizing:border-box;position:relative}.final-admin-sign>b{display:block;font-size:8pt;color:#09233f;min-height:8mm}.admin-name{font-weight:800;font-size:7.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-title{font-size:6.5pt;color:#64748b;min-height:3mm}.admin-sign-box{height:11mm;border-bottom:1px solid #09233f;display:flex;align-items:center;justify-content:center;margin-top:1mm}.admin-sign-box img{max-height:10mm;max-width:100%;object-fit:contain}.admin-sign-box span{font-size:7pt;color:#94a3b8}.admin-date{font-size:6.5pt;color:#64748b;margin-top:1mm}.decision{display:block;font-size:6.5pt;color:#b88618}
+  .final-footer{text-align:center;border-top:1px solid #d7dde6;margin-top:2mm;padding-top:1.5mm;font-size:6.5pt;color:#64748b}
+}
+`}</style></main>
 }
