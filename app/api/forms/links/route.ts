@@ -31,7 +31,8 @@ export async function PATCH(req: NextRequest) {
   const current = await currentRes.json()
   if (!currentRes.ok || !current?.[0]) return NextResponse.json({ error: 'الرابط غير موجود.' }, { status: 404 })
   if (current[0].form_type !== 'leave') return NextResponse.json({ error: 'إعادة الفتح متاحة حاليًا لروابط طلبات الإجازة فقط.' }, { status: 400 })
-  const response = await fetch(SUPABASE_URL + '/rest/v1/hr_form_links?id=eq.' + encodeURIComponent(body.link_id), { method: 'PATCH', headers, body: JSON.stringify({ last_submitted_at: null, status: 'active', expires_at: null, updated_at: new Date().toISOString() }) })
+  const patchBody = body.send ? { status: 'active', updated_at: new Date().toISOString() } : { last_submitted_at: null, status: 'active', expires_at: null, updated_at: new Date().toISOString() }
+  const response = await fetch(SUPABASE_URL + '/rest/v1/hr_form_links?id=eq.' + encodeURIComponent(body.link_id), { method: 'PATCH', headers, body: JSON.stringify(patchBody) })
   const data = await response.json().catch(() => ({}))
   if (!response.ok) return NextResponse.json({ error: data?.message || JSON.stringify(data) }, { status: response.status })
   return NextResponse.json({ ok: true, link: data?.[0] || null })
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     const recordData = await recordResponse.json()
     if (!recordResponse.ok || !recordData?.[0]?.id) return NextResponse.json({ error: recordData?.message || 'تعذر إنشاء سجل طلب الإجازة.' }, { status: 500 })
     const now = new Date().toISOString()
-    const linkPayload = { token:crypto.randomUUID(), form_type:'leave', employee_id:employee.id, record_id:recordData[0].id, created_by:auth.user.id, link_scope:'leave:employee', status:'active', created_at:now, updated_at:now, expires_at:body.expires_at||null }
+    const linkPayload = { token:crypto.randomUUID(), form_type:'leave', employee_id:employee.id, record_id:recordData[0].id, created_by:auth.user.id, link_scope:'leave:employee', status:body.draft?'draft':'active', created_at:now, updated_at:now, expires_at:body.expires_at||null }
     const linkResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, { method:'POST', headers, body:JSON.stringify(linkPayload) })
     const linkData = await linkResponse.json()
     if (!linkResponse.ok || !linkData?.[0]?.id) return NextResponse.json({ error:linkData?.message||'تعذر إنشاء رابط الموظف.' }, { status:500 })
