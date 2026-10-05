@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     const recordData = await recordResponse.json()
     if (!recordResponse.ok || !recordData?.[0]?.id) return NextResponse.json({ error: recordData?.message || 'تعذر إنشاء سجل طلب الإجازة.' }, { status: 500 })
     const now = new Date().toISOString()
-    const linkPayload = { token:crypto.randomUUID(), form_type:'leave', employee_id:employee.id, record_id:recordData[0].id, created_by:auth.user.id, link_scope:'leave:employee', status:body.draft?'draft':'active', created_at:now, updated_at:now, expires_at:body.expires_at||null }
+    const linkPayload = { token:crypto.randomUUID(), form_type:'leave', employee_id:employee.id, record_id:recordData[0].id, created_by:auth.user.id, link_scope:'leave:employee', status:body.draft?'disabled':'active', created_at:now, updated_at:now, expires_at:body.expires_at||null }
     const linkResponse = await fetch(`${SUPABASE_URL}/rest/v1/hr_form_links`, { method:'POST', headers, body:JSON.stringify(linkPayload) })
     const linkData = await linkResponse.json()
     if (!linkResponse.ok || !linkData?.[0]?.id) return NextResponse.json({ error:linkData?.message||'تعذر إنشاء رابط الموظف.' }, { status:500 })
